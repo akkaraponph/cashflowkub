@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   CashflowKub — Emerald Bank theme tokens.
+   OKLCH values from the design comp converted to hex so React
+   Native can parse them. Light = :root, dark = .dark.
+   File-type accent tints are the only chromatic product chrome.
+   ============================================================ */
+
+:root {
+  --background: #f5faf7;
+  --foreground: #243430;
+  --card: #ffffff;
+  --card-foreground: #243430;
+  --primary: #15835d;
+  --primary-foreground: #f4fdf9;
+  --secondary: #eef3f0;
+  --secondary-foreground: #243430;
+  --muted: #eef3f0;
+  --muted-foreground: #677873;
+  --accent: #eef3f0;
+  --accent-foreground: #243430;
+  --destructive: #dc4d3f;
+  --border: #dde6e1;
+  --input: #dde6e1;
+  --ring: #15835d;
+  --sidebar: #f0f5f2;
+  --sidebar-foreground: #243430;
+  --sidebar-border: #dfe8e3;
+
+  --type-folder-bg: #fef9c3;
+  --type-folder-fg: #ca8a04;
+  --type-pdf-bg: #fee2e2;
+  --type-pdf-fg: #dc2626;
+  --type-image-bg: #f3e8ff;
+  --type-image-fg: #9333ea;
+  --type-doc-bg: #dbeafe;
+  --type-doc-fg: #2563eb;
+  --type-xls-bg: #dcfce7;
+  --type-xls-fg: #16a34a;
+  --type-video-bg: #fce7f3;
+  --type-video-fg: #db2777;
+
+  --r-tile: 11px;
+  --r-md: 16px;
+  --r-lg: 18px;
+  --r-xl: 20px;
+}
+
+.dark {
+  --background: #161e1a;
+  --foreground: #ecf2ef;
+  --card: #1c2622;
+  --card-foreground: #ecf2ef;
+  --primary: #3cba88;
+  --primary-foreground: #131a17;
+  --secondary: #212b27;
+  --secondary-foreground: #ecf2ef;
+  --muted: #212b27;
+  --muted-foreground: #93a39d;
+  --accent: #212b27;
+  --accent-foreground: #ecf2ef;
+  --destructive: #e06a5c;
+  --border: #2d3833;
+  --input: #2d3833;
+  --ring: #3cba88;
+  --sidebar: #121815;
+  --sidebar-foreground: #ecf2ef;
+  --sidebar-border: #29332f;
+
+  --type-folder-bg: #3a3416;
+  --type-folder-fg: #facc15;
+  --type-pdf-bg: #3a1c1c;
+  --type-pdf-fg: #f87171;
+  --type-image-bg: #2e1f3e;
+  --type-image-fg: #c084fc;
+  --type-doc-bg: #1c2a44;
+  --type-doc-fg: #60a5fa;
+  --type-xls-bg: #14321f;
+  --type-xls-fg: #4ade80;
+  --type-video-bg: #3a1f30;
+  --type-video-fg: #f472b6;
+}
