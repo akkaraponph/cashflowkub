@@ -1,0 +1,23 @@
+# Optional: spin up Postgres locally if you don't already have one.
+# The app itself connects via DATABASE_URL (.env).
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cfk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ltcd2186
+      POSTGRES_DB: cfk_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - cfk_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cfk_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cfk_pgdata:
