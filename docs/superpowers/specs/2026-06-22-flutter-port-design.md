@@ -120,6 +120,15 @@ Charts read palette colours directly (matching `useColors`).
 
 ## Cleanup (final, only after parity verified)
 
+**Hard gate — do NOT delete `mobile/` until ALL of these pass:**
+- Every screen/modal in the source inventory has a working Dart equivalent (no stubs, no "TODO" screens).
+- `flutter analyze` is clean (0 errors/warnings).
+- `flutter test` is green.
+- `flutter build` succeeds for at least one target (e.g. `flutter build apk --debug` or `flutter build web`).
+- The app launches against the running Go API and the dashboard + tab navigation render.
+
+Only once the above hold:
+
 1. `git rm -r mobile/` (recoverable from history).
 2. Rewrite root `README.md`: keep the API section; replace the Expo stack table
    row, "Run the mobile app" steps, and project-layout tree with the Flutter app
