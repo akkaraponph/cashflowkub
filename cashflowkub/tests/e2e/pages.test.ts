@@ -8,6 +8,12 @@ const PAGES: [string, string, string][] = [
   ['/', 'Net worth', 'มูลค่าสุทธิ'],
   ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
   ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
+  ['/bills', 'KTC Credit Card', 'บิลเดือนนี้'],
+  ['/bills?view=calendar', 'Bills this month', 'ปฏิทิน'],
+  ['/debts', 'KrungThai Personal', 'กรุงไทยใจป้ำ'],
+  ['/debts?strategy=snowball', 'Pay smallest balance first', 'จ่ายยอดน้อยก่อน'],
+  ['/debts/2', 'Reducing balance', 'ลดต้นลดดอก'],
+  ['/debts/2?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
 ];
 
 async function fetchPage(path: string, cookie = ''): Promise<{ status: number; html: string }> {
