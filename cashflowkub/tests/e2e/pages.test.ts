@@ -20,6 +20,12 @@ const PAGES: [string, string, string][] = [
   ['/accounts', 'Kasikorn Savings', 'บัญชี'],
   ['/goals', 'Japan Trip', 'เที่ยวญี่ปุ่น'],
   ['/reports', 'Central Ladprao', 'ร้านค้ายอดนิยม'],
+  ['/plan', 'Income plan', 'แผนรายรับ'],
+  ['/plan?tab=summary', 'Net variance', 'ผลต่างรวม'],
+  ['/plan?tab=assets', 'Last updated', 'อัพเดตล่าสุด'],
+  ['/setup', 'Expense items', 'หมวด'],
+  ['/setup?tab=goals', 'Retirement', 'เกษียณ'],
+  ['/settings', 'Preferences', 'การตั้งค่า'],
 ];
 
 async function fetchPage(path: string, cookie = ''): Promise<{ status: number; html: string }> {
