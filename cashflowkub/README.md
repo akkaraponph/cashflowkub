@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CashflowKub (web)
 
-## Getting Started
+Bilingual (EN / ไทย) personal-finance manager: Next.js 16 + shadcn/ui front end, Next.js Route Handlers as the REST API, Prisma 7 + PostgreSQL.
 
-First, run the development server:
+## Run
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env              # set the Postgres password
+createdb cashflowkub && createdb cashflowkub_test
+pnpm install                      # also runs prisma generate
+pnpm db:deploy && pnpm db:seed    # schema + demo data
+pnpm dev                          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Test
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm test        # unit + api (api tests use TEST_DATABASE_URL)
+pnpm test:e2e    # page smoke tests against a running `pnpm start`
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`test:e2e` targets the server at `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://localhost:3111 pnpm test:e2e`).
 
-## Learn More
+## API
 
-To learn more about Next.js, take a look at the following resources:
+Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error": "..." }`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- CRUD: `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (`GET/POST /<r>`, `GET/PUT/PATCH/DELETE /<r>/:id`)
+- `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
+- `GET /dashboard`, `/networth`, `/reports`, `/setup`, `/plan?month=YYYY-MM`, `/plan/snapshots`, `/bills/summary`, `/debts/:id/schedule`
+- `POST /debts/:id/pay` (`{ "amount"?: number }`), `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)
+- `GET /api/health`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Layout
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/server/<domain>/logic.ts`: pure, unit-tested business logic.
+- `src/server/<domain>/service.ts`: Prisma access.
+- `src/app/api/v1/**`: REST handlers.
+- `src/app/(app)/**`: Server Component pages that call services directly.
+- `src/components/cfk`: app motifs and charts.
+- `src/components/ui`: shadcn.

@@ -1,5 +1,0 @@
-.env
-*.log
-tmp/
-bin/
-cashflowkub-api
