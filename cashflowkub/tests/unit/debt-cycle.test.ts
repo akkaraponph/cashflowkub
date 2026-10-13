@@ -52,4 +52,11 @@ describe('dueStatus', () => {
   it('closed debts are closed', () => {
     expect(dueStatus(terms({ done: true, paid: 9593 }), [], TODAY)).toMatchObject({ state: 'closed', amountDue: 0 });
   });
+  it('charges no fee exactly graceDays late, a fee one day after', () => {
+    expect(dueStatus(terms({ dueDay: 10, lateFee: 100, graceDays: 8 }), [], TODAY)).toMatchObject({ daysLate: 8, lateFee: 0 });
+    expect(dueStatus(terms({ dueDay: 10, lateFee: 100, graceDays: 7 }), [], TODAY)).toMatchObject({ daysLate: 8, lateFee: 100 });
+  });
+  it('ignores the time of day on today', () => {
+    expect(dueStatus(terms({ dueDay: 20 }), [], new Date('2026-06-20T15:30:00Z'))).toMatchObject({ state: 'dueToday', daysUntil: 0, daysLate: 0 });
+  });
 });

@@ -50,7 +50,10 @@ export function dueDateIn(year: number, monthIndex: number, dueDay: number): Dat
   return new Date(Date.UTC(y, m, Math.min(dueDay, lastDay)));
 }
 
-export function dueStatus(d: CycleTerms, payments: PaymentLite[], today: Date): DueStatus {
+export const startOfUtcDay = (d: Date): Date => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+
+export function dueStatus(d: CycleTerms, payments: PaymentLite[], now: Date): DueStatus {
+  const today = startOfUtcDay(now);
   const y = today.getUTCFullYear();
   const m = today.getUTCMonth();
   const thisDue = dueDateIn(y, m, d.dueDay);

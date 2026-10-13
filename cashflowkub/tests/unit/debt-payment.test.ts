@@ -26,4 +26,20 @@ describe('splitPayment', () => {
   it('a payment smaller than the fee only reduces the fee', () => {
     expect(splitPayment(terms({ dueDay: 10, lateFee: 100 }), [], 50, TODAY)).toEqual({ fee: 50, interest: 0, principal: 0, excess: 0 });
   });
+  it('rejects negative or non-finite amounts; zero is all zeros', () => {
+    expect(() => splitPayment(terms(), [], -1, TODAY)).toThrow(RangeError);
+    expect(() => splitPayment(terms(), [], Number.NaN, TODAY)).toThrow(RangeError);
+    expect(splitPayment(terms(), [], 0, TODAY)).toEqual({ fee: 0, interest: 0, principal: 0, excess: 0 });
+  });
+  it('takes interest first, so paying exactly the remaining principal leaves principal owing', () => {
+    const t = terms({ original: 10000, paid: 5000 });
+    expect(splitPayment(t, [], 5000, TODAY)).toEqual({ fee: 0, interest: 104, principal: 4896, excess: 0 });
+  });
+  it('overpaying with a late fee outstanding pays fee, interest and principal, rest is excess', () => {
+    const t = terms({ original: 1000, paid: 500, apr: 12, dueDay: 10, lateFee: 100 });
+    expect(splitPayment(t, [], 1000, TODAY)).toEqual({ fee: 100, interest: 5, principal: 500, excess: 395 });
+  });
+  it('ignores the time of day on the payment date', () => {
+    expect(splitPayment(terms({ dueDay: 18, lateFee: 100 }), [], 2783, new Date('2026-06-18T15:30:00Z')).fee).toBe(0);
+  });
 });
