@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dueDateIn, dueStatus, isoDate, type CycleTerms, type PaymentLite } from '@/server/debt/cycle';
+import { amountOwedNow, dueDateIn, dueStatus, isoDate, type CycleTerms, type PaymentLite } from '@/server/debt/cycle';
 
 const TODAY = new Date('2026-06-18T00:00:00Z');
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
@@ -58,5 +58,17 @@ describe('dueStatus', () => {
   });
   it('ignores the time of day on today', () => {
     expect(dueStatus(terms({ dueDay: 20 }), [], new Date('2026-06-20T15:30:00Z'))).toMatchObject({ state: 'dueToday', daysUntil: 0, daysLate: 0 });
+  });
+});
+
+describe('amountOwedNow', () => {
+  it.each([
+    [0, 0, 1000],
+    [400, 0, 600],
+    [0, 100, 1100],
+    [100, 100, 1000],
+    [500, 100, 600],
+  ])('paid %i, fee %i -> %i', (paidThisCycle, lateFee, expected) => {
+    expect(amountOwedNow({ amountDue: 1000, paidThisCycle, lateFee })).toBe(expected);
   });
 });

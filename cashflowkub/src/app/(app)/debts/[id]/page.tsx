@@ -10,6 +10,7 @@ import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
+import { amountOwedNow } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
 import { DueBadge } from '../due-badge';
 import { DeletePaymentButton } from './delete-payment-button';
@@ -22,9 +23,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const { debt: d, schedule, totalInterest, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
   const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
   const due = d.due;
-  // What is still owed this cycle: instalment less what was paid, plus any late fee not yet paid (fees are part of paidThisCycle).
-  const feePaidThisCycle = payments.filter((p) => p.date >= due.cycleStart).reduce((s, p) => s + p.fee, 0);
-  const owedNow = due.amountDue - due.paidThisCycle + Math.max(0, due.lateFee - feePaidThisCycle);
+  const owedNow = amountOwedNow(due);
   const suggested = Math.max(1, due.state === 'paid' ? d.installment : owedNow);
 
   return (

@@ -76,3 +76,8 @@ export function dueStatus(d: CycleTerms, payments: PaymentLite[], now: Date): Du
   const lateFee = daysLate > d.graceDays ? d.lateFee + Math.round(((unpaid * d.penaltyApr) / 100 / 365) * daysLate) : 0;
   return { ...base, state: 'overdue', dueDate: isoDate(thisDue), daysUntil: -daysLate, daysLate, lateFee };
 }
+
+/** Total still owed now this cycle. paidThisCycle already includes any fee paid, so the fee is added back in full. */
+export function amountOwedNow(due: Pick<DueStatus, 'amountDue' | 'paidThisCycle' | 'lateFee'>): number {
+  return Math.max(0, due.amountDue - due.paidThisCycle + due.lateFee);
+}
