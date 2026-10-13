@@ -72,4 +72,26 @@ describe('comparePayoff', () => {
     expect(c.baseline.neverPaysOff).toBe(true);
     expect(c.plan.neverPaysOff).toBe(false);
   });
+  describe('minimums-only baseline is independent per debt', () => {
+    const multi = [
+      sim({ id: 1, balance: 250, original: 250, apr: 24, minPayment: 100, sort: 1 }),
+      sim({ id: 2, balance: 1000, original: 1000, apr: 12, minPayment: 100, sort: 2 }),
+      sim({ id: 3, balance: 730, original: 730, apr: 30, minPayment: 90, sort: 3 }),
+    ];
+    it('is identical for every strategy', () => {
+      const [a, s, c] = (['avalanche', 'snowball', 'custom'] as const).map((st) => comparePayoff(multi, st, 0).baseline);
+      expect([s.months, s.totalInterest]).toEqual([a.months, a.totalInterest]);
+      expect([c.months, c.totalInterest]).toEqual([a.months, a.totalInterest]);
+    });
+    it('equals the sum of single-debt simulations', () => {
+      const solo = multi.map((d) => simulatePayoff([d], 'custom', 0, { rollover: false }));
+      const b = comparePayoff(multi, 'avalanche', 0).baseline;
+      expect(b.months).toBe(Math.max(...solo.map((r) => r.months)));
+      expect(b.totalInterest).toBe(solo.reduce((n, r) => n + r.totalInterest, 0));
+    });
+    it('still pours an explicit extra into the strategy target without rollover', () => {
+      const r = simulatePayoff(multi, 'avalanche', 100, { rollover: false });
+      expect(r.months).toBeLessThan(simulatePayoff(multi, 'avalanche', 0, { rollover: false }).months);
+    });
+  });
 });

@@ -81,6 +81,9 @@ export function simulatePayoff(debts: SimDebt[], strategy: Strategy, extra: numb
       balance.set(id, balance.get(id)! - pay);
       pool -= pay;
     }
+    // Without rollover, unused minimum (a final partial payment) must not flow to other debts;
+    // only the explicit extra is redistributed.
+    if (!rollover) pool = extra;
     for (const id of ids) {
       if (pool <= 0) break;
       const pay = Math.min(pool, balance.get(id)!);
