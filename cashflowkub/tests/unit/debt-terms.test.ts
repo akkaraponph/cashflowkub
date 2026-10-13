@@ -1,0 +1,48 @@
+import { describe, expect, it } from 'vitest';
+import { amountDueThisMonth, interestForMonth, remainingPrincipal, scheduledInstallment, toApr, type DebtTerms } from '@/server/debt/terms';
+
+const terms = (o: Partial<DebtTerms> = {}): DebtTerms => ({ original: 10000, paid: 0, apr: 0, calc: 'reducing', monthly: 0, fixedPayment: 0, termMonths: 0, ...o });
+
+describe('scheduledInstallment', () => {
+  it('uses the statement instalment when given (SPayLater)', () => {
+    expect(scheduledInstallment(terms({ fixedPayment: 1250, termMonths: 6, monthly: 999 }))).toBe(1250);
+  });
+  it('computes a flat-rate instalment from term (EasyCash)', () => {
+    // 20000/12 + 20000 × 1.5% = 1666.67 + 300
+    expect(scheduledInstallment(terms({ original: 20000, apr: 18, calc: 'flat', termMonths: 12 }))).toBe(1967);
+  });
+  it('computes an amortized instalment for a reducing-balance bank loan', () => {
+    expect(scheduledInstallment(terms({ original: 100000, apr: 12, calc: 'reducing', termMonths: 12 }))).toBe(8885);
+  });
+  it('rounds a 0% term loan up so it still closes on time', () => {
+    expect(scheduledInstallment(terms({ original: 1001, termMonths: 10 }))).toBe(101);
+  });
+  it('falls back to the minimum payment for open-ended debt', () => {
+    expect(scheduledInstallment(terms({ monthly: 1523 }))).toBe(1523);
+  });
+});
+
+describe('interestForMonth', () => {
+  it('flat: charges on the original amount regardless of repayments', () => {
+    expect(interestForMonth(terms({ original: 20000, paid: 5000, apr: 18, calc: 'flat' }))).toBe(300);
+  });
+  it('reducing: charges on the outstanding balance', () => {
+    expect(interestForMonth(terms({ original: 70000, paid: 24300, apr: 25 }))).toBe(952);
+  });
+  it('charges nothing once the balance is zero', () => {
+    expect(interestForMonth(terms({ original: 100, paid: 100, apr: 30, calc: 'flat' }))).toBe(0);
+  });
+});
+
+describe('amountDueThisMonth / remainingPrincipal / toApr', () => {
+  it('never asks for more than what is left plus interest', () => {
+    expect(amountDueThisMonth(terms({ original: 1000, paid: 900, fixedPayment: 1250 }))).toBe(100);
+  });
+  it('clamps remaining at zero', () => {
+    expect(remainingPrincipal(terms({ original: 100, paid: 150 }))).toBe(0);
+  });
+  it('converts a monthly rate to nominal annual', () => {
+    expect(toApr(1.5, 'month')).toBe(18);
+    expect(toApr(25, 'year')).toBe(25);
+  });
+});
