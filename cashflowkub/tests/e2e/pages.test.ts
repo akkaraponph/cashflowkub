@@ -1,10 +1,14 @@
 import 'dotenv/config';
 import { describe, expect, it } from 'vitest';
 
-const BASE = process.env.BASE_URL ?? 'http://localhost:3000';
+const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
 // [path, text that must appear in English, text that must appear with cfk-lang=th]
-const PAGES: [string, string, string][] = [];
+const PAGES: [string, string, string][] = [
+  ['/', 'Net worth', 'มูลค่าสุทธิ'],
+  ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
+  ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
+];
 
 async function fetchPage(path: string, cookie = ''): Promise<{ status: number; html: string }> {
   const res = await fetch(BASE + path, { headers: cookie ? { cookie } : {} });
