@@ -161,5 +161,8 @@ export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
 }
 
 export async function deleteDebt(id: number): Promise<void> {
-  await prisma.debt.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await lockDebt(tx, id);
+    await tx.debt.delete({ where: { id } });
+  });
 }

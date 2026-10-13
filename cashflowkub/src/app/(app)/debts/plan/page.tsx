@@ -130,6 +130,7 @@ export default async function SmartPlanPage({ searchParams }: { searchParams: Pr
                   <p className="text-xs text-muted-foreground">{label}</p>
                   <p className="text-xl font-extrabold tabular-nums">{r.months} {ui.monthsUnit}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">{ui.interest} {fmt(r.totalInterest)}</p>
+                  {r === comparison.plan ? <p className="mt-1 text-[11px] text-muted-foreground">{ui.keepsPaying}</p> : null}
                 </div>
               ))}
             </div>

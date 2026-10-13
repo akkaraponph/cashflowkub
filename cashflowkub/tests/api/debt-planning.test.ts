@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as settings from '@/app/api/v1/settings/route';
 import { GET as strategy } from '@/app/api/v1/debts/strategy/route';
 import { GET as dsr } from '@/app/api/v1/debts/dsr/route';
+import * as debts from '@/app/api/v1/debts/route';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -73,5 +74,15 @@ describe('GET /api/v1/debts/strategy', () => {
     const { json } = await call(strategy, { url: '/api/v1/debts/strategy?extra=0' });
     expect(typeof json.baseline.neverPaysOff).toBe('boolean');
     expect(typeof json.plan.neverPaysOff).toBe('boolean');
+  });
+  it('flags a debt whose payment is below its monthly interest, until extra beats it', async () => {
+    const created = await call(debts.POST, { method: 'POST', body: { name: 'Shark', original: 100000, apr: 60, calc: 'reducing', monthly: 1000 } });
+    expect(created.status).toBe(201);
+    const base = (await call(strategy, { url: '/api/v1/debts/strategy?strategy=avalanche&extra=0' })).json;
+    expect(base.baseline.neverPaysOff).toBe(true);
+    expect(typeof base.plan.neverPaysOff).toBe('boolean');
+    const rich = (await call(strategy, { url: '/api/v1/debts/strategy?strategy=avalanche&extra=20000' })).json;
+    expect(rich.baseline.neverPaysOff).toBe(true);
+    expect(rich.plan.neverPaysOff).toBe(false);
   });
 });

@@ -28,8 +28,17 @@ Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error":
 - CRUD: `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (`GET/POST /<r>`, `GET/PUT/PATCH/DELETE /<r>/:id`)
 - `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
 - `GET /dashboard`, `/networth`, `/reports`, `/setup`, `/plan?month=YYYY-MM`, `/plan/snapshots`, `/bills/summary`, `/debts/:id/schedule`
-- `POST /debts/:id/pay` (`{ "amount"?: number }`), `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)
+- `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)
+- `GET/POST /debts/:id/payments`: POST body `{ "amount": number (positive int), "date"?: "YYYY-MM-DD", "note"?: string }`; responds `201 { payment, debt, excess }`. The payment is split fee → interest → principal; only the applied amount is stored, and `excess` is the part of `amount` beyond what was owed (0 otherwise). A closed debt gives 409.
+- `DELETE /debts/:id/payments/:paymentId`: removes the payment, recomputes `paid`/`done` (reopens a closed debt) and returns the updated debt.
+- `GET/PUT /settings`: `{ "monthlyIncome": non-negative int }`.
+- `GET /debts/strategy?strategy=avalanche|snowball|custom&extra=`: `{ baseline, plan, interestSaved, monthsSaved }`; `baseline`/`plan` carry `{ strategy, extra, months, totalInterest, neverPaysOff, order, payoffMonth }`. Check `neverPaysOff` before presenting savings. `extra` is a non-negative int.
+- `GET /debts/dsr?target=`: `{ dsr: { income, monthlyDebt, ratio, band }, targetDsr, monthlyCut, incomeNeeded, quickWins, refinance, actions }`; `target` is 0 < target <= 1.
 - `GET /api/health`
+
+### Upgrading an existing database
+
+After `pnpm db:deploy`, existing debts get due day 1 and an empty payment ledger, so they may show as overdue until each debt's due day (and terms) is edited. `paid` and `done` are preserved via `opening_paid`.
 
 ## Layout
 

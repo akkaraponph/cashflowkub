@@ -77,6 +77,14 @@ describe('concurrency', () => {
     const d = await ledgerOk(15);
     expect(d).toMatchObject({ paid: 7500, done: true });
   });
+  it('two concurrent partial payments never over-apply', async () => {
+    const res = await Promise.all([post('15', { amount: 2000 }), post('15', { amount: 2000 })]);
+    expect(res.map((r) => r.status)).toEqual([201, 201]);
+    expect(res.map((r) => r.json.payment.principal).sort((a, b) => a - b)).toEqual([1750, 2000]);
+    expect(res.filter((r) => r.json.excess === 250)).toHaveLength(1);
+    const d = await ledgerOk(15);
+    expect(d).toMatchObject({ paid: d.original, done: true });
+  });
   it('POST racing DELETE ends consistent', async () => {
     const first = await post('15', { amount: 1000 });
     const [, del] = await Promise.all([
@@ -93,5 +101,20 @@ describe('PATCH /api/v1/debts/:id', () => {
     const item = await import('@/app/api/v1/debts/[id]/route');
     const r = await call(item.PATCH, { method: 'PATCH', params: { id: '16' }, body: { original: 5000 } });
     expect(r.status).toBe(400);
+  });
+});
+
+describe('DELETE /api/v1/debts/:id', () => {
+  it('404s a missing debt', async () => {
+    const item = await import('@/app/api/v1/debts/[id]/route');
+    expect((await call(item.DELETE, { method: 'DELETE', params: { id: '9999' } })).status).toBe(404);
+  });
+  it('deletes a debt together with its payments', async () => {
+    const { prisma } = await import('@/lib/db');
+    const item = await import('@/app/api/v1/debts/[id]/route');
+    expect(await prisma.debtPayment.count({ where: { debtId: 16 } })).toBeGreaterThan(0);
+    expect((await call(item.DELETE, { method: 'DELETE', params: { id: '16' } })).status).toBeLessThan(300);
+    expect(await prisma.debtPayment.count({ where: { debtId: 16 } })).toBe(0);
+    expect(await prisma.debt.count({ where: { id: 16 } })).toBe(0);
   });
 });

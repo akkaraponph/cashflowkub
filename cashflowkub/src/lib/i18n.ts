@@ -104,7 +104,7 @@ const en = {
   monthlyDebtPay: 'Debt payments / month', editIncome: 'Edit income', targetDsr: 'Target DSR', actionsTitle: 'Recommended actions',
   quickWins: 'Quick wins', dsrAfter: 'DSR after', simulator: 'Payoff simulator', extraPerMonth: 'Extra per month (฿)',
   simulate: 'Simulate', debtFreeIn: 'Debt-free in', monthsUnit: 'months', interestSaved: 'Interest saved', monthsSaved: 'Months saved',
-  minimumOnly: 'Minimums only', withPlan: 'With this plan', payoffOrder: 'Payoff order', monthN: 'month {n}',
+  minimumOnly: 'Minimums only', withPlan: 'With this plan', keepsPaying: 'Keeps paying the same total each month — freed minimums roll to the next debt', payoffOrder: 'Payoff order', monthN: 'month {n}',
   setIncomeFirst: 'Set your monthly income to see your DSR.',
   menu: 'Menu', settingsProfile: 'Ploy Srichan', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
@@ -207,7 +207,7 @@ const th: Dict = {
   monthlyDebtPay: 'ค่างวดหนี้ต่อเดือน', editIncome: 'แก้ไขรายได้', targetDsr: 'เป้าหมาย DSR', actionsTitle: 'สิ่งที่ควรทำ',
   quickWins: 'ปิดง่าย ได้ผลไว', dsrAfter: 'DSR หลังปิด', simulator: 'จำลองการปลดหนี้', extraPerMonth: 'โปะเพิ่มต่อเดือน (บาท)',
   simulate: 'จำลอง', debtFreeIn: 'ปลดหนี้ภายใน', monthsUnit: 'เดือน', interestSaved: 'ประหยัดดอกเบี้ย', monthsSaved: 'เร็วขึ้น (เดือน)',
-  minimumOnly: 'จ่ายขั้นต่ำอย่างเดียว', withPlan: 'ตามแผนนี้', payoffOrder: 'ลำดับการปิดหนี้', monthN: 'เดือนที่ {n}',
+  minimumOnly: 'จ่ายขั้นต่ำอย่างเดียว', withPlan: 'ตามแผนนี้', keepsPaying: 'จ่ายยอดรวมเท่าเดิมทุกเดือน — ขั้นต่ำที่ว่างจากหนี้ที่ปิดแล้วจะถูกยกไปจ่ายหนี้ถัดไป', payoffOrder: 'ลำดับการปิดหนี้', monthN: 'เดือนที่ {n}',
   setIncomeFirst: 'ตั้งค่ารายได้ต่อเดือนเพื่อดู DSR',
   menu: 'เมนู', settingsProfile: 'พลอย ศรีจันทร์', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
