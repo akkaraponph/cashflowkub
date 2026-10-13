@@ -65,6 +65,12 @@ async function findDebt(id: number, db: Prisma.TransactionClient = prisma) {
   return row;
 }
 
+/** Serialises writers of one debt: row lock held until the surrounding transaction ends. */
+async function lockDebt(db: Prisma.TransactionClient, id: number): Promise<void> {
+  const rows = await db.$queryRaw<{ id: number }[]>`SELECT id FROM debts WHERE id = ${id} FOR UPDATE`;
+  if (rows.length === 0) throw notFound();
+}
+
 /** Recomputes paid/done from the opening balance plus the ledger. */
 async function syncPaid(db: Prisma.TransactionClient, id: number) {
   const debt = await findDebt(id, db);
@@ -110,6 +116,7 @@ export async function recordPayment(debtId: number, body: unknown): Promise<{ pa
     date = parsed;
   }
   return prisma.$transaction(async (tx) => {
+    await lockDebt(tx, debtId);
     const debt = await findDebt(debtId, tx);
     if (debt.done) throw new HttpError(409, 'this debt is already paid off');
     const { excess, ...split } = splitPayment(debt, debt.payments, input.amount, date);
@@ -122,6 +129,7 @@ export async function recordPayment(debtId: number, body: unknown): Promise<{ pa
 
 export async function deletePayment(debtId: number, paymentId: number): Promise<DebtView> {
   return prisma.$transaction(async (tx) => {
+    await lockDebt(tx, debtId);
     const found = await tx.debtPayment.findFirst({ where: { id: paymentId, debtId } });
     if (!found) throw notFound();
     await tx.debtPayment.delete({ where: { id: paymentId } });
@@ -140,10 +148,13 @@ export async function createDebt(body: unknown): Promise<DebtView> {
 export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
   const input = parseBody(debtFields.partial(), body);
   return prisma.$transaction(async (tx) => {
+    await lockDebt(tx, id);
     const current = await findDebt(id, tx);
     const original = input.original ?? current.original;
     const openingPaid = input.openingPaid ?? current.openingPaid;
     if (openingPaid > original) throw badRequest('openingPaid cannot exceed original');
+    const ledger = current.payments.reduce((sum, p) => sum + p.principal, 0);
+    if (original < openingPaid + ledger) throw badRequest('original cannot be below principal already repaid');
     await tx.debt.update({ where: { id }, data: input });
     return toDebtView(await syncPaid(tx, id), today());
   });

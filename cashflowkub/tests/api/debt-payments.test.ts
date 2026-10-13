@@ -60,3 +60,38 @@ describe('payment history', () => {
     expect((await call(removePayment, { method: 'DELETE', params: { id: '16', paymentId: '1' } })).status).toBe(404);
   });
 });
+
+describe('concurrency', () => {
+  const ledgerOk = async (id: number) => {
+    const { prisma } = await import('@/lib/db');
+    const d = await prisma.debt.findUniqueOrThrow({ where: { id }, include: { payments: true } });
+    const principal = d.payments.reduce((s, p) => s + p.principal, 0);
+    expect(d.paid).toBe(d.openingPaid + principal);
+    expect(d.paid).toBeLessThanOrEqual(d.original);
+    expect(d.openingPaid + principal).toBeLessThanOrEqual(d.original);
+    return d;
+  };
+  it('concurrent full-balance payments: one wins, the rest are rejected', async () => {
+    const res = await Promise.all(Array.from({ length: 6 }, () => post('15', { amount: 3750 })));
+    expect(res.map((r) => r.status).sort()).toEqual([201, 409, 409, 409, 409, 409]);
+    const d = await ledgerOk(15);
+    expect(d).toMatchObject({ paid: 7500, done: true });
+  });
+  it('POST racing DELETE ends consistent', async () => {
+    const first = await post('15', { amount: 1000 });
+    const [, del] = await Promise.all([
+      post('15', { amount: 2000 }),
+      call(removePayment, { method: 'DELETE', params: { id: '15', paymentId: String(first.json.payment.id) } }),
+    ]);
+    expect(del.status).toBe(200);
+    await ledgerOk(15);
+  });
+});
+
+describe('PATCH /api/v1/debts/:id', () => {
+  it('rejects shrinking original below principal already repaid', async () => {
+    const item = await import('@/app/api/v1/debts/[id]/route');
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id: '16' }, body: { original: 5000 } });
+    expect(r.status).toBe(400);
+  });
+});
