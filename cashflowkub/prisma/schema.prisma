@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// A place money lives: bank, cash, e-wallet or credit line.
+model Account {
+  id        Int    @id @default(autoincrement())
+  name      String
+  sub       String @default("")
+  balance   Int    @default(0) /// negative for credit balances owed
+  icon      String @default("landmark")
+  tint      String @default("doc")
+  kind      String @default("bank") /// bank | cash | ewallet | credit
+  startDate String @default("") @map("start_date")
+  startTh   String @default("") @map("start_th")
+  sort      Int    @default(0)
+
+  @@map("accounts")
+}
+
+/// Spending/earning bucket; `key` is the slug used by transactions, budgets and the plan.
+model Category {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  label String
+  th    String @default("")
+  short String @default("")
+  icon  String @default("circle")
+  tint  String @default("doc")
+  type  String @default("expense") /// income | expense
+  sub   String @default("") /// need | want
+  sort  Int    @default(0)
+
+  @@map("categories")
+}
+
+/// One money movement. Signed amount: negative = expense.
+model Transaction {
+  id     Int      @id @default(autoincrement())
+  name   String
+  cat    String   @map("cat_key")
+  acct   String   @map("account")
+  amount Int
+  date   DateTime @db.Date
+  note   String   @default("")
+
+  @@index([date])
+  @@map("transactions")
+}
+
+model Budget {
+  id    Int    @id @default(autoincrement())
+  cat   String @map("cat_key")
+  spent Int    @default(0)
+  limit Int    @map("limit_amt")
+  sort  Int    @default(0)
+
+  @@map("budgets")
+}
+
+model Goal {
+  id      Int    @id @default(autoincrement())
+  name    String
+  th      String @default("")
+  icon    String @default("target")
+  saved   Int    @default(0)
+  target  Int
+  monthly Int    @default(0)
+  by      String @default("")
+  sort    Int    @default(0)
+
+  @@map("goals")
+}
+
+/// A loan or credit line being paid down. remaining = original - paid (derived).
+model Debt {
+  id         Int     @id @default(autoincrement())
+  name       String
+  th         String  @default("")
+  icon       String  @default("credit-card")
+  tint       String  @default("pdf")
+  original   Int
+  paid       Int     @default(0)
+  apr        Float   @default(0)
+  monthly    Int     @default(0)
+  calc       String  @default("reducing") /// flat | reducing
+  payoff     String  @default("")
+  payoffTh   String  @default("") @map("payoff_th")
+  monthsLeft Int     @default(0) @map("months_left")
+  done       Boolean @default(false)
+  revolving  Boolean @default(false)
+  sort       Int     @default(0)
+
+  @@map("debts")
+}
+
+model Asset {
+  id    Int    @id @default(autoincrement())
+  name  String
+  th    String @default("")
+  icon  String @default("wallet")
+  tint  String @default("doc")
+  value Int    @default(0)
+  sort  Int    @default(0)
+
+  @@map("assets")
+}
+
+/// Payment due on a day of the month.
+model Bill {
+  id     Int     @id @default(autoincrement())
+  name   String
+  th     String  @default("")
+  icon   String  @default("receipt")
+  tint   String  @default("pdf")
+  amount Int
+  dueDay Int     @map("due_day")
+  paid   Boolean @default(false)
+  freq   String  @default("monthly") /// monthly | once
+  cat    String  @default("bills") @map("cat_key")
+  sort   Int     @default(0)
+
+  @@map("bills")
+}
+
+model Channel {
+  id        Int    @id @default(autoincrement())
+  name      String
+  th        String @default("")
+  kind      String @default("saving") /// saving | mf | pf | stock | gold | bond
+  icon      String @default("piggy-bank")
+  tint      String @default("doc")
+  opening   Int    @default(0)
+  startDate String @default("") @map("start_date")
+  startTh   String @default("") @map("start_th")
+  sort      Int    @default(0)
+
+  @@map("channels")
+}
+
+model IncomeCategory {
+  id   Int    @id @default(autoincrement())
+  name String
+  th   String @default("")
+  sub  String @default("main") /// main | side | passive
+  icon String @default("briefcase")
+  tint String @default("xls")
+  sort Int    @default(0)
+
+  @@map("income_categories")
+}
+
+/// Planned-vs-actual row for a month; `type` partitions the three plan tables.
+model PlanItem {
+  id      Int    @id @default(autoincrement())
+  type    String /// income | expense | savings
+  name    String
+  th      String @default("")
+  icon    String @default("")
+  tint    String @default("")
+  cat     String @default("") @map("cat_key")
+  sub     String @default("")
+  planned Int    @default(0)
+  actual  Int    @default(0)
+  month   String /// YYYY-MM
+  sort    Int    @default(0)
+
+  @@index([month])
+  @@map("plan_items")
+}
+
+model AssetSnapshot {
+  id    Int    @id @default(autoincrement())
+  name  String
+  th    String @default("")
+  group String @map("grp") /// bank | savings | invest | other
+  icon  String @default("")
+  tint  String @default("")
+  prev  Int    @default(0)
+  curr  Int    @default(0)
+  month String
+  sort  Int    @default(0)
+
+  @@map("asset_snapshots")
+}
+
+model NetWorthHistory {
+  id      Int    @id @default(autoincrement())
+  month   String
+  monthTh String @map("month_th")
+  value   Int
+  sort    Int    @default(0)
+
+  @@map("net_worth_histories")
+}
+
+model MonthlyCashflow {
+  id      Int    @id @default(autoincrement())
+  month   String
+  income  Int
+  expense Int
+  sort    Int    @default(0)
+
+  @@map("monthly_cashflows")
+}
+
+model DaySpend {
+  id     Int    @id @default(autoincrement())
+  day    Int
+  amount Int
+  month  String
+
+  @@map("day_spends")
+}
+
+model SetupGoal {
+  id          Int                @id @default(autoincrement())
+  kind        String /// emergency | stocks | retirement | custom
+  name        String
+  th          String             @default("")
+  icon        String             @default("target")
+  tint        String             @default("doc")
+  startDate   String             @default("") @map("start_date")
+  startTh     String             @default("") @map("start_th")
+  endDate     String             @default("") @map("end_date")
+  endTh       String             @default("") @map("end_th")
+  inflation   Float              @default(0)
+  target      Int                @default(0)
+  opening     Int                @default(0)
+  currentAge  Int?               @map("current_age")
+  retireAge   Int?               @map("retire_age")
+  useUntilAge Int?               @map("use_until_age")
+  monthlyNeed Int?               @map("monthly_need")
+  sort        Int                @default(0)
+  channels    SetupGoalChannel[]
+
+  @@map("setup_goals")
+}
+
+model SetupGoalChannel {
+  id          Int       @id @default(autoincrement())
+  setupGoalId Int       @map("setup_goal_id")
+  setupGoal   SetupGoal @relation(fields: [setupGoalId], references: [id], onDelete: Cascade)
+  name        String
+  th          String    @default("")
+  pct         Int
+
+  @@map("setup_goal_channels")
+}
