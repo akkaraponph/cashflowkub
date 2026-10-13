@@ -1,16 +1,21 @@
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Donut } from '@/components/cfk/charts';
 import { Hero, HeroPill } from '@/components/cfk/hero';
+import { Icon } from '@/components/cfk/icon';
 import { ListRow } from '@/components/cfk/list-row';
 import { PageTitle } from '@/components/cfk/page-title';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { fmt } from '@/lib/format';
-import { localized } from '@/lib/i18n';
+import { localized, pickLabel } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseStrategy, sortByStrategy } from '@/server/debt/logic';
 import { listDebts } from '@/server/debt/service';
+import { AddDebtDialog } from './add-debt-dialog';
+import { DueBadge } from './due-badge';
 
 export default async function DebtsPage({ searchParams }: { searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
@@ -18,11 +23,18 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
   const [active, paid] = await Promise.all([listDebts('active'), listDebts('paid')]);
   const totalRemaining = active.reduce((s, d) => s + d.remaining, 0);
   const totalOriginal = active.reduce((s, d) => s + d.original, 0);
+  const monthlyTotal = active.reduce((s, d) => s + d.installment, 0);
   const progress = totalOriginal > 0 ? active.reduce((s, d) => s + d.paid, 0) / totalOriginal : 0;
 
   return (
     <>
-      <PageTitle title={ui.nav.debts} />
+      <PageTitle title={ui.nav.debts}>
+        <Button asChild size="sm">
+          <Link href="/debts/plan"><Icon name="lightbulb" size={16} />{ui.smartPlan}</Link>
+        </Button>
+        <AddDebtDialog />
+      </PageTitle>
+
       <Hero>
         <div className="flex items-center gap-5">
           <Donut size={96} stroke={12} trackColor="rgb(255 255 255 / 0.18)" segments={[{ value: progress, color: 'var(--hero-fg)' }]} centerValue={`${Math.round(progress * 100)}%`} />
@@ -32,9 +44,10 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
             <p className="text-sm opacity-75 tabular-nums">{ui.of} {fmt(totalOriginal)}</p>
           </div>
         </div>
-        <div className="mt-4 flex gap-2.5">
+        <div className="mt-4 flex flex-wrap gap-2.5">
           <HeroPill><span className="tabular-nums">{active.length}</span> {ui.active}</HeroPill>
           <HeroPill><span className="tabular-nums">{paid.length}</span> {ui.paidOff}</HeroPill>
+          <HeroPill>{ui.monthlyDebtPay} <span className="tabular-nums">{fmt(monthlyTotal)}</span></HeroPill>
         </div>
       </Hero>
 
@@ -59,9 +72,9 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
             icon={d.icon}
             tint={d.tint}
             title={localized(lang, d.name, d.th)}
-            subtitle={`${ui.apr} ${d.apr}% · ${ui.minMonthly} ${fmt(d.monthly)}`}
+            subtitle={`${pickLabel(ui.debtKind, d.kind)} · ${ui.apr} ${d.apr}% · ${fmt(d.installment)}${ui.perMonth}`}
             right={fmt(d.remaining)}
-            rightSub={localized(lang, d.payoff, d.payoffTh)}
+            rightSub={<DueBadge due={d.due} />}
             href={`/debts/${d.id}`}
             className="border-t"
           />

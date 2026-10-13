@@ -3,7 +3,7 @@
 import {
   ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Banknote, Bike, BookOpen, Briefcase, Calendar, CalendarClock, Car,
   ChartColumn, ChartPie, Check, ChevronLeft, ChevronRight, Circle, CircleHelp, Clapperboard, ClipboardList, Clock3,
-  Cloud, Coins, CreditCard, Delete, Droplet, Gift, Globe, GraduationCap, HeartPulse, House, Landmark, LayoutDashboard,
+  Cloud, Coins, CreditCard, Delete, Droplet, Gauge, Gift, Globe, GraduationCap, HandCoins, HeartPulse, History, House, Landmark, Lightbulb, LayoutDashboard,
   LogOut, Menu, Monitor, Moon, Music, Package, Pencil, PenTool, PiggyBank, Plane, Plus, Receipt, Scale, Settings, Shield,
   ShieldCheck, ShoppingBag, ShowerHead, SlidersHorizontal, Smartphone, Sun, Target, TentTree, Trash2, TrendingDown,
   TrendingUp, TriangleAlert, Utensils, Wallet, Wifi, X, Zap, type LucideIcon,
@@ -20,6 +20,7 @@ const ICONS: Record<string, LucideIcon> = {
   'piggy-bank': PiggyBank, plane: Plane, plus: Plus, receipt: Receipt, scale: Scale, settings: Settings, shield: Shield,
   'shield-check': ShieldCheck, 'shopping-bag': ShoppingBag, 'shower-head': ShowerHead, 'sliders-horizontal': SlidersHorizontal,
   smartphone: Smartphone, sun: Sun, target: Target, 'tent-tree': TentTree, 'trash-2': Trash2, 'trending-down': TrendingDown,
+  'hand-coins': HandCoins, gauge: Gauge, history: History, lightbulb: Lightbulb,
   'trending-up': TrendingUp, 'triangle-alert': TriangleAlert, utensils: Utensils, wallet: Wallet, wifi: Wifi, x: X, zap: Zap,
 };
 

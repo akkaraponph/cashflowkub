@@ -3,31 +3,32 @@
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 
-export function PayDebtButton({ id, amount, disabled }: { id: number; amount: number; disabled?: boolean }) {
+export function DeletePaymentButton({ debtId, paymentId }: { debtId: number; paymentId: number }) {
   const { ui } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
-    <Button
-      className="h-11 flex-1"
-      disabled={disabled || pending}
-      onClick={() =>
+    <button
+      type="button"
+      aria-label={ui.delete}
+      disabled={pending}
+      className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-destructive disabled:opacity-40"
+      onClick={() => {
+        if (!window.confirm(`${ui.delete}?`)) return;
         startTransition(async () => {
           try {
-            await apiFetch(`/debts/${id}/payments`, { method: 'POST', body: { amount } });
+            await apiFetch(`/debts/${debtId}/payments/${paymentId}`, { method: 'DELETE' });
             router.refresh();
           } catch (err) {
             toast.error(err instanceof Error ? err.message : String(err));
           }
-        })
-      }>
-      <Icon name="arrow-down-left" size={16} />
-      {ui.payNow}
-    </Button>
+        });
+      }}>
+      <Icon name="trash-2" size={15} />
+    </button>
   );
 }

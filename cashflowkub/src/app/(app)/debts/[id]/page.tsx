@@ -1,31 +1,41 @@
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/cfk/icon';
 import { PageTitle } from '@/components/cfk/page-title';
 import { Progress } from '@/components/cfk/progress';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
 import { fmt, pct } from '@/lib/format';
-import { localized } from '@/lib/i18n';
+import { localized, pickLabel } from '@/lib/i18n';
 import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
-import { getDebtSchedule } from '@/server/debt/service';
-import { PayDebtButton } from './pay-button';
+import { getDebtDetail } from '@/server/debt/service';
+import { DueBadge } from '../due-badge';
+import { DeletePaymentButton } from './delete-payment-button';
+import { RecordPaymentDialog } from './record-payment-dialog';
 
 export default async function DebtDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
   const { id } = await params;
   const tab = firstParam(await searchParams, 'tab') === 'schedule' ? 'schedule' : 'overview';
-  const { debt: d, schedule, totalInterest } = await loadOr404(async () => getDebtSchedule(parseId(id)));
+  const { debt: d, schedule, totalInterest, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
   const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
-  const payoff = localized(lang, d.payoff, d.payoffTh);
+  const due = d.due;
+  // What is still owed this cycle: instalment less what was paid, plus any late fee not yet paid (fees are part of paidThisCycle).
+  const feePaidThisCycle = payments.filter((p) => p.date >= due.cycleStart).reduce((s, p) => s + p.fee, 0);
+  const owedNow = due.amountDue - due.paidThisCycle + Math.max(0, due.lateFee - feePaidThisCycle);
+  const suggested = Math.max(1, due.state === 'paid' ? d.installment : owedNow);
 
   return (
     <>
       <PageTitle title={localized(lang, d.name, d.th)} back="/debts" />
       <div className="flex items-center gap-3">
         <Tile icon={d.icon} tint={d.tint} size={48} />
-        <p className="text-sm text-muted-foreground">{ui.apr} {d.apr}% · {method}</p>
+        <div>
+          <p className="text-sm font-semibold">{pickLabel(ui.debtKind, d.kind)}{d.lender ? ` · ${d.lender}` : ''}</p>
+          <p className="text-sm text-muted-foreground">{ui.apr} {d.apr}% · {method}</p>
+        </div>
       </div>
 
       <Card className="gap-3.5 bg-secondary p-5">
@@ -35,11 +45,13 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             <p className="text-3xl font-extrabold tabular-nums">{fmt(d.remaining)}</p>
             <p className="text-xs text-muted-foreground tabular-nums">{ui.of} {fmt(d.original)}</p>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.payoff}</p>
-            <p className="text-lg font-bold">{payoff}</p>
-            <p className="text-xs text-muted-foreground tabular-nums">{d.monthsLeft} {ui.monthsLeftLbl}</p>
-          </div>
+          {d.neverPaysOff ? null : (
+            <div className="text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.payoff}</p>
+              <p className="text-lg font-bold">{localized(lang, d.payoff, d.payoffTh) || '—'}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">{d.monthsLeft} {ui.monthsLeftLbl}</p>
+            </div>
+          )}
         </div>
         <Progress value={d.progress} />
         <div className="flex justify-between text-xs font-semibold text-muted-foreground tabular-nums">
@@ -48,18 +60,45 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
         </div>
       </Card>
 
+      {d.neverPaysOff ? (
+        <Card className="flex-row items-start gap-3 border-destructive/40 bg-type-pdf-bg p-4 text-type-pdf-fg">
+          <Icon name="triangle-alert" size={18} />
+          <p className="text-sm font-medium">{ui.neverPaysOff}</p>
+        </Card>
+      ) : null}
+
+      {!d.done ? (
+        <Card className="gap-2 p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.nextDue}</span>
+            <DueBadge due={due} />
+          </div>
+          <div className="flex items-end justify-between">
+            <span className="text-sm text-muted-foreground tabular-nums">{due.dueDate}</span>
+            <span className="text-xl font-extrabold tabular-nums">{fmt(due.state === 'paid' ? d.installment : due.amountDue - due.paidThisCycle)}</span>
+          </div>
+          {due.lateFee > 0 ? (
+            <div className="flex justify-between text-sm font-semibold text-destructive tabular-nums">
+              <span>{ui.lateFeeAccrued}</span>
+              <span>+{fmt(due.lateFee)}</span>
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
       <SegmentedLinks value={tab} options={[{ key: 'overview', label: ui.overview }, { key: 'schedule', label: ui.schedule }]} hrefFor={(k) => `/debts/${d.id}?tab=${k}`} />
 
       {tab === 'overview' ? (
         <>
           <Card className="gap-0 bg-secondary p-0">
             {([
-              [ui.apr, `${d.apr}%`],
+              [ui.instalmentPreview, fmt(d.installment)],
               [ui.calcMethod, method],
-              [ui.minMonthly, fmt(d.monthly)],
+              [ui.dueDayLbl, String(d.dueDay)],
+              [ui.lateFeeLbl, fmt(d.lateFee)],
               [ui.originalDebt, fmt(d.original)],
-              [ui.payoff, payoff],
-            ] as const).map(([label, value]) => (
+              ...(d.neverPaysOff ? [] : [[ui.totalInterest, fmt(d.totalInterestLeft)] as const]),
+            ] as readonly (readonly [string, string])[]).map(([label, value]) => (
               <div key={label} className="flex justify-between border-b px-4 py-3 text-sm last:border-0">
                 <span className="text-muted-foreground">{label}</span>
                 <span className="font-semibold tabular-nums">{value}</span>
@@ -67,10 +106,26 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             ))}
           </Card>
           <div className="flex gap-2.5">
-            <PayDebtButton id={d.id} amount={Math.max(1, d.installment)} disabled={d.done} />
+            <RecordPaymentDialog debtId={d.id} defaultAmount={suggested} disabled={d.done} />
           </div>
+          <Card className="gap-0 px-5 py-3">
+            <h2 className="flex items-center gap-2 py-2 font-bold"><Icon name="history" size={16} />{ui.paymentHistory}</h2>
+            {payments.length === 0 ? <p className="border-t py-4 text-sm text-muted-foreground">{ui.noPayments}</p> : null}
+            {payments.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 border-t py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold tabular-nums">{p.date}</p>
+                  <p className="truncate text-xs text-muted-foreground tabular-nums">
+                    {ui.principal} {fmt(p.principal)} · {ui.interest} {fmt(p.interest)}{p.fee ? ` · ${ui.fee} ${fmt(p.fee)}` : ''}{p.note ? ` · ${p.note}` : ''}
+                  </p>
+                </div>
+                <span className="font-bold tabular-nums">{fmt(p.amount)}</span>
+                <DeletePaymentButton debtId={d.id} paymentId={p.id} />
+              </div>
+            ))}
+          </Card>
         </>
-      ) : (
+      ) : d.neverPaysOff ? null : (
         <>
           <Card className="gap-0 overflow-x-auto bg-secondary p-0">
             <table className="w-full text-xs tabular-nums">

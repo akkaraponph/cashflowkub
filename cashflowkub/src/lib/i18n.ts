@@ -79,6 +79,33 @@ const en = {
   currValue: 'Current', deltaLbl: 'Change', lastUpdated: 'Last updated', saveSnapshot: 'Save snapshot',
   netWorthHist: '6-month net worth trend', incomeRatio: 'Income realized', expenseUsage: 'Expense usage',
   totalBalance: 'Total balance', payFirst: 'Pay first', totalInterest: 'Total interest', over: 'over',
+  debtKind: { paylater: 'PayLater', cashloan: 'Cash loan', bankloan: 'Bank loan', creditcard: 'Credit card', personal: 'Personal' },
+  dueState: { closed: 'Closed', paid: 'Paid this cycle', upcoming: 'Upcoming', dueSoon: 'Due soon', dueToday: 'Due today', overdue: 'Overdue' },
+  dsrBand: { healthy: 'Healthy', manageable: 'Manageable', high: 'High', critical: 'Critical' },
+  action: {
+    setIncome: 'Set your monthly income to calculate DSR.',
+    payOverdue: 'Pay {debt} now: {amount} including the late fee.',
+    cutDsr: 'Reduce monthly debt payments by {amount} to reach your DSR target.',
+    quickWin: 'Close {debt} ({amount}) to free its instalment every month.',
+    focusHighestRate: 'Put any extra money into {debt}: it has the highest interest rate.',
+    refinance: 'Consider refinancing {debt}: the rate is 25%+ on a large balance.',
+    noNewDebt: 'Avoid new debt until your DSR is below 40%.',
+    debtFree: 'No active debt. Keep it up!',
+  },
+  lender: 'Lender', debtName: 'Name', alreadyPaid: 'Already repaid', rate: 'Interest rate', perMonthRate: '% / month',
+  perYearRate: '% / year', termMonthsLbl: 'Term (months)', fixedPaymentLbl: 'Fixed instalment from statement',
+  fixedPaymentHint: 'Leave 0 to calculate it from rate and term', minPaymentLbl: 'Minimum payment', dueDayLbl: 'Due day of month',
+  graceDaysLbl: 'Grace days', lateFeeLbl: 'Late fee (฿)', penaltyAprLbl: 'Penalty interest (% / year)', revolvingLbl: 'Revolving credit line',
+  instalmentPreview: 'Monthly instalment', recordPayment: 'Record payment', paymentHistory: 'Payment history',
+  noPayments: 'No payments recorded yet', fee: 'Fee', excessReturned: 'Only the amount owed was recorded: {amount} more than owed was not applied.',
+  nextDue: 'Next due', daysLateN: '{n} days late', lateFeeAccrued: 'Late fee accrued', smartPlan: 'Smart plan',
+  neverPaysOff: 'The instalment does not cover the interest, so this debt will never be paid off. Pay more each month.',
+  dsrTitle: 'Debt service ratio (DSR)', dsrSub: 'Monthly debt payments ÷ monthly income', monthlyIncome: 'Monthly income',
+  monthlyDebtPay: 'Debt payments / month', editIncome: 'Edit income', targetDsr: 'Target DSR', actionsTitle: 'Recommended actions',
+  quickWins: 'Quick wins', dsrAfter: 'DSR after', simulator: 'Payoff simulator', extraPerMonth: 'Extra per month (฿)',
+  simulate: 'Simulate', debtFreeIn: 'Debt-free in', monthsUnit: 'months', interestSaved: 'Interest saved', monthsSaved: 'Months saved',
+  minimumOnly: 'Minimums only', withPlan: 'With this plan', payoffOrder: 'Payoff order', monthN: 'month {n}',
+  setIncomeFirst: 'Set your monthly income to see your DSR.',
   menu: 'Menu', settingsProfile: 'Ploy Srichan', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
 export type Dict = typeof en;
@@ -155,6 +182,33 @@ const th: Dict = {
   saveSnapshot: 'บันทึก snapshot', netWorthHist: 'มูลค่าสุทธิ 6 เดือน', incomeRatio: 'รายรับตามแผน',
   expenseUsage: 'รายจ่ายตามแผน',
   totalBalance: 'ยอดรวม', payFirst: 'จ่ายก่อน', totalInterest: 'ดอกเบี้ยรวม', over: 'เกิน',
+  debtKind: { paylater: 'เพย์เลเตอร์', cashloan: 'สินเชื่อเงินสด', bankloan: 'สินเชื่อธนาคาร', creditcard: 'บัตรเครดิต', personal: 'ส่วนบุคคล' },
+  dueState: { closed: 'ปิดแล้ว', paid: 'ชำระงวดนี้แล้ว', upcoming: 'รอชำระ', dueSoon: 'ใกล้ครบกำหนด', dueToday: 'ครบกำหนดวันนี้', overdue: 'เลยกำหนด' },
+  dsrBand: { healthy: 'ดี', manageable: 'พอรับได้', high: 'สูง', critical: 'วิกฤต' },
+  action: {
+    setIncome: 'ตั้งค่ารายได้ต่อเดือนเพื่อคำนวณ DSR',
+    payOverdue: 'ชำระ {debt} ทันที {amount} (รวมค่าปรับ)',
+    cutDsr: 'ลดค่างวดหนี้ต่อเดือนลง {amount} เพื่อให้ถึงเป้าหมาย DSR',
+    quickWin: 'ปิด {debt} ({amount}) เพื่อลดภาระค่างวดทุกเดือน',
+    focusHighestRate: 'มีเงินเหลือให้โปะ {debt} ก่อน เพราะดอกเบี้ยสูงสุด',
+    refinance: 'พิจารณารีไฟแนนซ์ {debt} ดอกเบี้ย 25% ขึ้นไปและยอดคงเหลือสูง',
+    noNewDebt: 'หลีกเลี่ยงการก่อหนี้ใหม่จนกว่า DSR จะต่ำกว่า 40%',
+    debtFree: 'ไม่มีหนี้คงค้าง เยี่ยมมาก!',
+  },
+  lender: 'ผู้ให้กู้', debtName: 'ชื่อหนี้', alreadyPaid: 'ชำระเงินต้นไปแล้ว', rate: 'อัตราดอกเบี้ย', perMonthRate: '% ต่อเดือน',
+  perYearRate: '% ต่อปี', termMonthsLbl: 'จำนวนงวด (เดือน)', fixedPaymentLbl: 'ค่างวดคงที่ตามใบแจ้งหนี้',
+  fixedPaymentHint: 'ใส่ 0 เพื่อคำนวณจากดอกเบี้ยและจำนวนงวด', minPaymentLbl: 'ยอดชำระขั้นต่ำ', dueDayLbl: 'วันครบกำหนดชำระ (วันที่)',
+  graceDaysLbl: 'ผ่อนผัน (วัน)', lateFeeLbl: 'ค่าปรับล่าช้า (บาท)', penaltyAprLbl: 'ดอกเบี้ยผิดนัด (% ต่อปี)', revolvingLbl: 'วงเงินหมุนเวียน',
+  instalmentPreview: 'ค่างวดต่อเดือน', recordPayment: 'บันทึกการชำระ', paymentHistory: 'ประวัติการชำระ',
+  noPayments: 'ยังไม่มีการบันทึกการชำระ', fee: 'ค่าปรับ', excessReturned: 'บันทึกเฉพาะยอดที่ค้างชำระ ส่วนเกิน {amount} ไม่ได้นำไปหักหนี้',
+  nextDue: 'ครบกำหนดถัดไป', daysLateN: 'เลยกำหนด {n} วัน', lateFeeAccrued: 'ค่าปรับสะสม', smartPlan: 'แผนจัดการหนี้',
+  neverPaysOff: 'ค่างวดไม่พอจ่ายดอกเบี้ย หนี้นี้จะไม่มีวันหมด ควรเพิ่มยอดชำระต่อเดือน',
+  dsrTitle: 'ภาระหนี้ต่อรายได้ (DSR)', dsrSub: 'ค่างวดหนี้ต่อเดือน ÷ รายได้ต่อเดือน', monthlyIncome: 'รายได้ต่อเดือน',
+  monthlyDebtPay: 'ค่างวดหนี้ต่อเดือน', editIncome: 'แก้ไขรายได้', targetDsr: 'เป้าหมาย DSR', actionsTitle: 'สิ่งที่ควรทำ',
+  quickWins: 'ปิดง่าย ได้ผลไว', dsrAfter: 'DSR หลังปิด', simulator: 'จำลองการปลดหนี้', extraPerMonth: 'โปะเพิ่มต่อเดือน (บาท)',
+  simulate: 'จำลอง', debtFreeIn: 'ปลดหนี้ภายใน', monthsUnit: 'เดือน', interestSaved: 'ประหยัดดอกเบี้ย', monthsSaved: 'เร็วขึ้น (เดือน)',
+  minimumOnly: 'จ่ายขั้นต่ำอย่างเดียว', withPlan: 'ตามแผนนี้', payoffOrder: 'ลำดับการปิดหนี้', monthN: 'เดือนที่ {n}',
+  setIncomeFirst: 'ตั้งค่ารายได้ต่อเดือนเพื่อดู DSR',
   menu: 'เมนู', settingsProfile: 'พลอย ศรีจันทร์', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
 
@@ -163,4 +217,14 @@ export const DICT: Record<Lang, Dict> = { en, th };
 /** Picks the Thai string when the UI is in Thai and a translation exists. */
 export function localized(lang: Lang, en: string, th: string): string {
   return lang === 'th' && th ? th : en;
+}
+
+/** Replaces {name} placeholders. */
+export function fill(template: string, vars: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => (key in vars ? String(vars[key]) : match));
+}
+
+/** Label for a data value (e.g. a debt kind), falling back to the raw value. */
+export function pickLabel(map: Record<string, string>, key: string): string {
+  return Object.hasOwn(map, key) ? map[key] : key;
 }

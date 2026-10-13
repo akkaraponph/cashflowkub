@@ -14,6 +14,8 @@ const PAGES: [string, string, string][] = [
   ['/debts?strategy=snowball', 'Pay smallest balance first', 'จ่ายยอดน้อยก่อน'],
   ['/debts/2', 'Reducing balance', 'ลดต้นลดดอก'],
   ['/debts/2?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
+  ['/debts/16', 'Payment history', 'ประวัติการชำระ'],
+  ['/debts/16?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
   ['/networth', 'Net worth trend', 'แนวโน้มมูลค่าสุทธิ'],
   ['/networth?tab=liabilities', 'Student Loan', 'กยศ'],
   ['/budgets', 'Total budget', 'งบรวม'],
