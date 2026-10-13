@@ -1,4 +1,4 @@
-// Bilingual UI strings ported verbatim from the CashflowKub design comp (via mobile/src/lib/i18n.ts).
+// Bilingual UI strings ported verbatim from the CashflowKub design comp (ported from the mobile app, see git history).
 
 export type Lang = 'en' | 'th';
 
