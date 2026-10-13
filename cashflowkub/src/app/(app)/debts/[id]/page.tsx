@@ -67,7 +67,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             ))}
           </Card>
           <div className="flex gap-2.5">
-            <PayDebtButton id={d.id} disabled={d.done} />
+            <PayDebtButton id={d.id} amount={Math.max(1, d.installment)} disabled={d.done} />
           </div>
         </>
       ) : (

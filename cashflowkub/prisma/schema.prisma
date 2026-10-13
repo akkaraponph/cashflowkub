@@ -77,26 +77,57 @@ model Goal {
   @@map("goals")
 }
 
-/// A loan or credit line being paid down. remaining = original - paid (derived).
+/// A loan or credit line. paid = openingPaid + Σ payments.principal (kept in sync by the service).
 model Debt {
-  id         Int     @id @default(autoincrement())
-  name       String
-  th         String  @default("")
-  icon       String  @default("credit-card")
-  tint       String  @default("pdf")
-  original   Int
-  paid       Int     @default(0)
-  apr        Float   @default(0)
-  monthly    Int     @default(0)
-  calc       String  @default("reducing") /// flat | reducing
-  payoff     String  @default("")
-  payoffTh   String  @default("") @map("payoff_th")
-  monthsLeft Int     @default(0) @map("months_left")
-  done       Boolean @default(false)
-  revolving  Boolean @default(false)
-  sort       Int     @default(0)
+  id           Int           @id @default(autoincrement())
+  name         String
+  th           String        @default("")
+  icon         String        @default("credit-card")
+  tint         String        @default("pdf")
+  kind         String        @default("personal") /// paylater | cashloan | bankloan | creditcard | personal
+  lender       String        @default("")
+  original     Int
+  openingPaid  Int           @default(0) @map("opening_paid") /// principal repaid before tracking started
+  paid         Int           @default(0)
+  apr          Float         @default(0) /// nominal annual %
+  calc         String        @default("reducing") /// flat | reducing
+  monthly      Int           @default(0) /// minimum payment (open-ended / revolving)
+  fixedPayment Int           @default(0) @map("fixed_payment") /// statement instalment; > 0 overrides calc
+  termMonths   Int           @default(0) @map("term_months")
+  dueDay       Int           @default(1) @map("due_day")
+  graceDays    Int           @default(0) @map("grace_days")
+  lateFee      Int           @default(0) @map("late_fee")
+  penaltyApr   Float         @default(0) @map("penalty_apr")
+  done         Boolean       @default(false)
+  revolving    Boolean       @default(false)
+  sort         Int           @default(0)
+  payments     DebtPayment[]
 
   @@map("debts")
+}
+
+/// One recorded repayment, already split into fee / interest / principal.
+model DebtPayment {
+  id        Int      @id @default(autoincrement())
+  debtId    Int      @map("debt_id")
+  debt      Debt     @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  amount    Int
+  principal Int
+  interest  Int
+  fee       Int
+  note      String   @default("")
+
+  @@index([debtId, date])
+  @@map("debt_payments")
+}
+
+/// Key/value app settings (e.g. monthlyIncome for DSR).
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
 }
 
 model Asset {

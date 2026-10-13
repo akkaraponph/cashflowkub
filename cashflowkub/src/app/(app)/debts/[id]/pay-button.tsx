@@ -8,7 +8,7 @@ import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 
-export function PayDebtButton({ id, disabled }: { id: number; disabled?: boolean }) {
+export function PayDebtButton({ id, amount, disabled }: { id: number; amount: number; disabled?: boolean }) {
   const { ui } = useI18n();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -19,7 +19,7 @@ export function PayDebtButton({ id, disabled }: { id: number; disabled?: boolean
       onClick={() =>
         startTransition(async () => {
           try {
-            await apiFetch(`/debts/${id}/pay`, { method: 'POST' });
+            await apiFetch(`/debts/${id}/payments`, { method: 'POST', body: { amount } });
             router.refresh();
           } catch (err) {
             toast.error(err instanceof Error ? err.message : String(err));

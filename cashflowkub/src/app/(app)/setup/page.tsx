@@ -79,7 +79,7 @@ function GoalCard({ goal, ui, lang }: { goal: SetupGoalRow; ui: Dict; lang: Lang
 
 function DebtRows({ debts, ui, lang }: { debts: DebtView[]; ui: Dict; lang: Lang }) {
   return debts.map((d) => (
-    <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${d.apr}% · ${ui.minPay} ${fmt(d.monthly)}`}
+    <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${d.apr}% · ${ui.minPay} ${fmt(d.installment)}`}
       right={<span className="font-bold text-destructive tabular-nums">{fmt(d.remaining)}</span>} href={`/debts/${d.id}`} className="border-t" />
   ));
 }

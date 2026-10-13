@@ -53,22 +53,39 @@ export const goals: Prisma.GoalCreateManyInput[] = [
   { name: 'New iPhone', th: 'ไอโฟนใหม่', icon: 'smartphone', saved: 28000, target: 45000, monthly: 3000, by: 'Sep 2026', sort: 3 },
 ];
 
+// paid = openingPaid + Σ principal of that debt's seeded payments (asserted in tests/api/seed.test.ts).
+// Shopee rows are illustrative demo terms, not Shopee's published rates/fees.
 export const debts: Prisma.DebtCreateManyInput[] = [
-  { name: 'Student Loan (กยศ)', th: 'กยศ', icon: 'graduation-cap', tint: 'doc', original: 186650, paid: 8275, apr: 0, monthly: 3889, calc: 'flat', payoff: 'May 2030', payoffTh: 'พ.ค. 2030', monthsLeft: 46, sort: 1 },
-  { name: 'KrungThai Personal', th: 'กรุงไทยใจป้ำ', icon: 'landmark', tint: 'pdf', original: 70000, paid: 24300, apr: 25, monthly: 2783, calc: 'reducing', payoff: 'Nov 2028', payoffTh: 'พ.ย. 2028', monthsLeft: 28, sort: 2 },
-  { name: 'Kbank Nano 3', th: 'Kbank Nano 3', icon: 'credit-card', tint: 'pdf', original: 12000, paid: 4570, apr: 33, monthly: 1523, calc: 'reducing', payoff: 'Mar 2027', payoffTh: 'มี.ค. 2027', monthsLeft: 6, revolving: true, sort: 3 },
-  { name: 'SPEC 3 Personal', th: 'SPEC 3', icon: 'receipt', tint: 'pdf', original: 9593, paid: 5300, apr: 33, monthly: 1607, calc: 'reducing', payoff: 'Dec 2026', payoffTh: 'ธ.ค. 2026', monthsLeft: 3, sort: 4 },
-  { name: 'Kbank Nano 2', th: 'Kbank Nano 2', icon: 'credit-card', tint: 'pdf', original: 8000, paid: 5400, apr: 33, monthly: 1016, calc: 'reducing', payoff: 'Nov 2026', payoffTh: 'พ.ย. 2026', monthsLeft: 3, revolving: true, sort: 5 },
-  { name: 'SPEC 4', th: 'SPEC 4', icon: 'receipt', tint: 'doc', original: 7789, paid: 7789, apr: 33, monthly: 948, calc: 'reducing', payoff: 'Jul 2026', payoffTh: 'ก.ค. 2026', monthsLeft: 0, done: true, sort: 6 },
-  { name: 'iPhone 16 / PQ', th: 'ผ่อน iPhone 16 กับ PQ', icon: 'smartphone', tint: 'image', original: 30580, paid: 30580, apr: 0, monthly: 3058, calc: 'flat', payoff: 'Mar 2026', payoffTh: 'มี.ค. 2026', monthsLeft: 0, done: true, sort: 7 },
-  { name: 'Motorcycle', th: 'รถมอเตอร์ไซค์', icon: 'bike', tint: 'doc', original: 14885, paid: 14885, apr: 0, monthly: 2977, calc: 'flat', payoff: 'Apr 2025', payoffTh: 'เม.ย. 2025', monthsLeft: 0, done: true, sort: 8 },
-  { name: 'iPhone Piggybank', th: 'ยืมกระปุก IPHONE', icon: 'piggy-bank', tint: 'folder', original: 15800, paid: 15800, apr: 0, monthly: 7900, calc: 'flat', payoff: 'Feb 2025', payoffTh: 'ก.พ. 2025', monthsLeft: 0, done: true, sort: 9 },
-  { name: 'Kbank Nano 1', th: 'Kbank Nano', icon: 'credit-card', tint: 'pdf', original: 5000, paid: 5000, apr: 33, monthly: 635, calc: 'reducing', payoff: 'Jul 2025', payoffTh: 'ก.ค. 2025', monthsLeft: 0, done: true, sort: 10 },
-  { name: 'SPEC 1', th: 'SPEC 1', icon: 'receipt', tint: 'pdf', original: 4032, paid: 4032, apr: 31.4, monthly: 898, calc: 'reducing', payoff: 'Sep 2025', payoffTh: 'ก.ย. 2025', monthsLeft: 0, done: true, sort: 11 },
-  { name: 'SPEC 2', th: 'SPEC 2', icon: 'receipt', tint: 'pdf', original: 5514, paid: 5514, apr: 33, monthly: 915, calc: 'reducing', payoff: 'Aug 2025', payoffTh: 'ส.ค. 2025', monthsLeft: 0, done: true, sort: 12 },
-  { name: 'Water Heater / PQ', th: 'เครื่องทำน้ำอุ่น พี่คิว', icon: 'shower-head', tint: 'image', original: 1886, paid: 1886, apr: 0, monthly: 629, calc: 'flat', payoff: 'Mar 2025', payoffTh: 'มี.ค. 2025', monthsLeft: 0, done: true, sort: 13 },
-  { name: 'Desk & Keyboard', th: 'โต๊ะ และ คีย์บอร์ด', icon: 'monitor', tint: 'doc', original: 2137, paid: 2137, apr: 0, monthly: 712, calc: 'flat', payoff: 'Jul 2025', payoffTh: 'ก.ค. 2025', monthsLeft: 0, done: true, sort: 14 },
+  { name: 'Student Loan (กยศ)', th: 'กยศ', icon: 'graduation-cap', tint: 'doc', kind: 'personal', lender: 'กยศ', original: 186650, openingPaid: 8275, paid: 8275, apr: 0, monthly: 3889, calc: 'flat', dueDay: 28, sort: 1 },
+  { name: 'KrungThai Personal', th: 'กรุงไทยใจป้ำ', icon: 'landmark', tint: 'pdf', kind: 'bankloan', lender: 'Krungthai Bank', original: 70000, openingPaid: 24300, paid: 24300, apr: 25, monthly: 2783, calc: 'reducing', dueDay: 25, sort: 2 },
+  { name: 'Kbank Nano 3', th: 'Kbank Nano 3', icon: 'credit-card', tint: 'pdf', kind: 'cashloan', lender: 'KBank', original: 12000, openingPaid: 4570, paid: 4570, apr: 33, monthly: 1523, calc: 'reducing', dueDay: 25, revolving: true, sort: 3 },
+  { name: 'SPEC 3 Personal', th: 'SPEC 3', icon: 'receipt', tint: 'pdf', kind: 'cashloan', lender: 'SPEC', original: 9593, openingPaid: 5300, paid: 5300, apr: 33, monthly: 1607, calc: 'reducing', dueDay: 20, sort: 4 },
+  { name: 'Kbank Nano 2', th: 'Kbank Nano 2', icon: 'credit-card', tint: 'pdf', kind: 'cashloan', lender: 'KBank', original: 8000, openingPaid: 5400, paid: 5400, apr: 33, monthly: 1016, calc: 'reducing', dueDay: 25, revolving: true, sort: 5 },
+  { name: 'SPEC 4', th: 'SPEC 4', icon: 'receipt', tint: 'doc', kind: 'cashloan', lender: 'SPEC', original: 7789, openingPaid: 7789, paid: 7789, apr: 33, monthly: 948, calc: 'reducing', done: true, sort: 6 },
+  { name: 'iPhone 16 / PQ', th: 'ผ่อน iPhone 16 กับ PQ', icon: 'smartphone', tint: 'image', kind: 'personal', lender: 'PQ', original: 30580, openingPaid: 30580, paid: 30580, apr: 0, monthly: 3058, calc: 'flat', done: true, sort: 7 },
+  { name: 'Motorcycle', th: 'รถมอเตอร์ไซค์', icon: 'bike', tint: 'doc', kind: 'personal', original: 14885, openingPaid: 14885, paid: 14885, apr: 0, monthly: 2977, calc: 'flat', done: true, sort: 8 },
+  { name: 'iPhone Piggybank', th: 'ยืมกระปุก IPHONE', icon: 'piggy-bank', tint: 'folder', kind: 'personal', original: 15800, openingPaid: 15800, paid: 15800, apr: 0, monthly: 7900, calc: 'flat', done: true, sort: 9 },
+  { name: 'Kbank Nano 1', th: 'Kbank Nano', icon: 'credit-card', tint: 'pdf', kind: 'cashloan', lender: 'KBank', original: 5000, openingPaid: 5000, paid: 5000, apr: 33, monthly: 635, calc: 'reducing', done: true, sort: 10 },
+  { name: 'SPEC 1', th: 'SPEC 1', icon: 'receipt', tint: 'pdf', kind: 'cashloan', lender: 'SPEC', original: 4032, openingPaid: 4032, paid: 4032, apr: 31.4, monthly: 898, calc: 'reducing', done: true, sort: 11 },
+  { name: 'SPEC 2', th: 'SPEC 2', icon: 'receipt', tint: 'pdf', kind: 'cashloan', lender: 'SPEC', original: 5514, openingPaid: 5514, paid: 5514, apr: 33, monthly: 915, calc: 'reducing', done: true, sort: 12 },
+  { name: 'Water Heater / PQ', th: 'เครื่องทำน้ำอุ่น พี่คิว', icon: 'shower-head', tint: 'image', kind: 'personal', lender: 'PQ', original: 1886, openingPaid: 1886, paid: 1886, apr: 0, monthly: 629, calc: 'flat', done: true, sort: 13 },
+  { name: 'Desk & Keyboard', th: 'โต๊ะ และ คีย์บอร์ด', icon: 'monitor', tint: 'doc', kind: 'personal', original: 2137, openingPaid: 2137, paid: 2137, apr: 0, monthly: 712, calc: 'flat', done: true, sort: 14 },
+  // id 15: SPayLater-style, fixed statement instalment, paid this cycle.
+  { name: 'Shopee SPayLater', th: 'ช้อปปี้ เพย์เลเตอร์', icon: 'shopping-bag', tint: 'image', kind: 'paylater', lender: 'Shopee', original: 7500, openingPaid: 0, paid: 3750, apr: 0, calc: 'flat', fixedPayment: 1250, termMonths: 6, dueDay: 1, revolving: true, sort: 15 },
+  // id 16: EasyCash-style flat-rate cash loan, June instalment missed (overdue with a late fee).
+  { name: 'Shopee EasyCash', th: 'ช้อปปี้ อีซี่แคช', icon: 'hand-coins', tint: 'folder', kind: 'cashloan', lender: 'Shopee', original: 20000, openingPaid: 0, paid: 5001, apr: 18, calc: 'flat', termMonths: 12, dueDay: 5, lateFee: 100, sort: 16 },
 ];
+
+export const debtPayments: Prisma.DebtPaymentCreateManyInput[] = [
+  { debtId: 15, date: d('2026-04-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement Apr' },
+  { debtId: 15, date: d('2026-05-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement May' },
+  { debtId: 15, date: d('2026-06-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement Jun' },
+  { debtId: 16, date: d('2026-03-05'), amount: 1967, principal: 1667, interest: 300, fee: 0, note: '' },
+  { debtId: 16, date: d('2026-04-05'), amount: 1967, principal: 1667, interest: 300, fee: 0, note: '' },
+  { debtId: 16, date: d('2026-05-05'), amount: 1967, principal: 1667, interest: 300, fee: 0, note: '' },
+];
+
+export const settings: Prisma.SettingCreateManyInput[] = [{ key: 'monthlyIncome', value: '62000' }];
 
 export const assets: Prisma.AssetCreateManyInput[] = [
   { name: 'Kasikorn Savings', th: 'ออมทรัพย์ กสิกร', icon: 'landmark', tint: 'doc', value: 128400, sort: 1 },

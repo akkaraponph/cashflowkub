@@ -14,9 +14,9 @@ beforeEach(resetDb);
 describe('GET /api/v1/dashboard', () => {
   it('aggregates the home screen', async () => {
     const { json } = await call(dashboard);
-    expect(json).toMatchObject({ netWorth: 125532, totalAssets: 363930, totalLiab: 238398, month: { income: 62000, expense: 17700, net: 44300 }, spendTotal: 17700 });
+    expect(json).toMatchObject({ netWorth: 106783, totalAssets: 363930, totalLiab: 257147, month: { income: 62000, expense: 17700, net: 44300 }, spendTotal: 17700 });
     expect(json.spending[0]).toMatchObject({ cat: 'shopping', label: 'Shopping', spent: 6500 });
-    expect(json.debt).toMatchObject({ original: 286243, paid: 47845, remaining: 238398 });
+    expect(json.debt).toMatchObject({ original: 313743, paid: 56596, remaining: 257147 });
     expect(json.debt.focus).toMatchObject({ id: 3, name: 'Kbank Nano 3' });
     expect(json.nextBill).toMatchObject({ id: 6, status: 'overdue' });
     expect(json.cashflow).toHaveLength(6);
@@ -31,9 +31,9 @@ describe('GET /api/v1/dashboard', () => {
 describe('net worth and reports', () => {
   it('breaks down assets and liabilities', async () => {
     const { json } = await call(networth);
-    expect(json).toMatchObject({ netWorth: 125532 });
+    expect(json).toMatchObject({ netWorth: 106783 });
     expect(json.assets[0]).toMatchObject({ name: 'Kasikorn Savings', value: 128400 });
-    expect(json.liabilities.map((d: { id: number }) => d.id)).toEqual([1, 2, 3, 4, 5]);
+    expect(json.liabilities.map((d: { id: number }) => d.id)).toEqual([1, 2, 16, 3, 4, 15, 5]);
     expect(json.history).toHaveLength(6);
   });
   it('ranks top merchants', async () => {
@@ -49,8 +49,8 @@ describe('GET /api/v1/setup', () => {
     expect(json.incomeCategories).toHaveLength(1);
     expect(json.expenseCategories).toHaveLength(6);
     expect(json.incomeSources).toHaveLength(9);
-    expect(json.debts.closing.map((d: { id: number }) => d.id)).toEqual([1, 2, 4]);
-    expect(json.debts.revolving.map((d: { id: number }) => d.id)).toEqual([3, 5]);
+    expect(json.debts.closing.map((d: { id: number }) => d.id)).toEqual([1, 2, 4, 16]);
+    expect(json.debts.revolving.map((d: { id: number }) => d.id)).toEqual([3, 5, 15]);
     expect(json.goals.retirement).toMatchObject({ currentAge: 23, retireAge: 60 });
     expect(json.goals.retirement.channels).toHaveLength(3);
     expect(json.goals.custom).toHaveLength(3);

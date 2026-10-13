@@ -1,16 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { toBillView, toDebtView } from '@/server/views';
-import { bill, debt } from '../fixtures';
+import { toBillView } from '@/server/views';
+import { bill, debtView, payment } from '../fixtures';
 
 describe('toDebtView', () => {
-  it('derives remaining and progress', () => {
-    const v = toDebtView(debt({ original: 70000, paid: 24300 }));
-    expect(v.remaining).toBe(45700);
-    expect(v.progress).toBeCloseTo(0.3471, 4);
+  it('derives remaining, progress, instalment and payoff from terms', () => {
+    const v = debtView({ original: 20000, paid: 5001, apr: 18, calc: 'flat', termMonths: 12, monthly: 0, dueDay: 5, lateFee: 100 });
+    expect(v).toMatchObject({ remaining: 14999, installment: 1967, monthsLeft: 9, payoff: 'Mar 2027', payoffTh: 'มี.ค. 2027', totalInterestLeft: 2700, neverPaysOff: false });
+    expect(v.due).toMatchObject({ state: 'overdue', lateFee: 100 });
   });
-  it('never reports negative remaining and survives a zero original', () => {
-    expect(toDebtView(debt({ original: 100, paid: 150 })).remaining).toBe(0);
-    expect(toDebtView(debt({ original: 0, paid: 0 })).progress).toBe(0);
+  it('uses payments to decide the due state and drops the payments array', () => {
+    const v = debtView({ dueDay: 1, fixedPayment: 1250, original: 7500, paid: 3750 }, [payment({ amount: 1250 })]);
+    expect(v.due.state).toBe('paid');
+    expect(v).not.toHaveProperty('payments');
+  });
+  it('closed debts have no instalment or payoff', () => {
+    expect(debtView({ original: 100, paid: 100, done: true })).toMatchObject({ remaining: 0, installment: 0, payoff: '', monthsLeft: 0 });
+  });
+  it('marks a debt whose payment never clears the interest', () => {
+    expect(debtView({ original: 10000, apr: 60, monthly: 400 })).toMatchObject({ neverPaysOff: true, payoff: '—' });
   });
 });
 

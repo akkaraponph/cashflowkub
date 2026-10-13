@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { buildDashboard, buildNetWorth, buildReports, netWorthTotals, spendingByCategory, topMerchants } from '@/server/analytics/logic';
-import { toDebtView } from '@/server/views';
-import { asset, bill, budget, cashflow, category, debt, goal, nwPoint, tx } from '../fixtures';
+import { asset, bill, budget, cashflow, category, debtView, goal, nwPoint, tx } from '../fixtures';
 
 const cats = [category({ key: 'food', label: 'Food', tint: 'folder' }), category({ id: 2, key: 'fun', label: 'Fun', tint: 'video' })];
 const budgets = [budget({ cat: 'food', spent: 750 }), budget({ id: 2, cat: 'fun', spent: 250 }), budget({ id: 3, cat: 'ghost', spent: 0 })];
 const active = [
-  toDebtView(debt({ id: 1, original: 1000, paid: 400, apr: 0 })),
-  toDebtView(debt({ id: 2, original: 500, paid: 100, apr: 33 })),
-  toDebtView(debt({ id: 3, original: 300, paid: 0, apr: 33 })),
+  debtView({ id: 1, original: 1000, paid: 400, apr: 0 }),
+  debtView({ id: 2, original: 500, paid: 100, apr: 33 }),
+  debtView({ id: 3, original: 300, paid: 0, apr: 33 }),
 ];
 
 describe('spendingByCategory', () => {

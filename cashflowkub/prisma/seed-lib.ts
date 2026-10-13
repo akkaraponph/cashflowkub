@@ -2,7 +2,7 @@ import type { PrismaClient } from '../src/generated/prisma/client';
 import * as data from './seed-data';
 
 const TABLES = [
-  'setup_goal_channels', 'setup_goals', 'day_spends', 'monthly_cashflows', 'net_worth_histories',
+  'debt_payments', 'settings', 'setup_goal_channels', 'setup_goals', 'day_spends', 'monthly_cashflows', 'net_worth_histories',
   'asset_snapshots', 'plan_items', 'income_categories', 'channels', 'bills', 'assets', 'debts',
   'goals', 'budgets', 'transactions', 'categories', 'accounts',
 ];
@@ -17,6 +17,8 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     await tx.budget.createMany({ data: data.budgets });
     await tx.goal.createMany({ data: data.goals });
     await tx.debt.createMany({ data: data.debts });
+    await tx.debtPayment.createMany({ data: data.debtPayments });
+    await tx.setting.createMany({ data: data.settings });
     await tx.asset.createMany({ data: data.assets });
     await tx.bill.createMany({ data: data.bills });
     await tx.channel.createMany({ data: data.channels });

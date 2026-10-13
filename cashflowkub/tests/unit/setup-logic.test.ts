@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSetup } from '@/server/setup/logic';
-import { toDebtView } from '@/server/views';
-import { category, debt, setupGoal } from '../fixtures';
+import { category, debtView, setupGoal } from '../fixtures';
 
 describe('buildSetup', () => {
   const v = buildSetup({
@@ -9,7 +8,7 @@ describe('buildSetup', () => {
     incomeSources: [],
     channels: [],
     accounts: [],
-    activeDebts: [toDebtView(debt({ id: 1 })), toDebtView(debt({ id: 2, revolving: true }))],
+    activeDebts: [debtView({ id: 1 }), debtView({ id: 2, revolving: true })],
     setupGoals: [setupGoal({ id: 1, kind: 'emergency' }), setupGoal({ id: 2, kind: 'custom' }), setupGoal({ id: 3, kind: 'custom' })],
   });
   it('splits categories by type', () => {
