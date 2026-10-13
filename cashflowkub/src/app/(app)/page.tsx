@@ -9,11 +9,12 @@ import { Tile } from '@/components/cfk/tile';
 import { tintFg } from '@/components/cfk/tint';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { TxRow } from '@/components/cfk/tx-row';
-import { compact, fmt, signed } from '@/lib/format';
+import { compact, fmt, pct, signed } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
 import { getDashboard } from '@/server/analytics/service';
+import { getDsr } from '@/server/debt/planning';
 import { listResource } from '@/server/reference/service';
 import { listTransactions } from '@/server/transaction/service';
 
@@ -42,7 +43,7 @@ function Legend({ income, expenses }: { income: string; expenses: string }) {
 
 export default async function DashboardPage() {
   const { ui, lang } = await getI18n();
-  const [d, recent, budgets, categories] = await Promise.all([getDashboard(), listTransactions({ limit: 5 }), listResource('budgets'), listResource('categories')]);
+  const [d, recent, budgets, categories, dsr] = await Promise.all([getDashboard(), listTransactions({ limit: 5 }), listResource('budgets'), listResource('categories'), getDsr()]);
   const cats = byKey(categories);
 
   return (
@@ -130,6 +131,10 @@ export default async function DashboardPage() {
               <span className="text-[13px] font-bold tabular-nums">{fmt(d.debt.focus.remaining)}</span>
             </Link>
           ) : null}
+          <Link href="/debts/plan" className="flex items-center justify-between rounded-xl border p-3 text-sm hover:opacity-90">
+            <span className="text-muted-foreground">{ui.dsrTitle}</span>
+            <span className="font-bold tabular-nums">{dsr.ratio === null ? '—' : `${pct(dsr.ratio)} · ${ui.dsrBand[dsr.band ?? 'healthy']}`}</span>
+          </Link>
         </Card>
         <Card className="gap-3.5 p-5">
           <SectionHead title={ui.netWorth} href="/networth" viewAll={ui.viewAll} />

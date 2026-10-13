@@ -6,6 +6,7 @@ const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 // [path, text that must appear in English, text that must appear with cfk-lang=th]
 const PAGES: [string, string, string][] = [
   ['/', 'Net worth', 'มูลค่าสุทธิ'],
+  ['/', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
   ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
   ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
   ['/bills', 'KTC Credit Card', 'บิลเดือนนี้'],
@@ -14,6 +15,9 @@ const PAGES: [string, string, string][] = [
   ['/debts?strategy=snowball', 'Pay smallest balance first', 'จ่ายยอดน้อยก่อน'],
   ['/debts/2', 'Reducing balance', 'ลดต้นลดดอก'],
   ['/debts/2?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
+  ['/debts/plan', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
+  ['/debts/plan?strategy=snowball&extra=2000', 'Interest saved', 'ประหยัดดอกเบี้ย'],
+  ['/debts/plan?extra=-5', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
   ['/debts/16', 'Payment history', 'ประวัติการชำระ'],
   ['/debts/16?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
   ['/networth', 'Net worth trend', 'แนวโน้มมูลค่าสุทธิ'],
