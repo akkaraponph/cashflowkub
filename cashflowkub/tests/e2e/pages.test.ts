@@ -14,6 +14,12 @@ const PAGES: [string, string, string][] = [
   ['/debts?strategy=snowball', 'Pay smallest balance first', 'จ่ายยอดน้อยก่อน'],
   ['/debts/2', 'Reducing balance', 'ลดต้นลดดอก'],
   ['/debts/2?tab=schedule', 'Total interest', 'ดอกเบี้ยรวม'],
+  ['/networth', 'Net worth trend', 'แนวโน้มมูลค่าสุทธิ'],
+  ['/networth?tab=liabilities', 'Student Loan', 'กยศ'],
+  ['/budgets', 'Total budget', 'งบรวม'],
+  ['/accounts', 'Kasikorn Savings', 'บัญชี'],
+  ['/goals', 'Japan Trip', 'เที่ยวญี่ปุ่น'],
+  ['/reports', 'Central Ladprao', 'ร้านค้ายอดนิยม'],
 ];
 
 async function fetchPage(path: string, cookie = ''): Promise<{ status: number; html: string }> {
