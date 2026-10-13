@@ -9,6 +9,7 @@ type Handler<P> = (req: Request, ctx: { params: Promise<P> }) => Promise<Respons
 export async function call<P = Record<string, string>>(
   handler: Handler<P>,
   opts: { method?: string; url?: string; body?: unknown; params?: P } = {},
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- tests assert on arbitrary JSON
 ): Promise<{ status: number; json: any }> {
   const init: RequestInit = { method: opts.method ?? 'GET' };
   if (opts.body !== undefined) {
