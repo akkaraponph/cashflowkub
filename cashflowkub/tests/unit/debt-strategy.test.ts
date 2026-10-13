@@ -32,10 +32,15 @@ describe('simulatePayoff', () => {
     const r = simulatePayoff([sim({ balance: 10000, original: 10000, apr: 60, minPayment: 400 })], 'avalanche', 0);
     expect(r).toMatchObject({ months: 600, neverPaysOff: true });
   });
-  it('treats NaN/negative/infinite inputs as 0 and still terminates', () => {
-    const r = simulatePayoff([sim({ balance: 500, minPayment: Number.NaN, apr: -5 }), sim({ id: 2, balance: Number.NaN })], 'avalanche', -50);
-    expect(r).toMatchObject({ months: 600, neverPaysOff: true, order: [1] });
-    expect(Number.isFinite(r.totalInterest)).toBe(true);
+  it('throws RangeError on invalid inputs', () => {
+    expect(() => simulatePayoff([sim({ balance: Number.NaN })], 'avalanche', 0)).toThrow(RangeError);
+    expect(() => simulatePayoff([sim({})], 'avalanche', -1)).toThrow(RangeError);
+    expect(() => simulatePayoff([sim({ minPayment: -1 })], 'avalanche', 0)).toThrow(RangeError);
+    expect(() => simulatePayoff([sim({ sort: Number.NaN })], 'avalanche', 0)).toThrow(RangeError);
+  });
+  it('skips a debt with zero balance', () => {
+    const r = simulatePayoff([sim({ balance: 0 }), sim({ id: 2 })], 'avalanche', 0);
+    expect(r.order).toEqual([2]);
   });
   it('flags neverPaysOff when minimums do not cover interest', () => {
     const r = simulatePayoff([sim({ balance: 10000, original: 10000, apr: 120, minPayment: 100 })], 'snowball', 0);
@@ -60,5 +65,11 @@ describe('comparePayoff', () => {
   });
   it('avalanche never pays more interest than snowball', () => {
     expect(comparePayoff(debts, 'avalanche', 2000).plan.totalInterest).toBeLessThanOrEqual(comparePayoff(debts, 'snowball', 2000).plan.totalInterest);
+  });
+  it('flags baseline neverPaysOff while the plan pays off', () => {
+    const d = [sim({ balance: 10000, original: 10000, apr: 60, minPayment: 400 })];
+    const c = comparePayoff(d, 'avalanche', 2000);
+    expect(c.baseline.neverPaysOff).toBe(true);
+    expect(c.plan.neverPaysOff).toBe(false);
   });
 });

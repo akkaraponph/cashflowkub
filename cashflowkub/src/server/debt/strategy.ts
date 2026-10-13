@@ -32,8 +32,9 @@ export interface PayoffComparison {
   monthsSaved: number;
 }
 
-/** Finite, non-negative number or 0. */
-const nn = (n: number): number => (Number.isFinite(n) && n > 0 ? n : 0);
+function assertMoney(name: string, n: number): void {
+  if (!Number.isFinite(n) || n < 0) throw new RangeError(`${name} must be a finite, non-negative number`);
+}
 
 export function payoffOrder(debts: SimDebt[], strategy: Strategy): number[] {
   const list = [...debts];
@@ -45,9 +46,15 @@ export function payoffOrder(debts: SimDebt[], strategy: Strategy): number[] {
 
 export function simulatePayoff(debts: SimDebt[], strategy: Strategy, extra: number, opts: { rollover?: boolean } = {}): SimResult {
   const rollover = opts.rollover ?? true;
-  extra = nn(extra);
-  // Guard: non-finite/negative money inputs are treated as 0 so the loop can't be poisoned by NaN.
-  const open = debts.map((d) => ({ ...d, balance: nn(d.balance), apr: nn(d.apr), original: nn(d.original), minPayment: nn(d.minPayment) })).filter((d) => d.balance > 0);
+  assertMoney('extra', extra);
+  for (const d of debts) {
+    assertMoney('balance', d.balance);
+    assertMoney('apr', d.apr);
+    assertMoney('original', d.original);
+    assertMoney('minPayment', d.minPayment);
+    if (!Number.isFinite(d.sort) || !Number.isFinite(d.id)) throw new RangeError('id and sort must be finite numbers');
+  }
+  const open = debts.filter((d) => d.balance > 0);
   const order = payoffOrder(open, strategy);
   const byId = new Map(open.map((d) => [d.id, d]));
   const balance = new Map(open.map((d) => [d.id, d.balance]));
@@ -85,7 +92,11 @@ export function simulatePayoff(debts: SimDebt[], strategy: Strategy, extra: numb
   return { strategy, extra, months: month, totalInterest, neverPaysOff: false, order, payoffMonth };
 }
 
-/** Chosen strategy + extra (with rollover) versus paying only each debt's own minimum. */
+/**
+ * Chosen strategy + extra (with rollover) versus paying only each debt's own minimum.
+ * When baseline.neverPaysOff (or plan.neverPaysOff) is true, interestSaved and monthsSaved are
+ * artefacts of the MAX_MONTHS cap and must not be shown to users; callers must check the flags first.
+ */
 export function comparePayoff(debts: SimDebt[], strategy: Strategy, extra: number): PayoffComparison {
   const baseline = simulatePayoff(debts, strategy, 0, { rollover: false });
   const plan = simulatePayoff(debts, strategy, extra);
