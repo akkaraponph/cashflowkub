@@ -16,3 +16,11 @@ Net Worth · Budgets · Accounts · Reports · Goals · Plan · Setup · Setting
 See [`cashflowkub/README.md`](cashflowkub/README.md) to run it.
 
 > The earlier Go API (`api/`) and Expo app (`mobile/`) were replaced by this app. They are in git history before this commit.
+
+## Flutter app (`app/`)
+
+`app/` is the earlier Flutter client. It expects the Go REST API on `:8080` (`--dart-define=API_BASE_URL`),
+and that Go API (`api/`) was removed when the Next.js app replaced it, so **`app/` currently has no backend**.
+It has not been touched or removed. Options: restore `api/` from git history, repoint `app/` at the Next.js
+API (`/api/v1`; response shapes may differ and need checking), or retire `app/`. This is a product decision
+that is still open.

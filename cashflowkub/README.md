@@ -48,3 +48,9 @@ After `pnpm db:deploy`, existing debts get due day 1 and an empty payment ledger
 - `src/app/(app)/**`: Server Component pages that call services directly.
 - `src/components/cfk`: app motifs and charts.
 - `src/components/ui`: shadcn.
+
+## Security
+
+There is **no authentication or authorization**: every `/api/v1` write endpoint is open. This is a
+single-user, localhost app. Do not expose it to a network or host it publicly without adding auth first.
+The seed (`pnpm db:seed`) truncates whatever `DATABASE_URL` points at; only run it against a local demo DB.
