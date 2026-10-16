@@ -31,6 +31,7 @@ Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error":
 - `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)
 - `GET/POST /debts/:id/payments`: POST body `{ "amount": number (positive int), "date"?: "YYYY-MM-DD", "note"?: string }`; responds `201 { payment, debt, excess }`. The payment is split fee → interest → principal; only the applied amount is stored, and `excess` is the part of `amount` beyond what was owed (0 otherwise). A closed debt gives 409.
 - `DELETE /debts/:id/payments/:paymentId`: removes the payment, recomputes `paid`/`done` (reopens a closed debt) and returns the updated debt.
+- `GET/PUT /tax?year=YYYY`: one saved Thai personal-income-tax plan per year (`TaxInput` body, integer baht). Responds `{ year, rulesYear, assumed, saved, input, result }`; `result.balance > 0` means you owe, `< 0` a refund. Only 2025 rules are pinned: other years set `assumed: true`.
 - `GET/PUT /settings`: `{ "monthlyIncome": non-negative int }`.
 - `GET /debts/strategy?strategy=avalanche|snowball|custom&extra=`: `{ baseline, plan, interestSaved, monthsSaved }`; `baseline`/`plan` carry `{ strategy, extra, months, totalInterest, neverPaysOff, order, payoffMonth }`. Check `neverPaysOff` before presenting savings. `extra` is a non-negative int.
 - `GET /debts/dsr?target=`: `{ dsr: { income, monthlyDebt, ratio, band }, targetDsr, monthlyCut, incomeNeeded, quickWins, refinance, actions }`; `target` is 0 < target <= 1.
