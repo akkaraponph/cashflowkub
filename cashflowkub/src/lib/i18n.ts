@@ -127,6 +127,7 @@ const en = {
     room: 'Room left to cut tax',
     assumed: 'Official {year} rules are not in the app yet; using {rulesYear} rules. Check before you file.',
     disclaimer: 'Estimate only, not tax advice. Check with the Revenue Department before filing.',
+    unsaved: 'Not saved yet. These figures use your monthly income × 12 as salary and assume no tax withheld. Enter your real numbers and save.',
     save: 'Save & recalculate',
     section: { income: 'Income', family: 'Family', insurance: 'Insurance & savings', other: 'Other' },
     field: {
@@ -283,6 +284,7 @@ const th: Dict = {
     room: 'ลดหย่อนเพิ่มได้อีก',
     assumed: 'ยังไม่มีเกณฑ์ภาษีปี {year} ในแอป ใช้เกณฑ์ปี {rulesYear} แทน โปรดตรวจสอบก่อนยื่นภาษี',
     disclaimer: 'เป็นการประมาณการเท่านั้น ไม่ใช่คำแนะนำทางภาษี โปรดตรวจสอบกับกรมสรรพากรก่อนยื่นแบบ',
+    unsaved: 'ยังไม่ได้บันทึก ตัวเลขนี้ใช้รายได้ต่อเดือน × 12 เป็นเงินเดือน และถือว่ายังไม่มีภาษีหัก ณ ที่จ่าย โปรดกรอกข้อมูลจริงแล้วบันทึก',
     save: 'บันทึกและคำนวณ',
     section: { income: 'รายได้', family: 'ครอบครัว', insurance: 'ประกันและการออม', other: 'อื่น ๆ' },
     field: {

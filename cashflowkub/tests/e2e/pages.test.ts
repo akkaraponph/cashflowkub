@@ -50,6 +50,12 @@ describe('pages', () => {
     expect(thPage.html).toContain(th);
   });
 
+  it('/tax says unsaved figures are defaults and hides owe/refund until saved', async () => {
+    const page = await fetchPage('/tax', 'cfk-year=2028');
+    expect(page.html).toContain('Not saved yet');
+    expect(page.html).not.toContain('You may owe');
+  });
+
   it('falls back to English for a garbage language cookie', async () => {
     const page = await fetchPage('/', 'cfk-lang=%3Cscript%3E');
     expect(page.status).toBe(200);

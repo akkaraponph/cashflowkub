@@ -5,6 +5,7 @@ import { ToneBadge } from '@/components/cfk/tone-badge';
 import { fmt, pct } from '@/lib/format';
 import { getPrefs } from '@/lib/prefs-server';
 import { DICT, fill } from '@/lib/i18n';
+import { hasUsefulRoom } from '@/server/tax/logic';
 import { getTaxPlan } from '@/server/tax/service';
 import { TaxForm } from './tax-form';
 
@@ -21,7 +22,6 @@ export default async function TaxPage() {
   const plan = await getTaxPlan(year);
   const { result: r } = plan;
   const shownYear = lang === 'th' ? year + 543 : year;
-  const hasRoom = r.room.rmf > 0 || r.room.ssf > 0 || r.room.thaiEsg > 0;
 
   return (
     <>
@@ -35,19 +35,23 @@ export default async function TaxPage() {
         </p>
       ) : null}
 
+      {!plan.saved ? <p className="rounded-xl bg-type-doc-bg p-4 text-sm text-type-doc-fg">{ui.tax.unsaved}</p> : null}
+
       <Card className="gap-3 p-5">
         <div>
           <p className="text-xs text-muted-foreground">{ui.tax.estimated}</p>
           <p className="text-3xl font-extrabold tabular-nums">{fmt(r.tax)}</p>
         </div>
         <Row label={ui.tax.withheldLbl} value={fmt(r.withheld)} />
-        <div className="flex items-center justify-between text-sm">
-          <ToneBadge
-            label={r.balance > 0 ? ui.tax.owe : r.balance < 0 ? ui.tax.refund : ui.tax.even}
-            tone={r.balance > 0 ? 'danger' : r.balance < 0 ? 'success' : 'neutral'}
-          />
-          <span className="font-bold tabular-nums">{fmt(Math.abs(r.balance))}</span>
-        </div>
+        {plan.saved ? (
+          <div className="flex items-center justify-between text-sm">
+            <ToneBadge
+              label={r.balance > 0 ? ui.tax.owe : r.balance < 0 ? ui.tax.refund : ui.tax.even}
+              tone={r.balance > 0 ? 'danger' : r.balance < 0 ? 'success' : 'neutral'}
+            />
+            <span className="font-bold tabular-nums">{fmt(Math.abs(r.balance))}</span>
+          </div>
+        ) : null}
         <Row label={ui.tax.effectiveRate} value={pct(r.effectiveRate)} />
         <Row label={ui.tax.marginalRate} value={pct(r.marginalRate)} />
         <Row label={ui.tax.incomeLbl} value={fmt(r.income)} />
@@ -79,7 +83,7 @@ export default async function TaxPage() {
         ))}
       </Card>
 
-      {hasRoom ? (
+      {hasUsefulRoom(r) ? (
         <Card className="gap-2 p-5">
           <h2 className="font-bold">{ui.tax.room}</h2>
           <Row label={ui.tax.field.rmf} value={fmt(r.room.rmf)} />
@@ -88,7 +92,7 @@ export default async function TaxPage() {
         </Card>
       ) : null}
 
-      <TaxForm key={JSON.stringify(plan.input)} year={year} input={plan.input} />
+      <TaxForm key={`${year}:${JSON.stringify(plan.input)}`} year={year} input={plan.input} />
 
       <p className="text-xs text-muted-foreground">{ui.tax.disclaimer}</p>
     </>

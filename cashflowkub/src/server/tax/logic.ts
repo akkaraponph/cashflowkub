@@ -162,3 +162,8 @@ export function computeTax(input: TaxInput, rules: TaxRules): TaxResult {
     },
   };
 }
+
+/** Room only matters when there is tax left to cut. */
+export function hasUsefulRoom(r: TaxResult): boolean {
+  return r.tax > 0 && (r.room.rmf > 0 || r.room.ssf > 0 || r.room.thaiEsg > 0);
+}

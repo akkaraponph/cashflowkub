@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { rulesFor, TAX_RULES_2025 } from '@/server/tax/rules';
-import { computeTax, EMPTY_TAX_INPUT, taxOnNet, type DeductionKey, type TaxInput } from '@/server/tax/logic';
+import { computeTax, EMPTY_TAX_INPUT, hasUsefulRoom, taxOnNet, type DeductionKey, type TaxInput } from '@/server/tax/logic';
 
 const base = (p: Partial<TaxInput>): TaxInput => ({ ...EMPTY_TAX_INPUT, ...p });
 const R = TAX_RULES_2025;
@@ -53,5 +53,13 @@ describe('computeTax', () => {
     expect(assumed).toBe(true);
     const r = computeTax(base({ salary: 600_000, easyEReceipt: 50_000 }), rules);
     expect(r.deductions.find((d) => d.key === 'easyEReceipt')).toEqual({ key: 'easyEReceipt', claimed: 50_000, allowed: 0, capped: true });
+  });
+});
+
+describe('hasUsefulRoom', () => {
+  it('is false when there is no tax to cut, true when there is room and tax', () => {
+    expect(hasUsefulRoom(computeTax(base({ salary: 300_000 }), R))).toBe(false);
+    expect(hasUsefulRoom(computeTax(base({ salary: 1_200_000 }), R))).toBe(true);
+    expect(hasUsefulRoom(computeTax(base({ salary: 1_200_000, rmf: 360_000, ssf: 140_000, thaiEsg: 300_000 }), R))).toBe(false);
   });
 });
