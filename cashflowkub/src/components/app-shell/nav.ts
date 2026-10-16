@@ -10,6 +10,7 @@ export const NAV_ITEMS = [
   { key: 'reports', href: '/reports', icon: 'bar-chart-3' },
   { key: 'goals', href: '/goals', icon: 'target' },
   { key: 'plan', href: '/plan', icon: 'clipboard-list' },
+  { key: 'tax', href: '/tax', icon: 'receipt' },
   { key: 'setup', href: '/setup', icon: 'sliders-horizontal' },
   { key: 'settings', href: '/settings', icon: 'settings' },
 ] as const;

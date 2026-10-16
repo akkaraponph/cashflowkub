@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DICT, fill, localized, pickLabel } from '@/lib/i18n';
+import { EMPTY_TAX_INPUT } from '@/server/tax/logic';
 
 describe('i18n', () => {
   it('has Thai copy for screen names', () => {
@@ -22,5 +23,15 @@ describe('i18n helpers', () => {
     expect(pickLabel(DICT.en.debtKind, 'paylater')).toBe('PayLater');
     expect(pickLabel(DICT.th.debtKind, 'bankloan')).toBe('สินเชื่อธนาคาร');
     expect(pickLabel(DICT.en.debtKind, 'mystery')).toBe('mystery');
+  });
+});
+
+describe('tax copy', () => {
+  it('has a Thai nav label and a label for every tax field', () => {
+    expect(DICT.th.nav.tax).toBe('ภาษี');
+    for (const key of Object.keys(EMPTY_TAX_INPUT)) {
+      expect(DICT.th.tax.field[key as keyof typeof EMPTY_TAX_INPUT], key).toBeTruthy();
+      expect(DICT.en.tax.field[key as keyof typeof EMPTY_TAX_INPUT], key).toBeTruthy();
+    }
   });
 });
