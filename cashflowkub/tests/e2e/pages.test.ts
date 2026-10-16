@@ -29,6 +29,8 @@ const PAGES: [string, string, string][] = [
   ['/plan', 'Income plan', 'แผนรายรับ'],
   ['/plan?tab=summary', 'Net variance', 'ผลต่างรวม'],
   ['/plan?tab=assets', 'Last updated', 'อัพเดตล่าสุด'],
+  ['/tax', 'Estimated tax', 'ภาษีที่ต้องจ่ายทั้งปี'],
+  ['/tax', 'Estimate only, not tax advice', 'ไม่ใช่คำแนะนำทางภาษี'],
   ['/setup', 'Expense items', 'หมวด'],
   ['/setup?tab=goals', 'Retirement', 'เกษียณ'],
   ['/settings', 'Preferences', 'การตั้งค่า'],
