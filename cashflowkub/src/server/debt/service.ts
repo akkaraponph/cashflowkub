@@ -112,7 +112,7 @@ export async function recordPayment(debtId: number, body: unknown): Promise<{ pa
   let date = today();
   if (input.date !== undefined) {
     const parsed = parseFlexDate(input.date);
-    if (!parsed) throw badRequest(`invalid date: ${input.date}`);
+    if (!parsed) throw badRequest(`invalid date: ${input.date}`, 'invalidDate');
     date = parsed;
   }
   return prisma.$transaction(async (tx) => {
@@ -140,7 +140,7 @@ export async function deletePayment(debtId: number, paymentId: number): Promise<
 export async function createDebt(body: unknown): Promise<DebtView> {
   const input = parseBody(debtFields, body);
   const openingPaid = input.openingPaid ?? 0;
-  if (openingPaid > input.original) throw badRequest('openingPaid cannot exceed original');
+  if (openingPaid > input.original) throw badRequest('openingPaid cannot exceed original', 'openingPaidExceeds');
   const row = await prisma.debt.create({ data: { ...input, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
   return toDebtView(row, today());
 }
@@ -152,9 +152,9 @@ export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
     const current = await findDebt(id, tx);
     const original = input.original ?? current.original;
     const openingPaid = input.openingPaid ?? current.openingPaid;
-    if (openingPaid > original) throw badRequest('openingPaid cannot exceed original');
+    if (openingPaid > original) throw badRequest('openingPaid cannot exceed original', 'openingPaidExceeds');
     const ledger = current.payments.reduce((sum, p) => sum + p.principal, 0);
-    if (original < openingPaid + ledger) throw badRequest('original cannot be below principal already repaid');
+    if (original < openingPaid + ledger) throw badRequest('original cannot be below principal already repaid', 'originalBelowRepaid');
     await tx.debt.update({ where: { id }, data: input });
     return toDebtView(await syncPaid(tx, id), today());
   });

@@ -9,9 +9,9 @@ export const list = (rows: unknown[]): Response => NextResponse.json({ data: row
 export const noContent = (): Response => new Response(null, { status: 204 });
 
 function toErrorResponse(err: unknown): Response {
-  if (err instanceof HttpError) return NextResponse.json({ error: err.message }, { status: err.status });
+  if (err instanceof HttpError) return NextResponse.json(err.code ? { error: err.message, code: err.code } : { error: err.message }, { status: err.status });
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    if (err.code === 'P2025') return NextResponse.json({ error: 'resource not found' }, { status: 404 });
+    if (err.code === 'P2025') return NextResponse.json({ error: 'resource not found', code: 'notFound' }, { status: 404 });
     if (err.code === 'P2002') return NextResponse.json({ error: 'resource already exists' }, { status: 409 });
   }
   console.error(err);

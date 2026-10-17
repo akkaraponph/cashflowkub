@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
+import { errorText } from '@/lib/api-error';
 
 export function DeletePaymentButton({ debtId, paymentId }: { debtId: number; paymentId: number }) {
   const { ui } = useI18n();
@@ -24,7 +25,7 @@ export function DeletePaymentButton({ debtId, paymentId }: { debtId: number; pay
             await apiFetch(`/debts/${debtId}/payments/${paymentId}`, { method: 'DELETE' });
             router.refresh();
           } catch (err) {
-            toast.error(err instanceof Error ? err.message : String(err));
+            toast.error(errorText(err, ui));
           }
         });
       }}>

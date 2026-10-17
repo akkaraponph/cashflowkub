@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
+import { errorText } from '@/lib/api-error';
 
 export function IncomeDialog({ income }: { income: number }) {
   const { ui } = useI18n();
@@ -27,7 +28,7 @@ export function IncomeDialog({ income }: { income: number }) {
         setOpen(false);
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(errorText(err, ui));
       }
     });
 

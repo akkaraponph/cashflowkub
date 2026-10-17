@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
+import { errorText } from '@/lib/api-error';
 import { today } from '@/lib/clock';
 import { fill } from '@/lib/i18n';
 import { fmt } from '@/lib/format';
@@ -32,7 +33,7 @@ export function RecordPaymentDialog({ debtId, defaultAmount, disabled }: { debtI
         setOpen(false);
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(errorText(err, ui));
       }
     });
 

@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
+import { errorText } from '@/lib/api-error';
 import { fmt } from '@/lib/format';
 import { scheduledInstallment, toApr } from '@/server/debt/terms';
 import type { DebtView } from '@/server/views';
@@ -66,7 +67,7 @@ export function DebtFormDialog({ debt }: { debt?: DebtView }) {
         setOpen(false);
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(errorText(err, ui));
       }
     });
 
