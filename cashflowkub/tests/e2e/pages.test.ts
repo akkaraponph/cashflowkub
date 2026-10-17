@@ -32,6 +32,7 @@ const PAGES: [string, string, string][] = [
   ['/tax', 'Estimated tax', 'ภาษีที่ต้องจ่ายทั้งปี'],
   ['/tax', 'Estimate only, not tax advice', 'ไม่ใช่คำแนะนำทางภาษี'],
   ['/setup', 'Expense items', 'หมวด'],
+  ['/setup', 'Debt payments', 'ชำระหนี้สิน'],
   ['/setup?tab=goals', 'Retirement', 'เกษียณ'],
   ['/settings', 'Preferences', 'การตั้งค่า'],
 ];

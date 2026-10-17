@@ -87,6 +87,19 @@ describe('parsePaste', () => {
   });
 });
 
+describe('parsePaste rules match the grid', () => {
+  const defaults = { date: '2026-01-05', acct: 'Cash' };
+  it('rejects an activity that conflicts with the category type', () => {
+    expect(parsePaste('2026-01-02\tรับเงิน\tfood\tCash\t500', defaults, cats)).toMatchObject({ ok: false, line: 1 });
+    expect(parsePaste('2026-01-02\tจ่ายเงิน\tincome\tCash\t500', defaults, cats)).toMatchObject({ ok: false, line: 1 });
+  });
+  it('rejects interest/fee outside debt categories and goal outside saving', () => {
+    expect(parsePaste('2026-01-02\tจ่ายเงิน\tfood\tCash\t500\t120\t30', defaults, cats)).toMatchObject({ ok: false, line: 1 });
+    expect(parsePaste('2026-01-02\tจ่ายเงิน\tfood\tCash\t500\t\t\tCar', defaults, cats)).toMatchObject({ ok: false, line: 1 });
+    expect(parsePaste('2026-01-02\tจ่ายเงิน\tsaving\tCash\t500\t\t\tCar', defaults, cats)).toMatchObject({ ok: true });
+  });
+});
+
 describe('monthRange', () => {
   it('spans the first to last day, including December', () => {
     expect(monthRange('2026-01')).toEqual({ from: new Date('2026-01-01T00:00:00Z'), to: new Date('2026-01-31T00:00:00Z') });

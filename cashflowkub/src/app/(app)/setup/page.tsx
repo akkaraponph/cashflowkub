@@ -89,6 +89,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
   const raw = firstParam(await searchParams, 'tab');
   const tab: Tab = (TABS as readonly string[]).includes(raw ?? '') ? (raw as Tab) : 'categories';
   const s = await getSetup();
+  const expenseSubLabel = (sub: string) => (sub === 'need' ? ui.subNeed : sub === 'saving' ? ui.sheet.sumSaving : sub === 'debt' ? ui.sheet.sumDebt : ui.subWant);
   const subLabel = (sub: string) => (sub === 'main' ? ui.subMain : sub === 'side' ? ui.subSide : ui.subPassive);
 
   return (
@@ -111,7 +112,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
           <Section title={ui.expenseCats} sub={ui.expenseCatsSub}>
             {s.expenseCategories.map((c) => (
               <ListRow key={c.id} icon={c.icon} tint={c.tint} title={localized(lang, c.label, c.th)} className="border-t"
-                right={<ToneBadge label={c.sub === 'need' ? ui.subNeed : ui.subWant} tone={c.sub === 'need' ? 'success' : 'warning'} />} />
+                right={<ToneBadge label={expenseSubLabel(c.sub)} tone={c.sub === 'need' ? 'success' : c.sub === 'want' ? 'warning' : 'info'} />} />
             ))}
           </Section>
         </>

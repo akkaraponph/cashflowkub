@@ -117,12 +117,15 @@ export function parsePaste(
     if (!category) return fail(`unknown category: ${c[2] ?? ''}`);
     const activity = parseActivity(c[1] ?? '', category);
     if (!activity) return fail(`unknown activity: ${c[1]}`);
+    if (c[1] && activity !== (category.type === 'income' ? 'income' : 'expense')) return fail(`activity does not match category: ${c[2]}`);
     const amount = parseAmount(c[4] ?? '');
     if (!amount) return fail(`invalid amount: ${c[4] ?? ''}`);
     const interest = c[5] ? parseAmount(c[5]) : 0;
     if (interest === null) return fail(`invalid interest: ${c[5]}`);
     const fee = c[6] ? parseAmount(c[6]) : 0;
     if (fee === null) return fail(`invalid fee: ${c[6]}`);
+    if ((interest > 0 || fee > 0) && category.sub !== 'debt') return fail('interest and fee only apply to debt payments');
+    if (c[7] && category.sub !== 'saving') return fail('goal only applies to savings');
     const note = c[8] ?? '';
     bodies.push({
       name: note || category.label, cat: category.key, acct: c[3] || defaults.acct, amount: activity === 'income' ? amount : -amount,
