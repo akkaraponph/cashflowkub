@@ -16,7 +16,7 @@ import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseStrategy, sortByStrategy } from '@/server/debt/logic';
 import { listDebts } from '@/server/debt/service';
 import { debtSummary } from '@/server/debt/summary';
-import { AddDebtDialog } from './add-debt-dialog';
+import { DebtFormDialog } from './debt-form-dialog';
 import { DueBadge } from './due-badge';
 
 export default async function DebtsPage({ searchParams }: { searchParams: SearchParams }) {
@@ -31,7 +31,7 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
         <Button asChild size="sm">
           <Link href="/debts/plan"><Icon name="lightbulb" size={16} />{ui.smartPlan}</Link>
         </Button>
-        <AddDebtDialog />
+        <DebtFormDialog />
       </PageTitle>
 
       <Hero>

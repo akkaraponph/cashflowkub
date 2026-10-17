@@ -7,32 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { fmt } from '@/lib/format';
 import { scheduledInstallment, toApr } from '@/server/debt/terms';
-import { Select } from '@/components/ui/select';
-
-const KINDS = ['paylater', 'cashloan', 'bankloan', 'creditcard', 'personal'] as const;
-type Kind = (typeof KINDS)[number];
-type RateUnit = 'month' | 'year';
-
-// Sensible defaults per product type; every field stays editable.
-const PRESETS: Record<Kind, { icon: string; tint: string; calc: 'flat' | 'reducing'; unit: RateUnit; revolving: boolean; lender: string }> = {
-  paylater: { icon: 'shopping-bag', tint: 'image', calc: 'flat', unit: 'month', revolving: true, lender: 'Shopee' },
-  cashloan: { icon: 'hand-coins', tint: 'folder', calc: 'flat', unit: 'month', revolving: false, lender: 'Shopee' },
-  bankloan: { icon: 'landmark', tint: 'doc', calc: 'reducing', unit: 'year', revolving: false, lender: '' },
-  creditcard: { icon: 'credit-card', tint: 'pdf', calc: 'reducing', unit: 'year', revolving: true, lender: '' },
-  personal: { icon: 'wallet', tint: 'xls', calc: 'flat', unit: 'year', revolving: false, lender: '' },
-};
-
-type TextField =
-  | 'name' | 'th' | 'lender' | 'original' | 'openingPaid' | 'rate' | 'termMonths'
-  | 'fixedPayment' | 'monthly' | 'dueDay' | 'graceDays' | 'lateFee' | 'penaltyApr';
-
-const int = (v: string): number => Math.max(0, Math.round(Number(v) || 0));
-const num = (v: string): number => Math.max(0, Number(v) || 0);
+import type { DebtView } from '@/server/views';
+import { emptyForm, formFromDebt, formToBody, int, KINDS, num, PRESETS, type DebtForm, type Kind, type TextField } from './debt-form';
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -44,27 +26,24 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
   );
 }
 
-export function AddDebtDialog() {
+/** Add dialog when `debt` is omitted, edit dialog when it is given. */
+export function DebtFormDialog({ debt }: { debt?: DebtView }) {
   const { ui } = useI18n();
   const router = useRouter();
+  const editing = debt !== undefined;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [kind, setKind] = useState<Kind>('paylater');
-  const [unit, setUnit] = useState<RateUnit>('month');
-  const [calc, setCalc] = useState<'flat' | 'reducing'>('flat');
-  const [revolving, setRevolving] = useState(true);
-  const [f, setF] = useState<Record<TextField, string>>({
-    name: '', th: '', lender: 'Shopee', original: '', openingPaid: '0', rate: '0', termMonths: '0',
-    fixedPayment: '0', monthly: '0', dueDay: '1', graceDays: '0', lateFee: '0', penaltyApr: '0',
-  });
+  const [form, setForm] = useState<DebtForm>(() => (debt ? formFromDebt(debt) : emptyForm));
+  const { kind, unit, calc, revolving, fields: f } = form;
+
+  const openDialog = () => {
+    if (debt) setForm(formFromDebt(debt));
+    setOpen(true);
+  };
 
   const chooseKind = (k: Kind) => {
     const p = PRESETS[k];
-    setKind(k);
-    setCalc(p.calc);
-    setUnit(p.unit);
-    setRevolving(p.revolving);
-    setF((prev) => ({ ...prev, lender: prev.lender || p.lender }));
+    setForm((prev) => (editing ? { ...prev, kind: k } : { ...prev, kind: k, calc: p.calc, unit: p.unit, revolving: p.revolving, fields: { ...prev.fields, lender: prev.fields.lender || p.lender } }));
   };
 
   const terms = {
@@ -77,16 +56,13 @@ export function AddDebtDialog() {
   const save = () =>
     startTransition(async () => {
       try {
-        const p = PRESETS[kind];
-        await apiFetch('/debts', {
-          method: 'POST',
-          body: {
-            name: f.name.trim(), th: f.th.trim() || f.name.trim(), kind, lender: f.lender.trim(), icon: p.icon, tint: p.tint,
-            original: terms.original, openingPaid: terms.paid, apr: terms.apr, calc, termMonths: terms.termMonths,
-            fixedPayment: terms.fixedPayment, monthly: terms.monthly, dueDay: int(f.dueDay), graceDays: int(f.graceDays),
-            lateFee: int(f.lateFee), penaltyApr: num(f.penaltyApr), revolving,
-          },
-        });
+        const body = formToBody(form, editing ? 'edit' : 'add');
+        if (debt) {
+          await apiFetch(`/debts/${debt.id}`, { method: 'PATCH', body });
+          toast.success(ui.savedOk);
+        } else {
+          await apiFetch('/debts', { method: 'POST', body });
+        }
         setOpen(false);
         router.refresh();
       } catch (err) {
@@ -96,19 +72,25 @@ export function AddDebtDialog() {
 
   const input = (id: TextField, type: 'text' | 'number' = 'number') => (
     <Input id={`debt-${id}`} type={type} inputMode={type === 'number' ? 'decimal' : undefined} min={0}
-      value={f[id]} onChange={(e) => setF((prev) => ({ ...prev, [id]: e.target.value }))} />
+      value={f[id]} onChange={(e) => setForm((prev) => ({ ...prev, fields: { ...prev.fields, [id]: e.target.value } }))} />
   );
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={16} />
-        {ui.addDebt}
-      </Button>
+      {editing ? (
+        <Button size="icon" variant="ghost" aria-label={ui.editDebt} onClick={openDialog}>
+          <Icon name="pencil" size={16} />
+        </Button>
+      ) : (
+        <Button size="sm" variant="outline" onClick={openDialog}>
+          <Icon name="plus" size={16} />
+          {ui.addDebt}
+        </Button>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{ui.addDebt}</DialogTitle>
+            <DialogTitle>{editing ? ui.editDebt : ui.addDebt}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-wrap gap-2">
             {KINDS.map((k) => (
@@ -126,12 +108,12 @@ export function AddDebtDialog() {
             <Field id="debt-rate" label={ui.rate}>
               <div className="flex gap-2">
                 {input('rate')}
-                <Select aria-label={ui.rate} className="w-32 shrink-0" value={unit} onValueChange={(v) => setUnit(v === 'year' ? 'year' : 'month')}
+                <Select aria-label={ui.rate} className="w-32 shrink-0" value={unit} onValueChange={(v) => setForm((prev) => ({ ...prev, unit: v === 'year' ? 'year' : 'month' }))}
                   options={[{ value: 'month', label: ui.perMonthRate }, { value: 'year', label: ui.perYearRate }]} />
               </div>
             </Field>
             <Field id="debt-calc" label={ui.calcMethod}>
-              <Select id="debt-calc" value={calc} onValueChange={(v) => setCalc(v === 'reducing' ? 'reducing' : 'flat')}
+              <Select id="debt-calc" value={calc} onValueChange={(v) => setForm((prev) => ({ ...prev, calc: v === 'reducing' ? 'reducing' : 'flat' }))}
                 options={[{ value: 'flat', label: ui.calcFlat }, { value: 'reducing', label: ui.calcReducing }]} />
             </Field>
             <Field id="debt-termMonths" label={ui.termMonthsLbl}>{input('termMonths')}</Field>
@@ -143,7 +125,7 @@ export function AddDebtDialog() {
             <Field id="debt-penaltyApr" label={ui.penaltyAprLbl}>{input('penaltyApr')}</Field>
           </div>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={revolving} onChange={(e) => setRevolving(e.target.checked)} />
+            <input type="checkbox" checked={revolving} onChange={(e) => setForm((prev) => ({ ...prev, revolving: e.target.checked }))} />
             {ui.revolvingLbl}
           </label>
           <div className="flex items-center justify-between rounded-xl bg-secondary p-3">

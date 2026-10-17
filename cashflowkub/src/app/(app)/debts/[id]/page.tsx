@@ -14,6 +14,7 @@ import { today } from '@/lib/clock';
 import { amountOwedNow, isoDate } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
 import { planVsActual } from '@/server/debt/summary';
+import { DebtFormDialog } from '../debt-form-dialog';
 import { DueBadge } from '../due-badge';
 import { SchedulePlanner } from './schedule-planner';
 import { DeletePaymentButton } from './delete-payment-button';
@@ -33,7 +34,9 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
 
   return (
     <>
-      <PageTitle title={localized(lang, d.name, d.th)} back="/debts" />
+      <PageTitle title={localized(lang, d.name, d.th)} back="/debts">
+        <DebtFormDialog debt={d} />
+      </PageTitle>
       <div className="flex items-center gap-3">
         <Tile icon={d.icon} tint={d.tint} size={48} />
         <div>
