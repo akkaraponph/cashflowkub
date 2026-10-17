@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { payoffLabel, projectSchedule } from '@/server/debt/schedule';
+import { paymentForTarget, payoffLabel, projectSchedule } from '@/server/debt/schedule';
 import type { DebtTerms } from '@/server/debt/terms';
 
 const terms = (o: Partial<DebtTerms> = {}): DebtTerms => ({ original: 10000, paid: 0, apr: 0, calc: 'reducing', monthly: 0, fixedPayment: 0, termMonths: 0, ...o });
@@ -41,5 +41,53 @@ describe('payoffLabel', () => {
     expect(payoffLabel(today, 46)).toEqual({ en: 'Apr 2030', th: 'เม.ย. 2030' });
     expect(payoffLabel(today, 9)).toEqual({ en: 'Mar 2027', th: 'มี.ค. 2027' });
     expect(payoffLabel(today, 0)).toEqual({ en: 'Jun 2026', th: 'มิ.ย. 2026' });
+  });
+});
+
+describe('sheet golden figures', () => {
+  it('Krungthai 45,700 @25% reducing, 21 months', () => {
+    const s = projectSchedule(terms({ original: 45700, apr: 25, calc: 'reducing', termMonths: 21 }));
+    expect(s.rows).toHaveLength(21);
+    expect(s.rows[0]).toMatchObject({ payment: 2709, principal: 1757, interest: 952, balance: 43943 });
+    expect(s.totalInterest).toBe(11189);
+  });
+  it('KKB Nano 53,824 @33% flat, 36 months closes in exactly 36 rows', () => {
+    const s = projectSchedule(terms({ original: 53824, apr: 33, calc: 'flat', termMonths: 36 }));
+    expect(s.rows).toHaveLength(36);
+    expect(s.rows.every((r) => r.interest === 1480)).toBe(true);
+    expect(s.rows[0].payment).toBe(2976);
+  });
+  it('SPEC 28,663 @33% flat, 10 months', () => {
+    expect(projectSchedule(terms({ original: 28663, apr: 33, calc: 'flat', termMonths: 10 })).rows).toHaveLength(10);
+  });
+  it('กยศ 186,150 @5% reducing, 96 months', () => {
+    expect(projectSchedule(terms({ original: 186150, apr: 5, calc: 'reducing', termMonths: 96 })).rows).toHaveLength(96);
+  });
+});
+
+describe('paymentForTarget', () => {
+  it('reducing from scratch fits the target', () => {
+    const d = terms({ original: 45700, apr: 25, calc: 'reducing' });
+    const p = paymentForTarget(d, 21);
+    expect(p).toBe(2710);
+    expect(projectSchedule({ ...d, fixedPayment: p }).rows.length).toBeLessThanOrEqual(21);
+  });
+  it('reducing, partly paid, 12 months', () => {
+    const d = terms({ original: 70000, paid: 24300, apr: 25, calc: 'reducing' });
+    const p = paymentForTarget(d, 12);
+    expect(p).toBeGreaterThan(2783);
+    expect(projectSchedule({ ...d, fixedPayment: p }).rows.length).toBeLessThanOrEqual(12);
+  });
+  it('flat, partly paid', () => {
+    expect(paymentForTarget(terms({ original: 20000, paid: 5000, apr: 18, calc: 'flat' }), 5)).toBe(3300);
+  });
+  it('zero rate', () => {
+    expect(paymentForTarget(terms({ original: 1000 }), 3)).toBe(334);
+  });
+  it('closed debt needs nothing', () => {
+    expect(paymentForTarget(terms({ original: 100, paid: 100 }), 3)).toBe(0);
+  });
+  it.each([0, -1, 1.5])('rejects months=%s', (m) => {
+    expect(() => paymentForTarget(terms(), m)).toThrow(RangeError);
   });
 });

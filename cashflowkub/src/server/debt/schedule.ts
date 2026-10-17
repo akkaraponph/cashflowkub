@@ -1,5 +1,5 @@
 // Forward projection of a debt from today's balance, and bilingual month labels.
-import { interestForMonth, remainingPrincipal, scheduledInstallment, type DebtTerms } from './terms';
+import { interestForMonth, monthlyRate, remainingPrincipal, scheduledInstallment, type DebtTerms } from './terms';
 
 export const MAX_MONTHS = 600;
 
@@ -26,6 +26,20 @@ export function projectSchedule(d: DebtTerms): { rows: ScheduleRow[]; totalInter
     rows.push({ month, payment: principal + interest, principal, interest, balance });
   }
   return { rows, totalInterest, neverPaysOff: false };
+}
+
+/** Smallest whole-baht monthly payment that clears the debt in at most `months` months. */
+export function paymentForTarget(d: DebtTerms, months: number): number {
+  if (!Number.isInteger(months) || months < 1) throw new RangeError(`months must be a positive integer: ${months}`);
+  const balance = remainingPrincipal(d);
+  if (balance === 0) return 0;
+  const r = monthlyRate(d);
+  let p: number;
+  if (d.calc === 'flat') p = Math.ceil(balance / months) + Math.round(d.original * r);
+  else if (r === 0) p = Math.ceil(balance / months);
+  else p = Math.ceil((balance * r) / (1 - (1 + r) ** -months));
+  for (let i = 0; i < 5 && projectSchedule({ ...d, fixedPayment: p }).rows.length > months; i++) p += 1;
+  return p;
 }
 
 const EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

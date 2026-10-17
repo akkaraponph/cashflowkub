@@ -28,7 +28,7 @@ export function scheduledInstallment(d: DebtTerms): number {
   if (d.termMonths > 0) {
     const r = monthlyRate(d);
     const n = d.termMonths;
-    if (d.calc === 'flat') return Math.round(d.original / n + d.original * r);
+    if (d.calc === 'flat') return Math.ceil(d.original / n) + Math.round(d.original * r);
     if (r === 0) return Math.ceil(d.original / n);
     return Math.round((d.original * r) / (1 - (1 + r) ** -n));
   }

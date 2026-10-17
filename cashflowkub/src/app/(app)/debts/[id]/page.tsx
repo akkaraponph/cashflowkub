@@ -10,9 +10,13 @@ import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
-import { amountOwedNow } from '@/server/debt/cycle';
+import { today } from '@/lib/clock';
+import { amountOwedNow, isoDate } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
+import { planVsActual } from '@/server/debt/summary';
+import { DebtFormDialog } from '../debt-form-dialog';
 import { DueBadge } from '../due-badge';
+import { SchedulePlanner } from './schedule-planner';
 import { DeletePaymentButton } from './delete-payment-button';
 import { RecordPaymentDialog } from './record-payment-dialog';
 
@@ -20,15 +24,19 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const { ui, lang } = await getI18n();
   const { id } = await params;
   const tab = firstParam(await searchParams, 'tab') === 'schedule' ? 'schedule' : 'overview';
-  const { debt: d, schedule, totalInterest, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
+  const { debt: d, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
   const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
   const due = d.due;
   const owedNow = amountOwedNow(due);
+  const terms = { original: d.original, paid: d.paid, apr: d.apr, calc: d.calc, monthly: d.monthly, fixedPayment: d.fixedPayment, termMonths: d.termMonths };
+  const pva = planVsActual(d, payments);
   const suggested = Math.max(1, due.state === 'paid' ? d.installment : owedNow);
 
   return (
     <>
-      <PageTitle title={localized(lang, d.name, d.th)} back="/debts" />
+      <PageTitle title={localized(lang, d.name, d.th)} back="/debts">
+        <DebtFormDialog debt={d} />
+      </PageTitle>
       <div className="flex items-center gap-3">
         <Tile icon={d.icon} tint={d.tint} size={48} />
         <div>
@@ -89,6 +97,38 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
 
       {tab === 'overview' ? (
         <>
+          <Card className="gap-0 overflow-x-auto bg-secondary p-0">
+            <h2 className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.planVsActual}</h2>
+            <table className="w-full text-xs tabular-nums">
+              <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 text-left" />
+                  <th className="px-2 text-right">{ui.amount}</th>
+                  <th className="px-2 text-right">{ui.principal}</th>
+                  <th className="px-2 text-right">{ui.interest}</th>
+                  <th className="px-4 text-right">{ui.monthsLbl}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  [ui.planned, pva.planned],
+                  [ui.actual, { ...pva.actual, months: null }],
+                  [ui.remaining, pva.remaining],
+                ] as const).map(([label, r]) => (
+                  <tr key={label} className="border-t">
+                    <td className="px-4 py-2.5 font-semibold text-muted-foreground">{label}</td>
+                    <td className="px-2 text-right font-semibold">{r ? fmt(r.payment) : '—'}</td>
+                    <td className="px-2 text-right">{r ? fmt(r.principal) : '—'}</td>
+                    <td className="px-2 text-right text-destructive">{r ? fmt(r.interest) : '—'}</td>
+                    <td className="px-4 text-right">{r && r.months !== null ? r.months : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {pva.actual.fees > 0 ? (
+              <p className="border-t px-4 py-2 text-xs text-destructive tabular-nums">{ui.fee} {fmt(pva.actual.fees)}</p>
+            ) : null}
+          </Card>
           <Card className="gap-0 bg-secondary p-0">
             {([
               [ui.instalmentPreview, fmt(d.installment)],
@@ -124,37 +164,10 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             ))}
           </Card>
         </>
-      ) : d.neverPaysOff ? null : (
-        <>
-          <Card className="gap-0 overflow-x-auto bg-secondary p-0">
-            <table className="w-full text-xs tabular-nums">
-              <thead className="bg-background text-[10px] uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3.5 py-2.5 text-left">#</th>
-                  <th className="px-2 text-left">{ui.amount}</th>
-                  <th className="px-2 text-left">{ui.principal}</th>
-                  <th className="px-2 text-left">{ui.interest}</th>
-                  <th className="px-3.5 text-right">{ui.remaining}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.slice(0, 24).map((r) => (
-                  <tr key={r.month} className="border-t">
-                    <td className="px-3.5 py-2.5 font-semibold text-muted-foreground">{r.month}</td>
-                    <td className="px-2 font-semibold">{fmt(r.payment)}</td>
-                    <td className="px-2">{fmt(r.principal)}</td>
-                    <td className="px-2 text-destructive">{fmt(r.interest)}</td>
-                    <td className="px-3.5 text-right font-semibold">{fmt(r.balance)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-          <div className="flex justify-between px-1 text-sm">
-            <span className="text-muted-foreground">{ui.totalInterest}</span>
-            <span className="font-bold text-destructive tabular-nums">{fmt(totalInterest)}</span>
-          </div>
-        </>
+      ) : d.done ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{ui.debtClosed}</p>
+      ) : (
+        <SchedulePlanner debtId={d.id} base={terms} todayIso={isoDate(today())} />
       )}
     </>
   );
