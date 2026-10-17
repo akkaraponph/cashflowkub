@@ -83,3 +83,19 @@ describe('POST /api/v1/transactions/batch', () => {
     expect((await post([])).status).toBe(400);
   });
 });
+
+describe('decimal amounts', () => {
+  it('stores satang and returns numbers', async () => {
+    const { status, json } = await call(collection.POST, { method: 'POST', body: { name: 'Coffee', cat: 'food', acct: 'Cash Wallet', amount: -45.5 } });
+    expect(status).toBe(201);
+    expect(json.amount).toBe(-45.5);
+    expect((await call(item.GET, { params: { id: String(json.id) } })).json.amount).toBe(-45.5);
+    const debt = await call(collection.POST, { method: 'POST', body: { name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1358.25, interest: 120.75, fee: 15.1 } });
+    expect(debt.json).toMatchObject({ amount: -1358.25, interest: 120.75, fee: 15.1 });
+  });
+  it('rejects more than two decimal places', async () => {
+    const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'X', cat: 'food', acct: 'Cash', ...body } });
+    expect((await post({ amount: -12.345 })).status).toBe(400);
+    expect((await post({ amount: -1, interest: 0.001 })).status).toBe(400);
+  });
+});

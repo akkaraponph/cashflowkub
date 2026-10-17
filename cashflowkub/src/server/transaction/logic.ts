@@ -38,7 +38,18 @@ export function groupLabel(date: Date, today: Date): string {
   return `${MONTHS[date.getUTCMonth()]} ${date.getUTCDate()}`;
 }
 
-export function toTxView(t: Transaction, today: Date): TxView {
+/** A Transaction row with money fields as plain numbers (Prisma returns Decimal). */
+export type TxPlain = Omit<Transaction, 'amount' | 'interest' | 'fee'> & { amount: number; interest: number; fee: number };
+
+export function toPlain(t: Transaction): TxPlain {
+  return { ...t, amount: t.amount.toNumber(), interest: t.interest.toNumber(), fee: t.fee.toNumber() };
+}
+
+export function hasAtMostTwoDecimals(n: number): boolean {
+  return Math.abs(n * 100 - Math.round(n * 100)) < 1e-6;
+}
+
+export function toTxView(t: TxPlain, today: Date): TxView {
   return {
     id: t.id, name: t.name, cat: t.cat, acct: t.acct, amount: t.amount, note: t.note,
     interest: t.interest, fee: t.fee, goal: t.goal, isoDate: t.date.toISOString().slice(0, 10),

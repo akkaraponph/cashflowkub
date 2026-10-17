@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatLongDate, groupLabel, parseFlexDate, parseTxFilter, toTxView } from '@/server/transaction/logic';
+import { formatLongDate, groupLabel, hasAtMostTwoDecimals, parseFlexDate, parseTxFilter, toTxView } from '@/server/transaction/logic';
 import { HttpError } from '@/server/errors';
 import { tx } from '../fixtures';
 
@@ -49,5 +49,12 @@ describe('parseTxFilter', () => {
   });
   it('rejects an invalid date with a 400', () => {
     expect(() => parseTxFilter(new URLSearchParams('to=2026-13-01'))).toThrow(HttpError);
+  });
+});
+
+describe('hasAtMostTwoDecimals', () => {
+  it('accepts whole baht and satang, rejects finer', () => {
+    expect([120, 120.5, 0.1, 19.99, -0.07].every(hasAtMostTwoDecimals)).toBe(true);
+    expect(hasAtMostTwoDecimals(12.345)).toBe(false);
   });
 });
