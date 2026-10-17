@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/[resource]/route';
 import * as item from '@/app/api/v1/[resource]/[id]/route';
 import { GET as health } from '@/app/api/health/route';
+import * as transactions from '@/app/api/v1/transactions/route';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -58,5 +59,38 @@ describe('/api/v1/:resource/:id', () => {
 describe('GET /api/health', () => {
   it('reports ok', async () => {
     expect((await call(health)).json).toEqual({ status: 'ok', service: 'cashflowkub' });
+  });
+});
+
+describe('renaming categories', () => {
+  const patch = (resource: string, id: string, body: unknown) => call(item.PATCH, { method: 'PATCH', params: { resource, id }, body });
+
+  it('renames an expense category without touching its key', async () => {
+    const { status, json } = await patch('categories', '1', { label: 'Groceries', th: 'ของชำ' });
+    expect(status).toBe(200);
+    expect(json).toMatchObject({ key: 'food', label: 'Groceries', th: 'ของชำ' });
+  });
+  it('clears only the Thai name when asked', async () => {
+    const { json } = await patch('categories', '1', { th: '' });
+    expect(json).toMatchObject({ th: '', label: 'Food & Dining' });
+  });
+  it('rejects a blank English name', async () => {
+    const r = await patch('categories', '1', { label: '   ' });
+    expect(r.status).toBe(400);
+    expect(r.json.code).toBe('validation');
+  });
+  it('renames an income source', async () => {
+    const { status, json } = await patch('income-categories', '1', { name: 'Day job', th: '' });
+    expect(status).toBe(200);
+    expect(json).toMatchObject({ name: 'Day job', th: '' });
+  });
+  it('leaves transactions and budgets that reference the key untouched', async () => {
+    const before = (await call(transactions.GET, { url: '/api/v1/transactions' })).json.data.filter((t: { cat: string }) => t.cat === 'food');
+    await patch('categories', '1', { label: 'Groceries' });
+    const after = (await call(transactions.GET, { url: '/api/v1/transactions' })).json.data.filter((t: { cat: string }) => t.cat === 'food');
+    expect(before.length).toBeGreaterThan(0);
+    expect(after.map((t: { id: number; name: string }) => [t.id, t.name])).toEqual(before.map((t: { id: number; name: string }) => [t.id, t.name]));
+    const budgets = (await call(collection.GET, { params: { resource: 'budgets' } })).json.data;
+    expect(budgets.some((b: { cat: string }) => b.cat === 'food')).toBe(true);
   });
 });
