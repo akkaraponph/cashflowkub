@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
-import { apiFetch } from '@/lib/api-client';
+import { ApiError, apiFetch } from '@/lib/api-client';
 import { errorText } from '@/lib/api-error';
 import type { PlanItem } from '@/generated/prisma/client';
 import { emptyPlanForm, formFromPlanItem, planItemBody, type PlanItemForm, type PlanType } from './plan-form';
@@ -41,11 +41,16 @@ export function PlanItemDialog({ type, month, item }: { type: PlanType; month: s
       } catch (err) {
         setConfirmDelete(false);
         toast.error(errorText(err, ui));
+        // The item is already gone (deleted elsewhere): drop the stale row instead of leaving it on screen.
+        if (err instanceof ApiError && err.code === 'notFound') {
+          setOpen(false);
+          router.refresh();
+        }
       }
     });
 
   const save = () => {
-    if (!body) return;
+    if (!body || pending) return;
     run(async () => {
       if (item) await apiFetch(`/plan/${item.id}`, { method: 'PATCH', body });
       else await apiFetch('/plan', { method: 'POST', body });
