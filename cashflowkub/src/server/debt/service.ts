@@ -9,6 +9,7 @@ import { toDebtView, type DebtView } from '@/server/views';
 import { buildSchedule, type ScheduleView } from './logic';
 import { isoDate } from './cycle';
 import { splitPayment } from './payment';
+import { deriveFixedApr } from './terms';
 
 export const DEBT_KINDS = ['paylater', 'cashloan', 'bankloan', 'creditcard', 'personal'] as const;
 export type DebtKind = (typeof DEBT_KINDS)[number];
@@ -23,7 +24,7 @@ const debtFields = z.object({
   original: z.number().int().positive(),
   openingPaid: money,
   apr: z.number().min(0).max(200).optional(),
-  calc: z.enum(['flat', 'reducing']).optional(),
+  calc: z.enum(['flat', 'reducing', 'fixed']).optional(),
   monthly: money,
   fixedPayment: money,
   termMonths: z.number().int().min(0).max(600).optional(),
@@ -137,11 +138,24 @@ export async function deletePayment(debtId: number, paymentId: number): Promise<
   });
 }
 
+/** For calc 'fixed' the rate is derived from the instalment x term, never taken from the client. */
+function withFixedApr<T extends { original: number; calc: string; fixedPayment: number; termMonths: number }>(merged: T): { apr: number } | Record<string, never> {
+  if (merged.calc !== 'fixed') return {};
+  if (merged.fixedPayment <= 0 || merged.termMonths <= 0) {
+    throw badRequest('a fixed instalment needs fixedPayment and termMonths', 'fixedTermsRequired');
+  }
+  if (merged.fixedPayment * merged.termMonths < merged.original) {
+    throw badRequest('fixedPayment x termMonths cannot be less than original', 'fixedTotalBelowOriginal');
+  }
+  return { apr: deriveFixedApr(merged.original, merged.fixedPayment, merged.termMonths) };
+}
+
 export async function createDebt(body: unknown): Promise<DebtView> {
   const input = parseBody(debtFields, body);
   const openingPaid = input.openingPaid ?? 0;
   if (openingPaid > input.original) throw badRequest('openingPaid cannot exceed original', 'openingPaidExceeds');
-  const row = await prisma.debt.create({ data: { ...input, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
+  const fixed = withFixedApr({ original: input.original, calc: input.calc ?? 'reducing', fixedPayment: input.fixedPayment ?? 0, termMonths: input.termMonths ?? 0 });
+  const row = await prisma.debt.create({ data: { ...input, ...fixed, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
   return toDebtView(row, today());
 }
 
@@ -155,7 +169,13 @@ export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
     if (openingPaid > original) throw badRequest('openingPaid cannot exceed original', 'openingPaidExceeds');
     const ledger = current.payments.reduce((sum, p) => sum + p.principal, 0);
     if (original < openingPaid + ledger) throw badRequest('original cannot be below principal already repaid', 'originalBelowRepaid');
-    await tx.debt.update({ where: { id }, data: input });
+    const fixed = withFixedApr({
+      original,
+      calc: input.calc ?? current.calc,
+      fixedPayment: input.fixedPayment ?? current.fixedPayment,
+      termMonths: input.termMonths ?? current.termMonths,
+    });
+    await tx.debt.update({ where: { id }, data: { ...input, ...fixed } });
     return toDebtView(await syncPaid(tx, id), today());
   });
 }

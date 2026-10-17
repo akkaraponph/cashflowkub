@@ -76,3 +76,34 @@ describe('error codes', () => {
     expect(r.json.code).toBe('invalidDate');
   });
 });
+
+describe('fixed instalment debts', () => {
+  it('POST derives apr and ignores any sent apr', async () => {
+    const r = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10, apr: 99 } });
+    expect(r.status).toBe(201);
+    expect(r.json).toMatchObject({ calc: 'fixed', installment: 1200, monthsLeft: 10, totalInterestLeft: 2000 });
+    expect(r.json.apr).toBeCloseTo(24, 10);
+  });
+  it('POST stores apr 0 for interest-free instalments', async () => {
+    const r = await call(collection.POST, { method: 'POST', body: { name: 'Mum', original: 6000, calc: 'fixed', fixedPayment: 1000, termMonths: 6 } });
+    expect(r.json).toMatchObject({ apr: 0, totalInterestLeft: 0 });
+  });
+  it('rejects missing or too-small fixed terms', async () => {
+    const missing = await call(collection.POST, { method: 'POST', body: { name: 'X', original: 1000, calc: 'fixed', fixedPayment: 100 } });
+    expect([missing.status, missing.json.code]).toEqual([400, 'fixedTermsRequired']);
+    const short = await call(collection.POST, { method: 'POST', body: { name: 'X', original: 1000, calc: 'fixed', fixedPayment: 99, termMonths: 10 } });
+    expect([short.status, short.json.code]).toEqual([400, 'fixedTotalBelowOriginal']);
+  });
+  it('PATCH re-derives apr from merged terms', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
+    const renamed = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { name: 'iPhone 17' } });
+    expect(renamed.json.apr).toBeCloseTo(24, 10);
+    const repriced = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { fixedPayment: 1100 } });
+    expect(repriced.json.apr).toBeCloseTo(12, 10);
+  });
+  it('switching away from fixed keeps the sent apr', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { calc: 'reducing', apr: 12, fixedPayment: 0 } });
+    expect(r.json).toMatchObject({ calc: 'reducing', apr: 12 });
+  });
+});

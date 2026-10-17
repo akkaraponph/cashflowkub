@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import * as collection from '@/app/api/v1/debts/route';
 import * as payments from '@/app/api/v1/debts/[id]/payments/route';
 import { DELETE as removePayment } from '@/app/api/v1/debts/[id]/payments/[paymentId]/route';
 import { GET as getDebt } from '@/app/api/v1/debts/[id]/route';
@@ -116,5 +117,13 @@ describe('DELETE /api/v1/debts/:id', () => {
     expect((await call(item.DELETE, { method: 'DELETE', params: { id: '16' } })).status).toBeLessThan(300);
     expect(await prisma.debtPayment.count({ where: { debtId: 16 } })).toBe(0);
     expect(await prisma.debt.count({ where: { id: 16 } })).toBe(0);
+  });
+});
+
+describe('fixed-instalment payments', () => {
+  it('splits a fixed-instalment payment into fixed interest and principal', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1000, termMonths: 12 } });
+    const r = await post(String(d.id), { amount: 1000 });
+    expect(r.json.payment).toMatchObject({ interest: 166, principal: 834, fee: 0 });
   });
 });
