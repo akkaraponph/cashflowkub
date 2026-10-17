@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
+import { errorText } from '@/lib/api-error';
 import { fmt } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { fill, localized } from '@/lib/i18n';
@@ -89,7 +90,7 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
         reset();
         router.refresh();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : String(err));
+        toast.error(errorText(err, ui));
       }
     });
 

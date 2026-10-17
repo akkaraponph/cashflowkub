@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/debts/route';
 import * as item from '@/app/api/v1/debts/[id]/route';
 import { GET as schedule } from '@/app/api/v1/debts/[id]/schedule/route';
+import * as payments from '@/app/api/v1/debts/[id]/payments/route';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -46,5 +47,32 @@ describe('debt create / update / delete', () => {
   });
   it('rejects an unknown calc method', async () => {
     expect((await call(collection.POST, { method: 'POST', body: { name: 'X', original: 1, calc: 'magic' } })).status).toBe(400);
+  });
+});
+
+describe('error codes', () => {
+  it('404 carries notFound', async () => {
+    expect((await call(item.GET, { params: { id: '9999' } })).json).toMatchObject({ code: 'notFound' });
+  });
+  it('zod failures carry validation', async () => {
+    expect((await call(collection.POST, { method: 'POST', body: {} })).json.code).toBe('validation');
+  });
+  it('openingPaid above original carries openingPaidExceeds and keeps the English text', async () => {
+    const r = await call(collection.POST, { method: 'POST', body: { name: 'X', original: 100, openingPaid: 101 } });
+    expect(r.json).toEqual({ error: 'openingPaid cannot exceed original', code: 'openingPaidExceeds' });
+    const patch = await call(item.PATCH, { method: 'PATCH', params: { id: '2' }, body: { openingPaid: 999999 } });
+    expect(patch.json.code).toBe('openingPaidExceeds');
+  });
+  it('original below repaid principal carries originalBelowRepaid', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'Loan', original: 1000 } });
+    const id = String(d.id);
+    await call(payments.POST, { method: 'POST', params: { id }, body: { amount: 500 } });
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id }, body: { original: 300 } });
+    expect(r.status).toBe(400);
+    expect(r.json.code).toBe('originalBelowRepaid');
+  });
+  it('a bad payment date carries invalidDate', async () => {
+    const r = await call(payments.POST, { method: 'POST', params: { id: '2' }, body: { amount: 100, date: 'garbage' } });
+    expect(r.json.code).toBe('invalidDate');
   });
 });
