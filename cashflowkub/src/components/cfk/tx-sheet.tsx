@@ -173,7 +173,6 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
     <div className="hidden items-start gap-4 md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]">
       <TxSummary totals={summarize(saved, categories)} />
       <div className="grid gap-1.5">
-        <p className="px-0.5 text-[11px] text-muted-foreground">{s.hint}</p>
         <div className="overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10">
           <table ref={tableRef} className="w-full min-w-[60rem] border-collapse text-xs" onPaste={onPaste} onKeyDown={onKeyDown}>
             <thead>

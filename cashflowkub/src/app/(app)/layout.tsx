@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
           <AppHeader year={year} categories={categories} accounts={accounts} />
-          <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-4 md:p-6">{children}</main>
+          <main className="mx-auto w-full max-w-5xl flex-1 space-y-4 p-4 has-[[data-wide]]:max-w-none md:p-6">{children}</main>
         </div>
       </div>
     </I18nProvider>

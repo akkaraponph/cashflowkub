@@ -43,7 +43,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
 
   const nav = 'flex size-9 items-center justify-center rounded-lg border bg-secondary hover:opacity-80';
   return (
-    <>
+    <div data-wide className="space-y-4">
       <PageTitle title={ui.nav.transactions}>
         <Link href={`/transactions?month=${shiftMonth(month, -1)}`} aria-label={ui.sheet.prevMonth} className={nav}><Icon name="chevron-left" size={18} /></Link>
         <span className="hidden min-w-32 text-center text-sm font-semibold sm:inline">{monthLabel}</span>
@@ -76,6 +76,6 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
           </section>
         ))}
       </div>
-    </>
+    </div>
   );
 }
