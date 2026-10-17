@@ -1,3 +1,5 @@
+import type { Lang } from '@/lib/i18n';
+
 // Money + number formatting, done by hand so output is identical on server and client.
 
 function group(n: number): string {
@@ -34,4 +36,19 @@ export function pct(ratio: number): string {
 /** Clamp a ratio into 0..1 for progress bars. */
 export function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
+}
+
+const MONTHS: Record<Lang, string[]> = {
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  th: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'],
+};
+
+/** "2026-06-28" → "28 มิ.ย. 2026" / "28 Jun 2026" (Gregorian year). Anything unparseable is returned as given. */
+export function formatDay(iso: string, lang: Lang): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const month = Number(m[2]);
+  const day = Number(m[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return iso;
+  return `${day} ${MONTHS[lang][month - 1]} ${m[1]}`;
 }

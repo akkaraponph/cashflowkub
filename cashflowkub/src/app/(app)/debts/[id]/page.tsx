@@ -4,7 +4,7 @@ import { PageTitle } from '@/components/cfk/page-title';
 import { Progress } from '@/components/cfk/progress';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
-import { fmt, pct } from '@/lib/format';
+import { fmt, formatDay, pct } from '@/lib/format';
 import { localized, pickLabel } from '@/lib/i18n';
 import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
@@ -81,7 +81,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             <DueBadge due={due} />
           </div>
           <div className="flex items-end justify-between">
-            <span className="text-sm text-muted-foreground tabular-nums">{due.dueDate}</span>
+            <span className="text-sm text-muted-foreground tabular-nums">{formatDay(due.dueDate, lang)}</span>
             <span className="text-xl font-extrabold tabular-nums">{fmt(due.state === 'paid' ? d.installment : due.amountDue - due.paidThisCycle)}</span>
           </div>
           {due.lateFee > 0 ? (
@@ -153,7 +153,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             {payments.map((p) => (
               <div key={p.id} className="flex items-center gap-3 border-t py-2.5">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold tabular-nums">{p.date}</p>
+                  <p className="text-sm font-semibold tabular-nums">{formatDay(p.date, lang)}</p>
                   <p className="truncate text-xs text-muted-foreground tabular-nums">
                     {ui.principal} {fmt(p.principal)} · {ui.interest} {fmt(p.interest)}{p.fee ? ` · ${ui.fee} ${fmt(p.fee)}` : ''}{p.note ? ` · ${p.note}` : ''}
                   </p>
