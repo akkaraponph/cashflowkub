@@ -112,7 +112,7 @@ const en = {
   editGoal: 'Edit goal', goalIcon: 'Icon', monthlySaving: 'Save per month (฿)', goalByHint: 'e.g. Dec 2026 or Ongoing',
   confirmDeleteGoal: 'Click again to delete this goal', noGoals: 'No goals yet. Add one to start saving toward it.',
   errors: {
-    goalNameTaken: 'A goal with this name already exists.', goalInUse: 'This goal has transactions tagged to it, so it cannot be deleted. Change or delete them first.',
+    billNotInMonth: 'This bill is not due in that month.', goalNameTaken: 'A goal with this name already exists.', goalInUse: 'This goal has transactions tagged to it, so it cannot be deleted. Change or delete them first.',
     notFound: 'Not found', validation: 'Invalid data. Please check and try again.', openingPaidExceeds: 'Amount already repaid cannot exceed the debt amount.',
     originalBelowRepaid: 'The debt amount cannot be below the principal already repaid.', invalidDate: 'Invalid date format.',
     accountInUse: 'This account has transactions, so it cannot be deleted. Move or delete them first.', accountNameTaken: 'An account with this name already exists.',
@@ -295,7 +295,7 @@ const th: Dict = {
   editGoal: 'แก้ไขเป้าหมาย', goalIcon: 'ไอคอน', monthlySaving: 'ออมต่อเดือน (฿)', goalByHint: 'เช่น ธ.ค. 2569 หรือ ต่อเนื่อง',
   confirmDeleteGoal: 'กดอีกครั้งเพื่อลบเป้าหมายนี้', noGoals: 'ยังไม่มีเป้าหมาย เพิ่มเป้าหมายแรกได้เลย',
   errors: {
-    goalNameTaken: 'มีเป้าหมายชื่อนี้อยู่แล้ว', goalInUse: 'เป้าหมายนี้มีธุรกรรมผูกอยู่ จึงลบไม่ได้ กรุณาแก้ไขหรือลบธุรกรรมเหล่านั้นก่อน',
+    billNotInMonth: 'บิลนี้ไม่มีกำหนดชำระในเดือนนั้น', goalNameTaken: 'มีเป้าหมายชื่อนี้อยู่แล้ว', goalInUse: 'เป้าหมายนี้มีธุรกรรมผูกอยู่ จึงลบไม่ได้ กรุณาแก้ไขหรือลบธุรกรรมเหล่านั้นก่อน',
     notFound: 'ไม่พบรายการนี้', validation: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง', openingPaidExceeds: 'ยอดที่ชำระแล้วต้องไม่เกินวงเงินหนี้',
     originalBelowRepaid: 'วงเงินหนี้ต้องไม่ต่ำกว่าเงินต้นที่ชำระไปแล้ว', invalidDate: 'รูปแบบวันที่ไม่ถูกต้อง',
     accountInUse: 'บัญชีนี้มีธุรกรรมอยู่ จึงลบไม่ได้ ย้ายหรือลบธุรกรรมก่อน', accountNameTaken: 'มีบัญชีชื่อนี้อยู่แล้ว',

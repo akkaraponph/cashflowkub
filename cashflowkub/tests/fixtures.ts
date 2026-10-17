@@ -2,7 +2,7 @@
 import type {
   Asset, AssetSnapshot, Bill, Budget, Category, Debt, DebtPayment, Goal, MonthlyCashflow, NetWorthHistory, PlanItem, Prisma, Transaction,
 } from '@/generated/prisma/client';
-import { toDebtView, type DebtView } from '@/server/views';
+import { toDebtView, type BillView, type DebtView } from '@/server/views';
 
 export const debt = (o: Partial<Debt> = {}): Debt => ({
   id: 1, name: 'Loan', th: 'เงินกู้', icon: 'landmark', tint: 'pdf', kind: 'personal', lender: '', original: 10000, openingPaid: 0, paid: 0,
@@ -16,6 +16,9 @@ export const debtView = (o: Partial<Debt> = {}, payments: DebtPayment[] = []): D
   toDebtView({ ...debt(o), payments }, new Date('2026-06-18T00:00:00Z'));
 export const bill = (o: Partial<Bill> = {}): Bill => ({
   id: 1, name: 'Bill', th: 'บิล', icon: 'receipt', tint: 'pdf', amount: 100, dueDay: 20, paid: false, freq: 'monthly', cat: 'bills', kind: 'bill', startMonth: '2026-06', endMonth: '', everyMonths: 1, sort: 1, ...o,
+});
+export const billView = (o: Partial<BillView> = {}): BillView => ({
+  ...bill(), month: '2026-06', dueDate: '2026-06-20', status: 'upcoming', daysDiff: 2, ...o,
 });
 export const tx = (o: Partial<Transaction> = {}): Transaction => ({
   id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', interest: 0, fee: 0, goal: '', ...o,

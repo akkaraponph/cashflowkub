@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
-import { todayDay } from '@/lib/clock';
+import { CURRENT_MONTH } from '@/lib/clock';
+import { listBills } from '@/server/bill/service';
 import { listActiveDebtViews } from '@/server/debt/service';
 import { buildDashboard, buildNetWorth, buildReports, type DashboardView, type NetWorthView, type ReportsView } from './logic';
 
@@ -15,11 +16,11 @@ export async function getDashboard(): Promise<DashboardView> {
     budgetsBySpend(),
     prisma.category.findMany(),
     cashflow(),
-    prisma.bill.findMany({ where: { paid: false }, orderBy: [{ dueDay: 'asc' }, { sort: 'asc' }] }),
+    listBills({ month: CURRENT_MONTH, status: 'unpaid' }),
     prisma.goal.findMany({ orderBy: { sort: 'asc' } }),
     history(),
   ]);
-  return buildDashboard({ assets, activeDebts, budgets, categories, cashflow: flow, unpaidBills, goals, netWorthHist, todayDay: todayDay() });
+  return buildDashboard({ assets, activeDebts, budgets, categories, cashflow: flow, unpaidBills, goals, netWorthHist });
 }
 
 export async function getNetWorth(): Promise<NetWorthView> {

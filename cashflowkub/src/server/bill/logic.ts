@@ -1,6 +1,6 @@
-// Pure bill logic: month summary and the paid-flag transition.
-import type { Bill, DaySpend } from '@/generated/prisma/client';
-import { toBillView, type BillView } from '@/server/views';
+// Pure bill logic: the summary of one month's bills.
+import type { DaySpend } from '@/generated/prisma/client';
+import type { BillView } from '@/server/views';
 
 export interface BillSummary {
   total: number;
@@ -16,8 +16,8 @@ export interface BillSummary {
   subscriptionsTotal: number;
 }
 
-/** Bills must be ordered by due day; the first unpaid one is "next". */
-export function buildBillSummary(bills: Bill[], daySpend: DaySpend[], todayDay: number, month: string): BillSummary {
+/** `bills` are the views for `month`, ordered by due day; the first unpaid one is "next". */
+export function buildBillSummary(bills: BillView[], daySpend: DaySpend[], todayDay: number, month: string): BillSummary {
   let total = 0;
   let paid = 0;
   let nextBill: BillView | null = null;
@@ -30,12 +30,7 @@ export function buildBillSummary(bills: Bill[], daySpend: DaySpend[], todayDay: 
       subscriptionsTotal += b.amount;
     }
     if (b.paid) paid += b.amount;
-    else nextBill ??= toBillView(b, todayDay);
+    else nextBill ??= b;
   }
   return { total, paid, remaining: total - paid, count: bills.length, month, today: todayDay, nextBill, daySpend, subscriptionsCount, subscriptionsTotal };
-}
-
-/** undefined toggles the flag; a boolean sets it. */
-export function applyPaid(b: Bill, paid: boolean | undefined): Bill {
-  return { ...b, paid: paid ?? !b.paid };
 }

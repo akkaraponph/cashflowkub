@@ -26,7 +26,7 @@ export default async function BillsPage({ searchParams }: { searchParams: Search
   const view = firstParam(sp, 'view') === 'calendar' ? 'calendar' : 'list';
   const rawKind = firstParam(sp, 'kind');
   const kind = rawKind === 'bill' || rawKind === 'subscription' ? rawKind : 'all';
-  const [summary, bills] = await Promise.all([getBillSummary(), listBills(undefined, kind === 'all' ? undefined : kind)]);
+  const [summary, bills] = await Promise.all([getBillSummary(), listBills({ kind: kind === 'all' ? undefined : kind })]);
   const href = (k: string, v: string) => `/bills?view=${v}${k === 'all' ? '' : `&kind=${k}`}`;
 
   return (

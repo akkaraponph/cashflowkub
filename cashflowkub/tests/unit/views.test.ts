@@ -22,15 +22,31 @@ describe('toDebtView', () => {
 });
 
 describe('toBillView', () => {
+  const today = new Date(Date.UTC(2026, 5, 18));
+  const view = (o: Parameters<typeof bill>[0], month = '2026-06', paid = false) => toBillView(bill(o), { month, paid, today });
+
   it.each([
-    [{ paid: true, dueDay: 1 }, 'paid', -17],
-    [{ dueDay: 16 }, 'overdue', -2],
-    [{ dueDay: 18 }, 'dueToday', 0],
-    [{ dueDay: 23 }, 'dueSoon', 5],
-    [{ dueDay: 24 }, 'upcoming', 6],
-  ] as const)('%o -> %s', (o, status, diff) => {
-    const v = toBillView(bill(o), 18);
-    expect(v.status).toBe(status);
-    expect(v.daysDiff).toBe(diff);
+    [{ dueDay: 1 }, true, 'paid', -17],
+    [{ dueDay: 16 }, false, 'overdue', -2],
+    [{ dueDay: 18 }, false, 'dueToday', 0],
+    [{ dueDay: 23 }, false, 'dueSoon', 5],
+    [{ dueDay: 24 }, false, 'upcoming', 6],
+  ] as const)('%o paid=%s -> %s', (o, paid, status, diff) => {
+    const v = view(o, '2026-06', paid);
+    expect(v).toMatchObject({ status, daysDiff: diff, paid, month: '2026-06' });
+  });
+  it('carries the due date for the viewed month', () => {
+    expect(view({ dueDay: 16 }).dueDate).toBe('2026-06-16');
+  });
+  it('an unpaid bill in a past month is overdue by the whole gap', () => {
+    const v = view({ dueDay: 1 }, '2026-05');
+    expect(v.status).toBe('overdue');
+    expect(v.daysDiff).toBe(-48);
+  });
+  it('a bill due in a later month is upcoming', () => {
+    expect(view({ dueDay: 1 }, '2026-08').status).toBe('upcoming');
+  });
+  it('a due day past the end of the month lands on the last day', () => {
+    expect(view({ dueDay: 31 }, '2027-02').dueDate).toBe('2027-02-28');
   });
 });
