@@ -5,7 +5,7 @@ import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { fmt } from '@/lib/format';
-import { localized, type Dict, type Lang } from '@/lib/i18n';
+import { localized, pickLabel, type Dict, type Lang } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import type { SetupGoalRow } from '@/server/setup/logic';
@@ -133,7 +133,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
       ) : null}
       {tab === 'accounts' ? (
         <Section title={ui.bankAccts} sub={ui.bankAcctsSub}>
-          {s.accounts.map((a) => <ListRow key={a.id} icon={a.icon} tint={a.tint} title={a.name} subtitle={a.sub} right={fmt(a.balance)} rightSub={<ToneBadge label={a.kind} />} className="border-t" />)}
+          {s.accounts.map((a) => <ListRow key={a.id} icon={a.icon} tint={a.tint} title={a.name} subtitle={a.sub} right={fmt(a.balance)} rightSub={<ToneBadge label={pickLabel(ui.accountKind, a.kind)} />} className="border-t" />)}
         </Section>
       ) : null}
       {tab === 'debts' ? (

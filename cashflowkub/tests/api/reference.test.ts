@@ -41,10 +41,10 @@ describe('POST /api/v1/:resource', () => {
 
 describe('/api/v1/:resource/:id', () => {
   it('gets, patches (keeping omitted fields) and deletes', async () => {
-    const params = { resource: 'accounts', id: '3' };
-    expect((await call(item.GET, { params })).json).toMatchObject({ name: 'Cash Wallet', balance: 3200 });
-    const patched = await call(item.PATCH, { method: 'PATCH', params, body: { balance: 0 } });
-    expect(patched.json).toMatchObject({ name: 'Cash Wallet', balance: 0 });
+    // Cash Wallet has transactions, so it can be patched but not deleted (see tests/api/accounts.test.ts); delete an unused account instead.
+    expect((await call(item.GET, { params: { resource: 'accounts', id: '3' } })).json).toMatchObject({ name: 'Cash Wallet', balance: 3200 });
+    expect((await call(item.PATCH, { method: 'PATCH', params: { resource: 'accounts', id: '3' }, body: { balance: 0 } })).json).toMatchObject({ name: 'Cash Wallet', balance: 0 });
+    const params = { resource: 'accounts', id: String((await call(collection.POST, { method: 'POST', params: { resource: 'accounts' }, body: { name: 'Temp' } })).json.id) };
     expect((await call(item.DELETE, { method: 'DELETE', params })).status).toBe(204);
     expect((await call(item.GET, { params })).status).toBe(404);
   });
