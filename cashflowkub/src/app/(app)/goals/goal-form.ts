@@ -1,5 +1,6 @@
 // Pure form model for the add/edit goal dialog.
 import { localized, type Lang } from '@/lib/i18n';
+import { parseMoney } from '@/lib/money-input';
 
 export const GOAL_ICONS = ['target', 'shield', 'plane', 'house', 'car', 'smartphone', 'graduation-cap', 'gift', 'heart-pulse', 'piggy-bank'] as const;
 
@@ -19,12 +20,6 @@ export function formFromGoal(g: { name: string; th: string; icon: string; target
   return { name: localized(lang, g.name, g.th), icon: g.icon, target: String(g.target), saved: String(g.saved), monthly: String(g.monthly), by: g.by };
 }
 
-/** Blank counts as `blank`; anything unreadable is NaN. */
-function money(raw: string, blank: number): number {
-  const s = raw.replace(/[,฿\s]/g, '');
-  return s === '' ? blank : Math.round(Number(s));
-}
-
 /**
  * POST / PATCH body, or null when the form is invalid (blank name, target not above 0, negative or unreadable saved/monthly).
  * One name is stored for both languages. On edit (`original` given) an unchanged name is left out so the other language's name
@@ -32,9 +27,9 @@ function money(raw: string, blank: number): number {
  */
 export function goalBody(f: GoalForm, original?: GoalForm): Record<string, unknown> | null {
   const name = f.name.trim();
-  const target = money(f.target, NaN);
-  const saved = money(f.saved, 0);
-  const monthly = money(f.monthly, 0);
+  const target = parseMoney(f.target, NaN);
+  const saved = parseMoney(f.saved, 0);
+  const monthly = parseMoney(f.monthly, 0);
   if (name === '' || !(target > 0) || !(saved >= 0) || !(monthly >= 0)) return null;
   const unchanged = original !== undefined && name === original.name.trim();
   return { ...(unchanged ? {} : { name, th: name }), icon: f.icon, target, saved, monthly, by: f.by.trim() };
