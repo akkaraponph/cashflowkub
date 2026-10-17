@@ -1,4 +1,5 @@
 // Pure form model shared by the add and edit debt dialogs.
+import { localized, type Lang } from '@/lib/i18n';
 import { toApr } from '@/server/debt/terms';
 import type { DebtView } from '@/server/views';
 
@@ -17,7 +18,7 @@ export const PRESETS: Record<Kind, { icon: string; tint: string; calc: Calc; uni
 };
 
 export type TextField =
-  | 'name' | 'th' | 'lender' | 'original' | 'openingPaid' | 'rate' | 'termMonths'
+  | 'name' | 'lender' | 'original' | 'openingPaid' | 'rate' | 'termMonths'
   | 'fixedPayment' | 'monthly' | 'dueDay' | 'graceDays' | 'lateFee' | 'penaltyApr';
 
 export interface DebtForm {
@@ -34,7 +35,7 @@ export const num = (v: string): number => Math.max(0, Number(v) || 0);
 export const emptyForm: DebtForm = {
   kind: 'paylater', unit: 'month', calc: 'flat', revolving: true,
   fields: {
-    name: '', th: '', lender: 'Shopee', original: '', openingPaid: '0', rate: '0', termMonths: '0',
+    name: '', lender: 'Shopee', original: '', openingPaid: '0', rate: '0', termMonths: '0',
     fixedPayment: '0', monthly: '0', dueDay: '1', graceDays: '0', lateFee: '0', penaltyApr: '0',
   },
 };
@@ -42,14 +43,14 @@ export const emptyForm: DebtForm = {
 const isKind = (v: string): v is Kind => (KINDS as readonly string[]).includes(v);
 
 /** Edit form for an existing debt. The stored rate is annual, so the form shows it per year. */
-export function formFromDebt(d: DebtView): DebtForm {
+export function formFromDebt(d: DebtView, lang: Lang): DebtForm {
   return {
     kind: isKind(d.kind) ? d.kind : 'personal',
     unit: 'year',
     calc: d.calc === 'flat' ? 'flat' : 'reducing',
     revolving: d.revolving,
     fields: {
-      name: d.name, th: d.th, lender: d.lender, original: String(d.original), openingPaid: String(d.openingPaid), rate: String(d.apr),
+      name: localized(lang, d.name, d.th), lender: d.lender, original: String(d.original), openingPaid: String(d.openingPaid), rate: String(d.apr),
       termMonths: String(d.termMonths), fixedPayment: String(d.fixedPayment), monthly: String(d.monthly), dueDay: String(d.dueDay),
       graceDays: String(d.graceDays), lateFee: String(d.lateFee), penaltyApr: String(d.penaltyApr),
     },
@@ -61,7 +62,7 @@ export function formToBody(f: DebtForm, mode: 'add' | 'edit' = 'add'): Record<st
   const x = f.fields;
   const name = x.name.trim();
   return {
-    name, th: x.th.trim() || name, kind: f.kind, lender: x.lender.trim(),
+    name, th: name, kind: f.kind, lender: x.lender.trim(),
     ...(mode === 'add' ? { icon: PRESETS[f.kind].icon, tint: PRESETS[f.kind].tint } : {}),
     original: int(x.original), openingPaid: int(x.openingPaid), apr: toApr(num(x.rate), f.unit), calc: f.calc,
     termMonths: int(x.termMonths), fixedPayment: int(x.fixedPayment), monthly: int(x.monthly),

@@ -102,7 +102,7 @@ const en = {
   neverPaysOff: 'The instalment does not cover the interest, so this debt will never be paid off. Pay more each month.',
   avgRate: 'Avg rate', paidSoFar: 'Paid so far', planVsActual: 'Plan vs actual', actual: 'Actual', monthsLbl: 'Months',
   whatIf: 'What if…', targetPayoff: 'Pay off in (months)', needsPerMonth: 'Needs {amount}/mo', reset: 'Reset', applyToDebt: 'Apply to debt',
-  savedOk: 'Saved', interestDelta: 'vs current', debtClosed: 'This debt is paid off', editDebt: 'Edit debt', close: 'Close', editName: 'Edit name', nameEn: 'English name', nameTh: 'Thai name',
+  savedOk: 'Saved', interestDelta: 'vs current', debtClosed: 'This debt is paid off', editDebt: 'Edit debt', close: 'Close', editName: 'Edit name', nameLbl: 'Name',
   errors: {
     notFound: 'Not found', validation: 'Invalid data. Please check and try again.', openingPaidExceeds: 'Amount already repaid cannot exceed the debt amount.',
     originalBelowRepaid: 'The debt amount cannot be below the principal already repaid.', invalidDate: 'Invalid date format.',
@@ -275,7 +275,7 @@ const th: Dict = {
   neverPaysOff: 'ค่างวดไม่พอจ่ายดอกเบี้ย หนี้นี้จะไม่มีวันหมด ควรเพิ่มยอดชำระต่อเดือน',
   avgRate: 'ดอกเบี้ยเฉลี่ย', paidSoFar: 'ชำระแล้ว', planVsActual: 'แผน vs ปัจจุบัน', actual: 'ปัจจุบัน', monthsLbl: 'เดือน',
   whatIf: 'ถ้าหาก…', targetPayoff: 'ปิดยอดภายใน (เดือน)', needsPerMonth: 'ต้องผ่อน {amount}/เดือน', reset: 'รีเซ็ต', applyToDebt: 'ใช้กับหนี้นี้',
-  savedOk: 'บันทึกแล้ว', interestDelta: 'เทียบกับปัจจุบัน', debtClosed: 'ปิดยอดหนี้นี้แล้ว', editDebt: 'แก้ไขหนี้', close: 'ปิด', editName: 'แก้ไขชื่อ', nameEn: 'ชื่อ (อังกฤษ)', nameTh: 'ชื่อ (ไทย)',
+  savedOk: 'บันทึกแล้ว', interestDelta: 'เทียบกับปัจจุบัน', debtClosed: 'ปิดยอดหนี้นี้แล้ว', editDebt: 'แก้ไขหนี้', close: 'ปิด', editName: 'แก้ไขชื่อ', nameLbl: 'ชื่อ',
   errors: {
     notFound: 'ไม่พบรายการนี้', validation: 'ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง', openingPaidExceeds: 'ยอดที่ชำระแล้วต้องไม่เกินวงเงินหนี้',
     originalBelowRepaid: 'วงเงินหนี้ต้องไม่ต่ำกว่าเงินต้นที่ชำระไปแล้ว', invalidDate: 'รูปแบบวันที่ไม่ถูกต้อง',

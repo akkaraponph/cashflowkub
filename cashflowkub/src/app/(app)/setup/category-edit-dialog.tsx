@@ -13,18 +13,17 @@ import { apiFetch } from '@/lib/api-client';
 import { errorText } from '@/lib/api-error';
 import { labelPatch, labelPath, type LabelKind } from './label-form';
 
-export function CategoryEditDialog({ kind, id, en, th }: { kind: LabelKind; id: number; en: string; th: string }) {
+/** `name` is the label as currently displayed; saving stores it for both languages. */
+export function CategoryEditDialog({ kind, id, name: current }: { kind: LabelKind; id: number; name: string }) {
   const { ui } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [nameEn, setNameEn] = useState(en);
-  const [nameTh, setNameTh] = useState(th);
-  const body = labelPatch(kind, nameEn, nameTh);
+  const [name, setName] = useState(current);
+  const body = labelPatch(kind, name);
 
   const openDialog = () => {
-    setNameEn(en);
-    setNameTh(th);
+    setName(current);
     setOpen(true);
   };
 
@@ -60,12 +59,8 @@ export function CategoryEditDialog({ kind, id, en, th }: { kind: LabelKind; id: 
             <DialogTitle>{ui.editName}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-1.5">
-            <Label htmlFor={`cat-en-${kind}-${id}`}>{ui.nameEn}</Label>
-            <Input id={`cat-en-${kind}-${id}`} maxLength={60} value={nameEn} onChange={(e) => setNameEn(e.target.value)} onKeyDown={onEnter} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor={`cat-th-${kind}-${id}`}>{ui.nameTh}</Label>
-            <Input id={`cat-th-${kind}-${id}`} maxLength={60} value={nameTh} onChange={(e) => setNameTh(e.target.value)} onKeyDown={onEnter} />
+            <Label htmlFor={`cat-name-${kind}-${id}`}>{ui.nameLbl}</Label>
+            <Input id={`cat-name-${kind}-${id}`} maxLength={60} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={onEnter} />
           </div>
           <DialogFooter>
             <Button className="w-full" disabled={!body || pending} onClick={save}>{ui.save}</Button>
