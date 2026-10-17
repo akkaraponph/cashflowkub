@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { notFound } from '@/server/errors';
 import { assertAccountNameFree, assertAccountUnused, renameAccountInTransactions } from './accounts';
+import { assertGoalNameFree, assertGoalUnused, renameGoalInTransactions } from './goals';
 import { parseBody } from '@/server/validate';
 import { RESOURCE_SCHEMAS, type ResourceName, type ResourceRows } from './resources';
 
@@ -52,6 +53,12 @@ export async function createResource<K extends ResourceName>(name: K, body: unkn
       return tx.account.create({ data: data as never }) as Promise<ResourceRows[K]>;
     });
   }
+  if (name === 'goals') {
+    return prisma.$transaction(async (tx) => {
+      await assertGoalNameFree(tx, String(data.name));
+      return tx.goal.create({ data: data as never }) as Promise<ResourceRows[K]>;
+    });
+  }
   return delegate(name).create({ data });
 }
 
@@ -68,6 +75,17 @@ export async function updateResource<K extends ResourceName>(name: K, id: number
       return tx.account.update({ where: { id }, data: data as never }) as Promise<ResourceRows[K]>;
     });
   }
+  if (name === 'goals') {
+    return prisma.$transaction(async (tx) => {
+      const current = await tx.goal.findUnique({ where: { id } });
+      if (!current) throw notFound();
+      if (typeof data.name === 'string' && data.name !== current.name) {
+        await assertGoalNameFree(tx, data.name, id);
+        await renameGoalInTransactions(tx, current.name, data.name);
+      }
+      return tx.goal.update({ where: { id }, data: data as never }) as Promise<ResourceRows[K]>;
+    });
+  }
   return delegate(name).update({ where: { id }, data });
 }
 
@@ -78,6 +96,15 @@ export async function deleteResource(name: ResourceName, id: number): Promise<vo
       if (!current) throw notFound();
       await assertAccountUnused(tx, current.name);
       await tx.account.delete({ where: { id } });
+    });
+    return;
+  }
+  if (name === 'goals') {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.goal.findUnique({ where: { id } });
+      if (!current) throw notFound();
+      await assertGoalUnused(tx, current.name);
+      await tx.goal.delete({ where: { id } });
     });
     return;
   }
