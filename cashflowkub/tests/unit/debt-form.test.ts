@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyForm, formFromDebt, formToBody } from '@/app/(app)/debts/debt-form';
+import { emptyForm, fixedTotal, formFromDebt, formToBody, isFormValid, type DebtForm } from '@/app/(app)/debts/debt-form';
 import type { DebtView } from '@/server/views';
 
 const debt = {
@@ -35,5 +35,25 @@ describe('debt form', () => {
     expect(formFromDebt(debt, 'th').fields.name).toBe('กรุงไทยใจป้ำ');
     expect(formToBody(formFromDebt(debt, 'th'), 'edit')).toMatchObject({ name: 'กรุงไทยใจป้ำ', th: 'กรุงไทยใจป้ำ' });
     expect(formFromDebt({ ...debt, th: '' } as typeof debt, 'th').fields.name).toBe('KrungThai Personal');
+  });
+
+  const fixedForm = (o: Partial<DebtForm['fields']> = {}): DebtForm => ({
+    ...emptyForm, kind: 'personal', calc: 'fixed',
+    fields: { ...emptyForm.fields, name: 'iPhone', original: '10000', fixedPayment: '1200', termMonths: '10', ...o },
+  });
+  it('formFromDebt keeps the fixed method', () => {
+    expect(formFromDebt({ ...debt, calc: 'fixed' } as DebtView, 'en').calc).toBe('fixed');
+  });
+  it('formToBody for fixed sends apr 0 and no minimum payment', () => {
+    expect(formToBody(fixedForm({ rate: '30', monthly: '500' }))).toMatchObject({ calc: 'fixed', apr: 0, monthly: 0, fixedPayment: 1200, termMonths: 10 });
+  });
+  it('isFormValid requires instalment, months, and a total covering the principal', () => {
+    expect(isFormValid(fixedForm())).toBe(true);
+    expect(isFormValid(fixedForm({ termMonths: '0' }))).toBe(false);
+    expect(isFormValid(fixedForm({ fixedPayment: '0' }))).toBe(false);
+    expect(isFormValid(fixedForm({ fixedPayment: '999' }))).toBe(false);
+  });
+  it('fixedTotal multiplies instalment by months', () => {
+    expect(fixedTotal(fixedForm())).toBe(12000);
   });
 });

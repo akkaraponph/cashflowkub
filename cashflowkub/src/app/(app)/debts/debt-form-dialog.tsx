@@ -15,7 +15,7 @@ import { errorText } from '@/lib/api-error';
 import { fmt } from '@/lib/format';
 import { scheduledInstallment, toApr } from '@/server/debt/terms';
 import type { DebtView } from '@/server/views';
-import { emptyForm, formFromDebt, formToBody, int, KINDS, num, PRESETS, type DebtForm, type Kind, type TextField } from './debt-form';
+import { CALCS, emptyForm, fixedTotal, formFromDebt, formToBody, int, isFormValid, KINDS, num, PRESETS, type Calc, type DebtForm, type Kind, type TextField } from './debt-form';
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -52,7 +52,9 @@ export function DebtFormDialog({ debt }: { debt?: DebtView }) {
     monthly: int(f.monthly), fixedPayment: int(f.fixedPayment), termMonths: int(f.termMonths),
   };
   const preview = terms.original > 0 ? scheduledInstallment(terms) : 0;
-  const valid = f.name.trim() !== '' && terms.original > 0 && terms.paid <= terms.original && int(f.dueDay) >= 1 && int(f.dueDay) <= 31;
+  const valid = isFormValid(form);
+  const isFixed = calc === 'fixed';
+  const calcLabel: Record<Calc, string> = { flat: ui.calcFlat, reducing: ui.calcReducing, fixed: ui.calcFixed };
 
   const save = () =>
     startTransition(async () => {
@@ -105,20 +107,22 @@ export function DebtFormDialog({ debt }: { debt?: DebtView }) {
             <Field id="debt-lender" label={ui.lender}>{input('lender', 'text')}</Field>
             <Field id="debt-original" label={`${ui.originalDebt} (฿)`}>{input('original')}</Field>
             <Field id="debt-openingPaid" label={`${ui.alreadyPaid} (฿)`}>{input('openingPaid')}</Field>
-            <Field id="debt-rate" label={ui.rate}>
-              <div className="flex gap-2">
-                {input('rate')}
-                <Select aria-label={ui.rate} className="w-32 shrink-0" value={unit} onValueChange={(v) => setForm((prev) => ({ ...prev, unit: v === 'year' ? 'year' : 'month' }))}
-                  options={[{ value: 'month', label: ui.perMonthRate }, { value: 'year', label: ui.perYearRate }]} />
-              </div>
-            </Field>
+            {isFixed ? null : (
+              <Field id="debt-rate" label={ui.rate}>
+                <div className="flex gap-2">
+                  {input('rate')}
+                  <Select aria-label={ui.rate} className="w-32 shrink-0" value={unit} onValueChange={(v) => setForm((prev) => ({ ...prev, unit: v === 'year' ? 'year' : 'month' }))}
+                    options={[{ value: 'month', label: ui.perMonthRate }, { value: 'year', label: ui.perYearRate }]} />
+                </div>
+              </Field>
+            )}
             <Field id="debt-calc" label={ui.calcMethod}>
-              <Select id="debt-calc" value={calc} onValueChange={(v) => setForm((prev) => ({ ...prev, calc: v === 'reducing' ? 'reducing' : 'flat' }))}
-                options={[{ value: 'flat', label: ui.calcFlat }, { value: 'reducing', label: ui.calcReducing }]} />
+              <Select id="debt-calc" value={calc} onValueChange={(v) => setForm((prev) => ({ ...prev, calc: CALCS.find((c) => c === v) ?? 'flat' }))}
+                options={CALCS.map((c) => ({ value: c, label: calcLabel[c] }))} />
             </Field>
             <Field id="debt-termMonths" label={ui.termMonthsLbl}>{input('termMonths')}</Field>
-            <Field id="debt-fixedPayment" label={`${ui.fixedPaymentLbl} (฿)`} hint={ui.fixedPaymentHint}>{input('fixedPayment')}</Field>
-            <Field id="debt-monthly" label={`${ui.minPaymentLbl} (฿)`}>{input('monthly')}</Field>
+            <Field id="debt-fixedPayment" label={isFixed ? `${ui.instalmentPreview} (฿)` : `${ui.fixedPaymentLbl} (฿)`} hint={isFixed ? ui.fixedModeHint : ui.fixedPaymentHint}>{input('fixedPayment')}</Field>
+            {isFixed ? null : <Field id="debt-monthly" label={`${ui.minPaymentLbl} (฿)`}>{input('monthly')}</Field>}
             <Field id="debt-dueDay" label={ui.dueDayLbl}>{input('dueDay')}</Field>
             <Field id="debt-graceDays" label={ui.graceDaysLbl}>{input('graceDays')}</Field>
             <Field id="debt-lateFee" label={ui.lateFeeLbl}>{input('lateFee')}</Field>
@@ -132,6 +136,18 @@ export function DebtFormDialog({ debt }: { debt?: DebtView }) {
             <span className="text-sm text-muted-foreground">{ui.instalmentPreview}</span>
             <span className="text-lg font-extrabold tabular-nums">{fmt(preview)}</span>
           </div>
+          {isFixed ? (
+            <div className="grid gap-1 rounded-xl bg-secondary p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{ui.totalPayable}</span>
+                <span className="font-bold tabular-nums">{fmt(fixedTotal(form))}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">{ui.totalInterest}</span>
+                <span className="font-bold tabular-nums">{fmt(Math.max(0, fixedTotal(form) - int(f.original)))}</span>
+              </div>
+            </div>
+          ) : null}
           <DialogFooter>
             <Button className="w-full" disabled={!valid || pending} onClick={save}>{ui.save}</Button>
           </DialogFooter>
