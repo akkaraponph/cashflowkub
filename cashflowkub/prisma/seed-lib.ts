@@ -1,4 +1,5 @@
 import type { PrismaClient } from '../src/generated/prisma/client';
+import { CURRENT_MONTH } from '../src/lib/clock';
 import * as data from './seed-data';
 
 const TABLES = [
@@ -21,6 +22,9 @@ export async function seedDatabase(db: PrismaClient): Promise<void> {
     await tx.setting.createMany({ data: data.settings });
     await tx.asset.createMany({ data: data.assets });
     await tx.bill.createMany({ data: data.bills });
+    // The seed marks bills paid with `paid: true`; per-month payment rows are what the app reads.
+    const paidIds = (await tx.bill.findMany({ where: { paid: true }, select: { id: true } })).map((b) => b.id);
+    await tx.billPayment.createMany({ data: paidIds.map((billId) => ({ billId, month: CURRENT_MONTH })) });
     await tx.channel.createMany({ data: data.channels });
     await tx.incomeCategory.createMany({ data: data.incomeCategories });
     await tx.planItem.createMany({ data: data.planItems });

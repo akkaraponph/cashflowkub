@@ -148,22 +148,39 @@ model Asset {
   @@map("assets")
 }
 
-/// Payment due on a day of the month.
+/// A recurring (or one-time) payment due on a day of the month. Which months it occurs in comes from
+/// startMonth / endMonth / freq / everyMonths; paid state is per month in BillPayment.
 model Bill {
-  id     Int     @id @default(autoincrement())
-  name   String
-  th     String  @default("")
-  icon   String  @default("receipt")
-  tint   String  @default("pdf")
-  amount Int
-  dueDay Int     @map("due_day")
-  paid   Boolean @default(false)
-  freq   String  @default("monthly") /// monthly | once
-  cat    String  @default("bills") @map("cat_key")
-  kind   String  @default("bill") /// bill | subscription
-  sort   Int     @default(0)
+  id          Int           @id @default(autoincrement())
+  name        String
+  th          String        @default("")
+  icon        String        @default("receipt")
+  tint        String        @default("pdf")
+  amount      Int
+  dueDay      Int           @map("due_day")
+  /// Deprecated: per-month payments live in bill_payments. No longer read.
+  paid        Boolean       @default(false)
+  freq        String        @default("monthly") /// monthly (recurring every everyMonths) | once (only in startMonth)
+  cat         String        @default("bills") @map("cat_key")
+  kind        String        @default("bill") /// bill | subscription
+  startMonth  String        @default("2026-06") @map("start_month") /// YYYY-MM
+  endMonth    String        @default("") @map("end_month") /// YYYY-MM, inclusive; empty = no end
+  everyMonths Int           @default(1) @map("every_months") /// 1-12
+  sort        Int           @default(0)
+  payments    BillPayment[]
 
   @@map("bills")
+}
+
+/// A bill marked paid for one month (YYYY-MM). A row means paid.
+model BillPayment {
+  id     Int    @id @default(autoincrement())
+  billId Int    @map("bill_id")
+  month  String
+  bill   Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  @@unique([billId, month])
+  @@map("bill_payments")
 }
 
 model Channel {
