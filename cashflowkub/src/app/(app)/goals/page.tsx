@@ -6,6 +6,7 @@ import { fmt } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { listResource } from '@/server/reference/service';
+import { GoalDialog } from './goal-dialog';
 
 export default async function GoalsPage() {
   const { ui, lang } = await getI18n();
@@ -13,7 +14,9 @@ export default async function GoalsPage() {
 
   return (
     <>
-      <PageTitle title={ui.nav.goals} />
+      <PageTitle title={ui.nav.goals} addTransaction={false}>
+        <GoalDialog />
+      </PageTitle>
       <div className="grid gap-3 sm:grid-cols-2">
         {goals.map((g) => {
           const ratio = g.target ? g.saved / g.target : 0;
@@ -23,6 +26,7 @@ export default async function GoalsPage() {
                 <Tile icon={g.icon} tint="xls" />
                 <span className="flex-1 truncate font-bold">{localized(lang, g.name, g.th)}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">{Math.round(ratio * 100)}%</span>
+                <GoalDialog goal={g} />
               </div>
               <Progress value={ratio} />
               <p className="text-xs text-muted-foreground tabular-nums">{fmt(g.saved)} {ui.of} {fmt(g.target)}</p>
@@ -34,6 +38,7 @@ export default async function GoalsPage() {
           );
         })}
       </div>
+      {goals.length === 0 ? <Card className="p-6"><p className="text-center text-sm text-muted-foreground">{ui.noGoals}</p></Card> : null}
     </>
   );
 }
