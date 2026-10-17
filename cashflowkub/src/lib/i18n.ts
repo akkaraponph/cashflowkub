@@ -160,6 +160,15 @@ const en = {
       donationDouble: 'Education/hospital donations (2×)',
     },
   },
+  sheet: {
+    title: 'Daily transactions', summary: 'Summary', date: 'Date', activity: 'Activity', category: 'Category',
+    channel: 'Account / channel', amount: 'Amount', debtCase: 'Debt payment', interest: 'Interest',
+    fee: 'Other fees (excl. interest)', savingCase: 'Savings', goal: 'Goal', note: 'Note',
+    incomeAct: 'Income', expenseAct: 'Expense', total: 'Total', pasted: 'Added {n} rows', pasteError: 'Line {line}: {error}',
+    hint: 'Paste rows from Sheets/Excel to add many at once', incomplete: 'Row incomplete — not saved yet',
+    deleteRow: 'Delete row', prevMonth: 'Previous month', nextMonth: 'Next month', month: 'Month',
+    sumIncome: 'Income', sumSaving: 'Savings / investing', sumNeed: 'Essential spending', sumWant: 'Other spending', sumDebt: 'Debt payments',
+  },
   menu: 'Menu', settingsProfile: 'Ploy Srichan', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
 export type Dict = typeof en;
@@ -316,6 +325,15 @@ const th: Dict = {
       donation: 'เงินบริจาคทั่วไป',
       donationDouble: 'เงินบริจาคเพื่อการศึกษา/โรงพยาบาล (2 เท่า)',
     },
+  },
+  sheet: {
+    title: 'บันทึกธุรกรรมรายวัน', summary: 'สรุป', date: 'วันที่', activity: 'กิจกรรม', category: 'รายการ',
+    channel: 'ช่องทางรับเงิน - จ่ายเงิน', amount: 'ยอดเงิน', debtCase: 'กรณีชำระหนี้สิน', interest: 'ดอกเบี้ย',
+    fee: 'ค่าธรรมเนียมอื่นๆ (ไม่รวมดอกเบี้ย)', savingCase: 'กรณีเงินสะสม', goal: 'เลือกเป้าหมาย', note: 'โน้ต',
+    incomeAct: 'รับเงิน', expenseAct: 'จ่ายเงิน', total: 'รวม', pasted: 'เพิ่ม {n} รายการ', pasteError: 'บรรทัด {line}: {error}',
+    hint: 'วางหลายแถวจาก Sheets/Excel เพื่อเพิ่มทีละหลายรายการ', incomplete: 'ข้อมูลไม่ครบ — ยังไม่ได้บันทึก',
+    deleteRow: 'ลบแถว', prevMonth: 'เดือนก่อน', nextMonth: 'เดือนถัดไป', month: 'เดือน',
+    sumIncome: 'รายรับ', sumSaving: 'เงินสะสม / การลงทุน', sumNeed: 'ค่าใช้จ่ายจำเป็น', sumWant: 'ค่าใช้จ่ายอื่นๆ', sumDebt: 'ชำระหนี้สิน',
   },
   menu: 'เมนู', settingsProfile: 'พลอย ศรีจันทร์', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
