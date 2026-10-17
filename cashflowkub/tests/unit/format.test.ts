@@ -31,3 +31,11 @@ describe('format', () => {
     expect(clamp01(0.4)).toBe(0.4);
   });
 });
+
+it('fmt shows satang only when present, after rounding to cents', () => {
+  expect(fmt(1234.5)).toBe('฿1,234.50');
+  expect(fmt(0.1 + 0.2)).toBe('฿0.30');
+  expect(fmt(-45.05)).toBe('฿45.05');
+  expect(fmt(1234.004)).toBe('฿1,234');
+  expect(signed(-0.5)).toBe('-฿0.50');
+});

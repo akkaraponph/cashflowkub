@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Account, Category } from '@/generated/prisma/client';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/cfk/icon';
 import { Select } from '@/components/ui/select';
 import { TxSummary } from '@/components/cfk/tx-summary';
@@ -11,7 +12,7 @@ import { apiFetch } from '@/lib/api-client';
 import { fmt } from '@/lib/format';
 import { fill, localized } from '@/lib/i18n';
 import {
-  columnTotals, draftFromView, parsePaste, summarize, validateRow, type Activity, type RowDraft, type TxBody,
+  columnTotals, draftFromView, parsePaste, sanitizeAmountInput, summarize, validateRow, type Activity, type RowDraft, type TxBody,
 } from '@/lib/tx-sheet';
 import { cn } from '@/lib/utils';
 import type { TxView } from '@/server/transaction/logic';
@@ -32,12 +33,13 @@ interface Row {
 
 type EditableField = Exclude<keyof RowDraft, 'id' | 'name'>;
 
-export function TxSheet({ rows: initialRows, categories, accounts, goals, defaultDate }: {
+export function TxSheet({ rows: initialRows, categories, accounts, goals, defaultDate, summaryCaption }: {
   rows: TxView[];
   categories: Category[];
   accounts: Account[];
   goals: { name: string }[];
   defaultDate: string;
+  summaryCaption?: string;
 }) {
   const { ui, lang } = useI18n();
   const s = ui.sheet;
@@ -63,10 +65,19 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
     return makeRow(draft, check.kind === 'ready' ? check.body : null, draft);
   })));
   const rowsRef = useRef(rows);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
   const setRows = (fn: (r: Row[]) => Row[]) => {
     const next = fn(rowsRef.current);
     rowsRef.current = next;
     setRowsState(next);
+    // Selection only ever holds keys of rows that still exist.
+    setSelected((sel) => {
+      if (sel.size === 0) return sel;
+      const live = new Set(next.map((r) => r.key));
+      const kept = [...sel].filter((k) => live.has(k));
+      return kept.length === sel.size ? sel : new Set(kept);
+    });
   };
   const patchRow = (key: string, fn: (r: Row) => Row) => setRows((list) => withPad(list.map((r) => (r.key === key ? fn(r) : r))));
 
@@ -130,6 +141,33 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
     }
   };
 
+  const toggle = (key: string) => setSelected((sel) => {
+    const next = new Set(sel);
+    if (!next.delete(key)) next.add(key);
+    return next;
+  });
+
+  const deleteSelected = async () => {
+    const keys = [...selected];
+    if (keys.length === 0 || !window.confirm(fill(s.deleteSelectedConfirm, { n: keys.length }))) return;
+    setDeleting(true);
+    try {
+      // A row created by an in-flight POST only gets its id once that save settles.
+      await Promise.all(keys.map((k) => inflight.current.get(k)));
+      const targets = rowsRef.current.filter((r) => keys.includes(r.key) && r.draft.id !== undefined);
+      const ids = targets.map((r) => r.draft.id as number);
+      if (ids.length === 0) return;
+      const { deleted } = await apiFetch<{ deleted: number }>('/transactions/batch', { method: 'DELETE', body: { ids } });
+      const gone = new Set(targets.map((r) => r.key));
+      setRows((list) => withPad(list.filter((r) => !gone.has(r.key))));
+      toast.success(fill(s.deletedN, { n: deleted }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const onPaste = async (e: React.ClipboardEvent) => {
     const text = e.clipboardData.getData('text').replace(/[\r\n]+$/, '');
     if (!/[\t\n]/.test(text)) return;
@@ -169,6 +207,14 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
     focusCell(r + dr, f);
   };
 
+  const savedKeys = rows.filter((r) => r.draft.id !== undefined).map((r) => r.key);
+  const selectedSaved = savedKeys.filter((k) => selected.has(k)).length;
+  const allSelected = savedKeys.length > 0 && selectedSaved === savedKeys.length;
+  const headBox = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (headBox.current) headBox.current.indeterminate = selectedSaved > 0 && !allSelected;
+  }, [selectedSaved, allSelected]);
+
   const saved = rows.flatMap((r) => (r.body ? [r.body] : []));
   const totals = columnTotals(saved);
   const catLabel = (c: Category) => localized(lang, c.label, c.th);
@@ -176,12 +222,25 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
 
   return (
     <div className="hidden items-start gap-4 md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]">
-      <TxSummary totals={summarize(saved, categories)} />
+      <TxSummary totals={summarize(saved, categories)} caption={summaryCaption} />
       <div className="grid gap-1.5">
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 rounded-xl bg-card px-3 py-1.5 text-xs ring-1 ring-foreground/10">
+            <span className="font-medium">{fill(s.selectedN, { n: selected.size })}</span>
+            <Button type="button" variant="destructive" size="sm" disabled={deleting} onClick={() => void deleteSelected()}>
+              <Icon name="trash-2" size={13} />{s.deleteSelected}
+            </Button>
+            <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={() => setSelected(new Set())}>{s.clearSelection}</Button>
+          </div>
+        )}
         <div className="overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10">
           <table ref={tableRef} className="w-full min-w-[60rem] border-collapse text-xs" onPaste={onPaste} onKeyDown={onKeyDown}>
             <thead>
               <tr>
+                <th rowSpan={2} className={cn(th, 'w-8')}>
+                  <input ref={headBox} type="checkbox" aria-label={s.selectAll} disabled={savedKeys.length === 0} checked={allSelected}
+                    onChange={() => setSelected(allSelected ? new Set() : new Set(savedKeys))} />
+                </th>
                 <th rowSpan={2} className={cn(th, 'w-8')} />
                 <th rowSpan={2} className={th}>{s.date}</th>
                 <th rowSpan={2} className={th}>{s.activity}</th>
@@ -210,9 +269,14 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                 return (
                   <tr
                     key={row.key}
-                    className="group border-t"
+                    className={cn('group border-t', selected.has(row.key) && 'bg-primary/5')}
                     onBlur={(e) => { if (openMenus.current === 0 && !e.currentTarget.contains(e.relatedTarget as Node | null)) commit(row.key); }}
                   >
+                    <td className="w-8 border-r text-center">
+                      {d.id !== undefined && (
+                        <input type="checkbox" aria-label={s.selectRow} checked={selected.has(row.key)} onChange={() => toggle(row.key)} />
+                      )}
+                    </td>
                     <td
                       className={cn('w-8 border-l-2 border-r bg-muted text-center text-[10px] text-muted-foreground', row.incomplete ? 'border-l-amber-500' : 'border-l-transparent')}
                       title={row.incomplete ? s.incomplete : undefined}
@@ -240,12 +304,12 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                         options={accts.map((a) => ({ value: a, label: a }))} />
                     </td>
                     <td className="w-28 border-r p-0">
-                      <input {...ctl('amount')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums', tone)} value={d.amount} onChange={(e) => edit(row.key, { amount: e.target.value })} />
+                      <input {...ctl('amount')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums', tone)} value={d.amount} onChange={(e) => edit(row.key, { amount: sanitizeAmountInput(e.target.value) })} />
                     </td>
                     {sub === 'debt' ? (
                       <>
-                        <td className="w-24 border-r p-0"><input {...ctl('interest')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.interest} onChange={(e) => edit(row.key, { interest: e.target.value })} /></td>
-                        <td className="w-24 border-r p-0"><input {...ctl('fee')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.fee} onChange={(e) => edit(row.key, { fee: e.target.value })} /></td>
+                        <td className="w-24 border-r p-0"><input {...ctl('interest')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.interest} onChange={(e) => edit(row.key, { interest: sanitizeAmountInput(e.target.value) })} /></td>
+                        <td className="w-24 border-r p-0"><input {...ctl('fee')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.fee} onChange={(e) => edit(row.key, { fee: sanitizeAmountInput(e.target.value) })} /></td>
                       </>
                     ) : <td colSpan={2} className="border-r bg-muted" />}
                     {sub === 'saving' ? (
@@ -261,7 +325,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
             </tbody>
             <tfoot>
               <tr className="border-t-2 bg-secondary font-semibold">
-                <td colSpan={5} className="px-2 py-1 text-right">{s.total}</td>
+                <td colSpan={6} className="px-2 py-1 text-right">{s.total}</td>
                 <td className="px-1.5 py-1 text-right tabular-nums">
                   <div className="text-type-xls-fg">{fmt(totals.income)}</div>
                   <div className="text-destructive">{fmt(totals.expense)}</div>

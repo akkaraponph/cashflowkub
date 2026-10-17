@@ -21,6 +21,14 @@ describe('GET /api/v1/transactions', () => {
     expect(await get('from=2026-06-15&to=2026-06-15')).toHaveLength(3);
     expect(await get('limit=5')).toHaveLength(5);
   });
+  it('pages with offset', async () => {
+    const get = async (qs: string) => (await call(collection.GET, { url: `/api/v1/transactions?${qs}` })).json.data;
+    const all = await get('');
+    const page = await get('limit=5&offset=5');
+    expect(page).toHaveLength(5);
+    expect(page[0].id).toBe(all[5].id);
+    expect(await get('offset=100')).toEqual([]);
+  });
   it('400s an invalid date filter', async () => {
     expect((await call(collection.GET, { url: '/api/v1/transactions?from=nope' })).status).toBe(400);
   });
@@ -58,6 +66,11 @@ describe('/api/v1/transactions/:id', () => {
     expect((await call(item.DELETE, { method: 'DELETE', params: { id: '1' } })).status).toBe(204);
     expect((await call(item.GET, { params: { id: '1' } })).status).toBe(404);
   });
+  it('PATCH keeps satang as a number', async () => {
+    const { json } = await call(item.PATCH, { method: 'PATCH', params: { id: '1' }, body: { amount: -45.5 } });
+    expect(json.amount).toBe(-45.5);
+    expect(typeof json.amount).toBe('number');
+  });
   it('400s a bad id', async () => {
     expect((await call(item.GET, { params: { id: '1.5' } })).status).toBe(400);
   });
@@ -81,5 +94,42 @@ describe('POST /api/v1/transactions/batch', () => {
   });
   it('rejects an empty list', async () => {
     expect((await post([])).status).toBe(400);
+  });
+});
+
+describe('decimal amounts', () => {
+  it('stores satang and returns numbers', async () => {
+    const { status, json } = await call(collection.POST, { method: 'POST', body: { name: 'Coffee', cat: 'food', acct: 'Cash Wallet', amount: -45.5 } });
+    expect(status).toBe(201);
+    expect(json.amount).toBe(-45.5);
+    expect((await call(item.GET, { params: { id: String(json.id) } })).json.amount).toBe(-45.5);
+    const debt = await call(collection.POST, { method: 'POST', body: { name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1358.25, interest: 120.75, fee: 15.1 } });
+    expect(debt.json).toMatchObject({ amount: -1358.25, interest: 120.75, fee: 15.1 });
+  });
+  it('rejects more than two decimal places', async () => {
+    const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'X', cat: 'food', acct: 'Cash', ...body } });
+    expect((await post({ amount: -12.345 })).status).toBe(400);
+    expect((await post({ amount: -1, interest: 0.001 })).status).toBe(400);
+  });
+});
+
+describe('DELETE /api/v1/transactions/batch', () => {
+  const del = (body: unknown) => call(batch.DELETE, { method: 'DELETE', body });
+  const count = async () => (await call(collection.GET, { url: '/api/v1/transactions' })).json.data.length;
+  it('deletes the listed ids and reports the count', async () => {
+    const { status, json } = await del({ ids: [1, 2, 3] });
+    expect(status).toBe(200);
+    expect(json).toEqual({ deleted: 3 });
+    expect(await count()).toBe(9);
+    expect((await call(item.GET, { params: { id: '2' } })).status).toBe(404);
+  });
+  it('skips unknown ids', async () => {
+    expect((await del({ ids: [4, 9999] })).json).toEqual({ deleted: 1 });
+  });
+  it('rejects empty, oversized and malformed id lists', async () => {
+    for (const body of [{ ids: [] }, { ids: Array.from({ length: 501 }, (_, i) => i + 1) }, { ids: [0] }, { ids: [1.5] }, {}]) {
+      expect((await del(body)).status).toBe(400);
+    }
+    expect(await count()).toBe(12);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatLongDate, groupLabel, parseFlexDate, parseTxFilter, toTxView } from '@/server/transaction/logic';
+import { formatLongDate, groupLabel, hasAtMostTwoDecimals, parseFlexDate, parseTxFilter, toTxView } from '@/server/transaction/logic';
 import { HttpError } from '@/server/errors';
 import { tx } from '../fixtures';
 
@@ -44,10 +44,30 @@ describe('parseTxFilter', () => {
     expect(f).toEqual({ type: 'income', category: 'food', account: 'Cash', from: day('2026-06-01'), limit: 5 });
     expect(parseTxFilter(new URLSearchParams('type=bogus&limit=abc'))).toEqual({});
   });
+  it('ignores an offset that is not a safe integer in [0, 1_000_000]', () => {
+    for (const o of ['1e20', '99999999999', '1000001', '-1', '1.5']) expect(parseTxFilter(new URLSearchParams(`offset=${o}`)).offset).toBeUndefined();
+    expect(parseTxFilter(new URLSearchParams('offset=1000000')).offset).toBe(1_000_000);
+    expect(parseTxFilter(new URLSearchParams('offset=0')).offset).toBe(0);
+  });
   it('caps limit at 500', () => {
     expect(parseTxFilter(new URLSearchParams('limit=100000')).limit).toBe(500);
   });
   it('rejects an invalid date with a 400', () => {
     expect(() => parseTxFilter(new URLSearchParams('to=2026-13-01'))).toThrow(HttpError);
+  });
+});
+
+describe('hasAtMostTwoDecimals', () => {
+  it('accepts whole baht and satang, rejects finer', () => {
+    expect([120, 120.5, 0.1, 19.99, -0.07].every(hasAtMostTwoDecimals)).toBe(true);
+    expect(hasAtMostTwoDecimals(12.345)).toBe(false);
+  });
+});
+
+describe('parseTxFilter offset', () => {
+  it('reads a non-negative integer offset and ignores junk', () => {
+    expect(parseTxFilter(new URLSearchParams('offset=10')).offset).toBe(10);
+    expect(parseTxFilter(new URLSearchParams('offset=-1')).offset).toBeUndefined();
+    expect(parseTxFilter(new URLSearchParams('offset=x')).offset).toBeUndefined();
   });
 });

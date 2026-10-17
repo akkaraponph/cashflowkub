@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { CURRENT_MONTH } from '@/lib/clock';
 import { listBills } from '@/server/bill/service';
 import { listActiveDebtViews } from '@/server/debt/service';
+import { toPlain } from '@/server/transaction/logic';
 import { buildDashboard, buildNetWorth, buildReports, type DashboardView, type NetWorthView, type ReportsView } from './logic';
 
 const budgetsBySpend = () => prisma.budget.findMany({ orderBy: { spent: 'desc' } });
@@ -32,7 +33,7 @@ export async function getReports(): Promise<ReportsView> {
   const [budgets, categories, expenseTx, monthly] = await Promise.all([
     budgetsBySpend(),
     prisma.category.findMany(),
-    prisma.transaction.findMany({ where: { amount: { lt: 0 } }, orderBy: [{ date: 'desc' }, { id: 'desc' }] }),
+    prisma.transaction.findMany({ where: { amount: { lt: 0 } }, orderBy: [{ date: 'desc' }, { id: 'desc' }] }).then((rows) => rows.map(toPlain)),
     cashflow(),
   ]);
   return buildReports({ budgets, categories, expenseTx, monthly });

@@ -1,5 +1,6 @@
 // Pure analytics: spending breakdown, net worth, debt roll-up, merchants, screen views.
-import type { Asset, Budget, Category, Goal, MonthlyCashflow, NetWorthHistory, Transaction } from '@/generated/prisma/client';
+import type { Asset, Budget, Category, Goal, MonthlyCashflow, NetWorthHistory } from '@/generated/prisma/client';
+import type { TxPlain } from '@/server/transaction/logic';
 import type { BillView, DebtView } from '@/server/views';
 
 export interface CategorySpend {
@@ -39,7 +40,7 @@ export function netWorthTotals(assets: Asset[], activeDebts: DebtView[]): { tota
   return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab };
 }
 
-export function topMerchants(expenseTx: Transaction[]): Merchant[] {
+export function topMerchants(expenseTx: TxPlain[]): Merchant[] {
   const byName = new Map<string, Merchant>();
   for (const t of expenseTx) {
     const m = byName.get(t.name) ?? { name: t.name, cat: t.cat, total: 0 };
@@ -143,7 +144,7 @@ export interface ReportsView {
   monthly: MonthlyCashflow[];
 }
 
-export function buildReports(input: { budgets: Budget[]; categories: Category[]; expenseTx: Transaction[]; monthly: MonthlyCashflow[] }): ReportsView {
+export function buildReports(input: { budgets: Budget[]; categories: Category[]; expenseTx: TxPlain[]; monthly: MonthlyCashflow[] }): ReportsView {
   const { items, total } = spendingByCategory(input.budgets, input.categories);
   return { breakdown: items, spendTotal: total, topMerchants: topMerchants(input.expenseTx), monthly: input.monthly };
 }

@@ -35,11 +35,19 @@ export type RowCheck = { kind: 'empty' } | { kind: 'incomplete'; missing: (keyof
 
 const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
-/** "฿1,358.00" / "-100" → 1358 / 100 (sign comes from the activity); null if blank or not a number. */
+/** "฿1,358.00" / "-100" → 1358 / 100 (satang kept, max 2 decimals) (sign comes from the activity); null if blank or not a number. */
 export function parseAmount(raw: string): number | null {
   const s = raw.replace(/[฿,\s]/g, '').replace(/^-/, '');
-  if (!/^\d+(\.\d+)?$/.test(s)) return null;
-  return Math.round(Number(s));
+  if (!/^(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(s)) return null;
+  return Math.round(Number(s) * 100) / 100;
+}
+
+/** Keystroke filter for money inputs: digits and the first '.', at most 2 decimals. */
+export function sanitizeAmountInput(raw: string): string {
+  const s = raw.replace(/[^\d.]/g, '');
+  const i = s.indexOf('.');
+  if (i < 0) return s;
+  return s.slice(0, i) + '.' + s.slice(i + 1).replace(/\./g, '').slice(0, 2);
 }
 
 function isoDate(y: number, m: number, d: number): string | null {

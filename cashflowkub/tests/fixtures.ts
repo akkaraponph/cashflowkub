@@ -1,7 +1,8 @@
 // Row factories for unit tests: complete Prisma rows with neutral defaults.
 import type {
-  Asset, AssetSnapshot, Bill, Budget, Category, Debt, DebtPayment, Goal, MonthlyCashflow, NetWorthHistory, PlanItem, Prisma, Transaction,
+  Asset, AssetSnapshot, Bill, Budget, Category, Debt, DebtPayment, Goal, MonthlyCashflow, NetWorthHistory, PlanItem, Prisma,
 } from '@/generated/prisma/client';
+import type { TxPlain } from '@/server/transaction/logic';
 import { toDebtView, type BillView, type DebtView } from '@/server/views';
 
 export const debt = (o: Partial<Debt> = {}): Debt => ({
@@ -20,7 +21,7 @@ export const bill = (o: Partial<Bill> = {}): Bill => ({
 export const billView = (o: Partial<BillView> = {}): BillView => ({
   ...bill(), month: '2026-06', dueDate: '2026-06-20', status: 'upcoming', daysDiff: 2, ...o,
 });
-export const tx = (o: Partial<Transaction> = {}): Transaction => ({
+export const tx = (o: Partial<TxPlain> = {}): TxPlain => ({
   id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', interest: 0, fee: 0, goal: '', ...o,
 });
 export const budget = (o: Partial<Budget> = {}): Budget => ({ id: 1, cat: 'food', spent: 0, limit: 1000, sort: 1, ...o });

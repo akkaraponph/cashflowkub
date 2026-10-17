@@ -45,13 +45,13 @@ model Transaction {
   name     String
   cat      String   @map("cat_key")
   acct     String   @map("account")
-  amount   Int
+  amount   Decimal  @db.Decimal(14, 2)
   date     DateTime @db.Date
   note     String   @default("")
-  /// Loan interest part of a debt payment (baht, >= 0).
-  interest Int      @default(0)
-  /// Other loan fees, excluding interest (baht, >= 0).
-  fee      Int      @default(0)
+  /// Loan interest part of a debt payment (baht, 2 decimals, >= 0).
+  interest Decimal  @default(0) @db.Decimal(14, 2)
+  /// Other loan fees, excluding interest (baht, 2 decimals, >= 0).
+  fee      Decimal  @default(0) @db.Decimal(14, 2)
   /// Saving goal name for saving-category rows.
   goal     String   @default("")
 
