@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  columnTotals, monthRange, parseAmount, parsePaste, parseThaiOrIsoDate, summarize, validateRow, type RowDraft,
+  columnTotals, monthRange, shiftMonth, parseAmount, parsePaste, parseThaiOrIsoDate, summarize, validateRow, type RowDraft,
 } from '@/lib/tx-sheet';
 import { category } from '../fixtures';
 
@@ -113,5 +113,13 @@ describe('summarize / columnTotals', () => {
   });
   it('totals income and expense separately', () => {
     expect(columnTotals(rows)).toEqual({ income: 1000, expense: 657, interest: 20, fee: 5 });
+  });
+});
+
+describe('shiftMonth', () => {
+  it('rolls over year boundaries', () => {
+    expect(shiftMonth('2026-12', 1)).toBe('2027-01');
+    expect(shiftMonth('2026-01', -1)).toBe('2025-12');
+    expect(shiftMonth('2026-06', 0)).toBe('2026-06');
   });
 });

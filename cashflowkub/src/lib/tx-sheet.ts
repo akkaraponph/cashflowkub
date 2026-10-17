@@ -143,6 +143,13 @@ export function monthRange(month: string): { from: Date; to: Date } | null {
   return { from: new Date(Date.UTC(y, mo - 1, 1)), to: new Date(Date.UTC(y, mo, 0)) };
 }
 
+/** "2026-12" + 1 → "2027-01". Assumes a valid month. */
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
 export function summarize(rows: Pick<TxView, 'cat' | 'amount'>[], cats: Category[]): { income: number; saving: number; need: number; want: number; debt: number } {
   const sub = new Map(cats.map((c) => [c.key, c.sub]));
   const out = { income: 0, saving: 0, need: 0, want: 0, debt: 0 };
