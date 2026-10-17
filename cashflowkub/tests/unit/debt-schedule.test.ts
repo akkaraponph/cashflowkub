@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { paymentForTarget, payoffLabel, projectSchedule } from '@/server/debt/schedule';
-import type { DebtTerms } from '@/server/debt/terms';
+import { deriveFixedApr, type DebtTerms } from '@/server/debt/terms';
 
 const terms = (o: Partial<DebtTerms> = {}): DebtTerms => ({ original: 10000, paid: 0, apr: 0, calc: 'reducing', monthly: 0, fixedPayment: 0, termMonths: 0, ...o });
+
+const fixed = (original: number, pay: number, n: number, paid = 0) => terms({ original, paid, calc: 'fixed', fixedPayment: pay, termMonths: n, apr: deriveFixedApr(original, pay, n) });
 
 describe('projectSchedule', () => {
   it('reducing balance: first row matches the bank-loan math', () => {
@@ -112,5 +114,32 @@ describe('projectSchedule per-month overrides', () => {
   });
   it('overrides past the end are ignored', () => {
     expect(projectSchedule(d, { 99: 10 })).toEqual(projectSchedule(d));
+  });
+});
+
+describe('fixed-instalment calc', () => {
+  it('fixed: constant instalment, closes exactly on term', () => {
+    const s = projectSchedule(fixed(10000, 1200, 10));
+    expect(s.rows).toHaveLength(10);
+    expect(s.rows.every((r) => r.payment === 1200 && r.interest === 200)).toBe(true);
+    expect(s.totalInterest).toBe(2000);
+  });
+  it('fixed: closes within term when interest does not divide evenly', () => {
+    const s = projectSchedule(fixed(10000, 1000, 12));
+    expect(s.rows).toHaveLength(12);
+    expect(s.rows[0]).toEqual({ month: 1, payment: 1000, principal: 834, interest: 166, balance: 9166 });
+    expect(s.rows.at(-1)).toEqual({ month: 12, payment: 992, principal: 826, interest: 166, balance: 0 });
+    expect(s.totalInterest).toBe(1992);
+  });
+  it('fixed: interest-free instalments', () => {
+    const s = projectSchedule(fixed(6000, 1000, 6));
+    expect(s.rows).toHaveLength(6);
+    expect(s.totalInterest).toBe(0);
+  });
+  it('fixed: opening paid shortens the schedule', () => {
+    expect(projectSchedule(fixed(10000, 1200, 10, 5000)).rows).toHaveLength(5);
+  });
+  it('paymentForTarget treats fixed like flat (interest on original)', () => {
+    expect(paymentForTarget(fixed(10000, 1200, 10), 5)).toBe(2200);
   });
 });

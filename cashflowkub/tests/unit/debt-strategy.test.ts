@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { deriveFixedApr } from '@/server/debt/terms';
 import { comparePayoff, payoffOrder, simulatePayoff, type SimDebt } from '@/server/debt/strategy';
 
 const sim = (o: Partial<SimDebt>): SimDebt => ({ id: 1, balance: 1000, apr: 0, calc: 'reducing', original: 1000, minPayment: 100, sort: 1, ...o });
@@ -93,5 +94,13 @@ describe('comparePayoff', () => {
       const r = simulatePayoff(multi, 'avalanche', 100, { rollover: false });
       expect(r.months).toBeLessThan(simulatePayoff(multi, 'avalanche', 0, { rollover: false }).months);
     });
+  });
+});
+
+describe('fixed calc', () => {
+  it('charges a fixed debt interest on its original amount, rounded down', () => {
+    const r = simulatePayoff([{ id: 1, balance: 10000, apr: deriveFixedApr(10000, 1000, 12), calc: 'fixed', original: 10000, minPayment: 1000, sort: 0 }], 'avalanche', 0);
+    expect(r.months).toBe(12);
+    expect(r.totalInterest).toBe(1992);
   });
 });

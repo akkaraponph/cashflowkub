@@ -4,6 +4,7 @@
 // starting total, so a closed debt's minimum flows to the next one (snowball effect).
 import type { Strategy } from './logic';
 import { MAX_MONTHS } from './schedule';
+import { interestForMonth } from './terms';
 
 export interface SimDebt {
   id: number;
@@ -71,7 +72,7 @@ export function simulatePayoff(debts: SimDebt[], strategy: Strategy, extra: numb
     for (const id of ids) {
       const d = byId.get(id)!;
       const b = balance.get(id)!;
-      const interest = Math.round((d.calc === 'flat' ? d.original : b) * (d.apr / 1200));
+      const interest = interestForMonth(d, b);
       totalInterest += interest;
       balance.set(id, b + interest);
     }
