@@ -106,6 +106,6 @@ export function parseTxFilter(params: URLSearchParams): TxFilter {
   const limit = Number(params.get('limit'));
   if (Number.isInteger(limit) && limit > 0) f.limit = Math.min(limit, 500);
   const offset = Number(params.get('offset'));
-  if (params.get('offset') && Number.isInteger(offset) && offset >= 0) f.offset = offset;
+  if (params.get('offset') && Number.isSafeInteger(offset) && offset >= 0 && offset <= 1_000_000) f.offset = offset;
   return f;
 }

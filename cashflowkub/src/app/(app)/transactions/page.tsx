@@ -25,8 +25,10 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const month = asked && monthRange(asked) ? asked : CURRENT_MONTH;
   const range = monthRange(month)!;
   const { page: askedPage, size } = parsePaging(firstParam(sp, 'page'), firstParam(sp, 'size'));
-  const [{ rows: txs, total, page }, categories, accounts, goals] = await Promise.all([
+  const [{ rows: txs, total, page }, listing, categories, accounts, goals] = await Promise.all([
     listTransactionPage({ from: range.from, to: range.to }, askedPage, size),
+    // The ?type filter drives only the mobile list (its control is md:hidden); the desktop sheet always gets every row.
+    type ? listTransactionPage({ from: range.from, to: range.to, type }, askedPage, size) : null,
     listResource('categories'),
     listResource('accounts'),
     listResource('goals'),
@@ -36,9 +38,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const monthLabel = new Intl.DateTimeFormat(lang === 'th' ? 'th-TH' : 'en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(range.from);
   const maxId = txs.reduce((m, t) => Math.max(m, t.id), 0);
 
-  const listed = txs.filter((t) => (type === 'income' ? t.amount > 0 : type === 'expense' ? t.amount < 0 : true));
+  const mobile = listing ?? { rows: txs, total, page };
   const groups: { label: string; items: TxView[] }[] = [];
-  for (const t of listed) {
+  for (const t of mobile.rows) {
     const last = groups.at(-1);
     if (last?.label === t.group) last.items.push(t);
     else groups.push({ label: t.group, items: [t] });
@@ -55,7 +57,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     if (pg !== 1) q.set('page', String(pg));
     return `/transactions?${q}`;
   };
-  const pager = total > 0 ? <Pager page={page} size={size} total={total} hrefFor={(p) => href(p)} /> : null;
+  const pagerFor = (pg: number, n: number) => (n > 0 ? <Pager page={pg} size={size} total={n} hrefFor={(p) => href(p)} /> : null);
 
   const nav = 'flex size-9 items-center justify-center rounded-lg border bg-secondary hover:opacity-80';
   return (
@@ -76,7 +78,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         defaultDate={defaultDate}
         summaryCaption={total > size ? ui.sheet.pageTotals : undefined}
       />
-      <div className="hidden md:block">{pager}</div>
+      <div className="hidden md:block">{pagerFor(page, total)}</div>
 
       <div className="grid gap-4 md:hidden">
         <SegmentedLinks
@@ -93,7 +95,7 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
             </Card>
           </section>
         ))}
-        {pager}
+        {pagerFor(mobile.page, mobile.total)}
       </div>
     </div>
   );

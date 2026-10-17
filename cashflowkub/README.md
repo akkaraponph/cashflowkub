@@ -27,6 +27,7 @@ Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error":
 
 - CRUD: `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (`GET/POST /<r>`, `GET/PUT/PATCH/DELETE /<r>/:id`)
 - `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=&offset=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
+- Transaction `amount`, `interest` and `fee` are numbers with up to 2 decimal places (e.g. `-45.5`).
 - `DELETE /transactions/batch` (`{ "ids": number[] }`, 1-500 positive ints): deletes them in one statement and responds `{ "deleted": n }`; unknown ids are skipped.
 - `GET /dashboard`, `/networth`, `/reports`, `/setup`, `/plan?month=YYYY-MM`, `/plan/snapshots`, `/bills/summary`, `/debts/:id/schedule`
 - `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)

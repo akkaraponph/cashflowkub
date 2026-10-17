@@ -44,6 +44,11 @@ describe('parseTxFilter', () => {
     expect(f).toEqual({ type: 'income', category: 'food', account: 'Cash', from: day('2026-06-01'), limit: 5 });
     expect(parseTxFilter(new URLSearchParams('type=bogus&limit=abc'))).toEqual({});
   });
+  it('ignores an offset that is not a safe integer in [0, 1_000_000]', () => {
+    for (const o of ['1e20', '99999999999', '1000001', '-1', '1.5']) expect(parseTxFilter(new URLSearchParams(`offset=${o}`)).offset).toBeUndefined();
+    expect(parseTxFilter(new URLSearchParams('offset=1000000')).offset).toBe(1_000_000);
+    expect(parseTxFilter(new URLSearchParams('offset=0')).offset).toBe(0);
+  });
   it('caps limit at 500', () => {
     expect(parseTxFilter(new URLSearchParams('limit=100000')).limit).toBe(500);
   });

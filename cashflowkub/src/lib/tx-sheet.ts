@@ -38,7 +38,7 @@ const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.
 /** "฿1,358.00" / "-100" → 1358 / 100 (satang kept, max 2 decimals) (sign comes from the activity); null if blank or not a number. */
 export function parseAmount(raw: string): number | null {
   const s = raw.replace(/[฿,\s]/g, '').replace(/^-/, '');
-  if (!/^(\d+(\.\d{1,2})?|\.\d{1,2})$/.test(s)) return null;
+  if (!/^(\d+(\.\d{0,2})?|\.\d{1,2})$/.test(s)) return null;
   return Math.round(Number(s) * 100) / 100;
 }
 

@@ -23,6 +23,12 @@ describe('parseAmount', () => {
     expect(parseAmount('abc')).toBeNull();
     expect(parseAmount('')).toBeNull();
     expect(parseAmount('1.2.3')).toBeNull();
+    expect(parseAmount('.')).toBeNull();
+    expect(parseAmount('1.234')).toBeNull();
+  });
+  it('accepts a trailing dot', () => {
+    expect(parseAmount('100.')).toBe(100);
+    expect(parseAmount('5.')).toBe(5);
   });
 });
 

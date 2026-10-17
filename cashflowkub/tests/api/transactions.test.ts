@@ -66,6 +66,11 @@ describe('/api/v1/transactions/:id', () => {
     expect((await call(item.DELETE, { method: 'DELETE', params: { id: '1' } })).status).toBe(204);
     expect((await call(item.GET, { params: { id: '1' } })).status).toBe(404);
   });
+  it('PATCH keeps satang as a number', async () => {
+    const { json } = await call(item.PATCH, { method: 'PATCH', params: { id: '1' }, body: { amount: -45.5 } });
+    expect(json.amount).toBe(-45.5);
+    expect(typeof json.amount).toBe('number');
+  });
   it('400s a bad id', async () => {
     expect((await call(item.GET, { params: { id: '1.5' } })).status).toBe(400);
   });
