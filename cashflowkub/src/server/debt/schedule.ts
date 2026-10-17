@@ -11,7 +11,8 @@ export interface ScheduleRow {
   balance: number;
 }
 
-export function projectSchedule(d: DebtTerms): { rows: ScheduleRow[]; totalInterest: number; neverPaysOff: boolean } {
+/** `overrides` maps a 1-based month to the payment made that month instead of the regular instalment. */
+export function projectSchedule(d: DebtTerms, overrides: Readonly<Record<number, number>> = {}): { rows: ScheduleRow[]; totalInterest: number; neverPaysOff: boolean } {
   let balance = remainingPrincipal(d);
   const installment = scheduledInstallment(d);
   const rows: ScheduleRow[] = [];
@@ -19,8 +20,9 @@ export function projectSchedule(d: DebtTerms): { rows: ScheduleRow[]; totalInter
   if (balance > 0 && installment <= 0) return { rows, totalInterest, neverPaysOff: true };
   for (let month = 1; balance > 0; month++) {
     const interest = interestForMonth(d, balance);
-    const principal = Math.min(installment - interest, balance);
-    if (principal <= 0 || month > MAX_MONTHS) return { rows: [], totalInterest: 0, neverPaysOff: true };
+    const pay = overrides[month];
+    const principal = Math.min((pay ?? installment) - interest, balance);
+    if ((principal <= 0 && pay === undefined) || month > MAX_MONTHS) return { rows: [], totalInterest: 0, neverPaysOff: true };
     balance -= principal;
     totalInterest += interest;
     rows.push({ month, payment: principal + interest, principal, interest, balance });
