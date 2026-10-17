@@ -15,13 +15,17 @@ const billSchema = z.object({
   paid: z.boolean().optional(),
   freq: z.enum(['monthly', 'once']).optional(),
   cat: text,
+  kind: z.enum(['bill', 'subscription']).optional(),
   sort: z.number().int().optional(),
 });
 const toggleSchema = z.object({ paid: z.boolean().optional() });
 const ORDER = [{ dueDay: 'asc' as const }, { sort: 'asc' as const }];
 
-export async function listBills(status?: string): Promise<BillView[]> {
-  const where = status === 'paid' ? { paid: true } : status === 'unpaid' ? { paid: false } : {};
+export async function listBills(status?: string, kind?: string): Promise<BillView[]> {
+  const where = {
+    ...(status === 'paid' ? { paid: true } : status === 'unpaid' ? { paid: false } : {}),
+    ...(kind === 'bill' || kind === 'subscription' ? { kind } : {}),
+  };
   const rows = await prisma.bill.findMany({ where, orderBy: ORDER });
   const day = todayDay();
   return rows.map((b) => toBillView(b, day));

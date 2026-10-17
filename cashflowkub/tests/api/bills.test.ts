@@ -36,3 +36,30 @@ describe('bills', () => {
     expect((await call(collection.POST, { method: 'POST', body: { name: 'Bad', amount: 1, dueDay: 32 } })).status).toBe(400);
   });
 });
+
+describe('subscriptions', () => {
+  it('defaults to a bill and accepts a subscription kind', async () => {
+    expect((await call(collection.POST, { method: 'POST', body: { name: 'Gym', amount: 1500, dueDay: 3 } })).json.kind).toBe('bill');
+    const sub = await call(collection.POST, { method: 'POST', body: { name: 'YouTube Premium', amount: 179, dueDay: 12, kind: 'subscription', cat: 'fun' } });
+    expect(sub.status).toBe(201);
+    expect(sub.json).toMatchObject({ kind: 'subscription', amount: 179 });
+  });
+  it('rejects an unknown kind', async () => {
+    const r = await call(collection.POST, { method: 'POST', body: { name: 'X', amount: 1, dueDay: 1, kind: 'gift' } });
+    expect(r.status).toBe(400);
+    expect(r.json.code).toBe('validation');
+  });
+  it('turns a bill into a subscription and back', async () => {
+    const id = '3';
+    expect((await call(item.PATCH, { method: 'PATCH', params: { id }, body: { kind: 'subscription' } })).json.kind).toBe('subscription');
+    expect((await call(item.PATCH, { method: 'PATCH', params: { id }, body: { kind: 'bill' } })).json.kind).toBe('bill');
+  });
+  it('filters the list by kind', async () => {
+    const subs = (await call(collection.GET, { url: '/api/v1/bills?kind=subscription' })).json.data;
+    expect(subs.map((b: { name: string }) => b.name).sort()).toEqual(['Netflix Premium', 'Spotify Family', 'iCloud+ 200GB']);
+    expect((await call(collection.GET, { url: '/api/v1/bills?kind=bill' })).json.data).toHaveLength(10);
+  });
+  it('summarizes subscriptions per month', async () => {
+    expect((await call(summary)).json).toMatchObject({ subscriptionsCount: 3, subscriptionsTotal: 667 });
+  });
+});

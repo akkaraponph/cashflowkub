@@ -101,8 +101,8 @@ export const assets: Prisma.AssetCreateManyInput[] = [
 ];
 
 export const bills: Prisma.BillCreateManyInput[] = [
-  { name: 'Spotify Family', th: 'Spotify Family', icon: 'music', tint: 'image', amount: 149, dueDay: 1, paid: true, freq: 'monthly', cat: 'fun', sort: 1 },
-  { name: 'Netflix Premium', th: 'Netflix Premium', icon: 'clapperboard', tint: 'video', amount: 419, dueDay: 3, paid: true, freq: 'monthly', cat: 'fun', sort: 2 },
+  { name: 'Spotify Family', th: 'Spotify Family', icon: 'music', tint: 'image', amount: 149, dueDay: 1, paid: true, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 1 },
+  { name: 'Netflix Premium', th: 'Netflix Premium', icon: 'clapperboard', tint: 'video', amount: 419, dueDay: 3, paid: true, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 2 },
   { name: 'Apartment Rent', th: 'ค่าเช่าบ้าน', icon: 'house', tint: 'folder', amount: 12000, dueDay: 5, paid: true, freq: 'monthly', cat: 'bills', sort: 3 },
   { name: 'PEA Electricity', th: 'ค่าไฟ PEA', icon: 'zap', tint: 'pdf', amount: 1240, dueDay: 10, paid: true, freq: 'monthly', cat: 'bills', sort: 4 },
   { name: 'AIS Fiber Internet', th: 'AIS Fiber อินเทอร์เน็ต', icon: 'wifi', tint: 'doc', amount: 590, dueDay: 15, paid: true, freq: 'monthly', cat: 'bills', sort: 5 },
@@ -113,7 +113,7 @@ export const bills: Prisma.BillCreateManyInput[] = [
   { name: 'KrungThai Personal', th: 'กรุงไทยใจป้ำ', icon: 'landmark', tint: 'pdf', amount: 2783, dueDay: 25, paid: false, freq: 'monthly', cat: 'debt', sort: 10 },
   { name: 'Student Loan (กยศ)', th: 'กยศ', icon: 'graduation-cap', tint: 'doc', amount: 3889, dueDay: 28, paid: false, freq: 'monthly', cat: 'debt', sort: 11 },
   { name: 'AIA Life Insurance', th: 'ประกันชีวิต AIA', icon: 'shield', tint: 'xls', amount: 1850, dueDay: 30, paid: false, freq: 'monthly', cat: 'bills', sort: 12 },
-  { name: 'iCloud+ 200GB', th: 'iCloud+ 200GB', icon: 'cloud', tint: 'image', amount: 99, dueDay: 30, paid: false, freq: 'monthly', cat: 'fun', sort: 13 },
+  { name: 'iCloud+ 200GB', th: 'iCloud+ 200GB', icon: 'cloud', tint: 'image', amount: 99, dueDay: 30, paid: false, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 13 },
 ];
 
 export const channels: Prisma.ChannelCreateManyInput[] = [
