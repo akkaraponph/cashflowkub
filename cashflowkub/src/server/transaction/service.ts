@@ -79,6 +79,15 @@ export async function createTransactions(body: unknown): Promise<TxView[]> {
   return rows.map((t) => toTxView(toPlain(t), fallback));
 }
 
+const deleteSchema = z.object({ ids: z.array(z.number().int().positive()).min(1).max(500) });
+
+/** Deletes every listed id in one statement; unknown ids are skipped. */
+export async function deleteTransactions(body: unknown): Promise<{ deleted: number }> {
+  const { ids } = parseBody(deleteSchema, body);
+  const { count } = await prisma.transaction.deleteMany({ where: { id: { in: ids } } });
+  return { deleted: count };
+}
+
 export async function updateTransaction(id: number, body: unknown): Promise<TxView> {
   const { date, ...input } = parseBody(txSchema.partial(), body);
   const row = await prisma.transaction.update({ where: { id }, data: { ...input, date: toDate(date) } });

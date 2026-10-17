@@ -107,3 +107,24 @@ describe('decimal amounts', () => {
     expect((await post({ amount: -1, interest: 0.001 })).status).toBe(400);
   });
 });
+
+describe('DELETE /api/v1/transactions/batch', () => {
+  const del = (body: unknown) => call(batch.DELETE, { method: 'DELETE', body });
+  const count = async () => (await call(collection.GET, { url: '/api/v1/transactions' })).json.data.length;
+  it('deletes the listed ids and reports the count', async () => {
+    const { status, json } = await del({ ids: [1, 2, 3] });
+    expect(status).toBe(200);
+    expect(json).toEqual({ deleted: 3 });
+    expect(await count()).toBe(9);
+    expect((await call(item.GET, { params: { id: '2' } })).status).toBe(404);
+  });
+  it('skips unknown ids', async () => {
+    expect((await del({ ids: [4, 9999] })).json).toEqual({ deleted: 1 });
+  });
+  it('rejects empty, oversized and malformed id lists', async () => {
+    for (const body of [{ ids: [] }, { ids: Array.from({ length: 501 }, (_, i) => i + 1) }, { ids: [0] }, { ids: [1.5] }, {}]) {
+      expect((await del(body)).status).toBe(400);
+    }
+    expect(await count()).toBe(12);
+  });
+});
