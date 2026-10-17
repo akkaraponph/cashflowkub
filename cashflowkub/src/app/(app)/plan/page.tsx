@@ -1,3 +1,4 @@
+import { MonthPicker } from '@/components/cfk/month-picker';
 import { Card } from '@/components/ui/card';
 import { Donut, TrendChart } from '@/components/cfk/charts';
 import { PageTitle } from '@/components/cfk/page-title';
@@ -6,6 +7,7 @@ import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
 import { CURRENT_MONTH } from '@/lib/clock';
 import { fmt, signed } from '@/lib/format';
+import { resolveMonth } from '@/lib/month';
 import { localized, type Dict, type Lang } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
@@ -24,6 +26,7 @@ function PlanSection({ title, group, expense, ui, lang }: { title: string; group
   return (
     <Card className="gap-0 px-5 py-3">
       <h2 className="py-1 font-bold">{title}</h2>
+      {group.items.length === 0 ? <p className="border-t py-3 text-sm text-muted-foreground">{ui.noPlanItems}</p> : null}
       {group.items.map((it) => (
         <div key={it.id} className="grid gap-1.5 border-t py-2.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -53,17 +56,19 @@ function RatioDonut({ label, ratio }: { label: string; ratio: number }) {
 
 export default async function PlanPage({ searchParams }: { searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
-  const raw = firstParam(await searchParams, 'tab');
+  const sp = await searchParams;
+  const raw = firstParam(sp, 'tab');
   const tab = raw === 'summary' || raw === 'assets' ? raw : 'monthly';
-  const plan = await getPlan(CURRENT_MONTH);
+  const month = resolveMonth(firstParam(sp, 'month'), CURRENT_MONTH);
+  const plan = await getPlan(month);
 
   return (
     <>
-      <PageTitle title={ui.nav.plan} />
+      <PageTitle title={ui.nav.plan}>{tab === 'assets' ? null : <MonthPicker month={month} basePath="/plan" />}</PageTitle>
       <SegmentedLinks
         value={tab}
         options={[{ key: 'monthly', label: ui.planTabMonthly }, { key: 'summary', label: ui.planTabSummary }, { key: 'assets', label: ui.planTabAssets }]}
-        hrefFor={(k) => `/plan?tab=${k}`}
+        hrefFor={(k) => `/plan?tab=${k}&month=${month}`}
       />
       {tab === 'monthly' ? (
         <>

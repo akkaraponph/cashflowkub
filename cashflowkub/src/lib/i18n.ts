@@ -112,6 +112,7 @@ const en = {
   creditBalanceHint: 'Use a negative number for credit card debt owed.', confirmDeleteAccount: 'Click again to delete this account', noAccounts: 'No accounts yet. Add one to get started.',
   editGoal: 'Edit goal', goalIcon: 'Icon', monthlySaving: 'Save per month (฿)', goalByHint: 'e.g. Dec 2026 or Ongoing',
   confirmDeleteGoal: 'Click again to delete this goal', noGoals: 'No goals yet. Add one to start saving toward it.',
+  addPlanItem: 'Add plan item', editPlanItem: 'Edit plan item', confirmDeletePlanItem: 'Click again to delete this item', noPlanItems: 'Nothing planned here yet.',
   periodLbl: 'Repeat every', everyMonth: 'Every month', everyMonthsN: 'Every {n} months', startMonthLbl: 'Starts in', endMonthLbl: 'Ends after (optional)',
   dueDateLbl: 'Due date', thisMonthBtn: 'This month', prevMonth: 'Previous month', nextMonth: 'Next month',
   errors: {
@@ -303,6 +304,7 @@ const th: Dict = {
   creditBalanceHint: 'บัตรเครดิตที่ค้างชำระให้ใส่เป็นค่าติดลบ', confirmDeleteAccount: 'กดอีกครั้งเพื่อลบบัญชีนี้', noAccounts: 'ยังไม่มีบัญชี เพิ่มบัญชีเพื่อเริ่มต้น',
   editGoal: 'แก้ไขเป้าหมาย', goalIcon: 'ไอคอน', monthlySaving: 'ออมต่อเดือน (฿)', goalByHint: 'เช่น ธ.ค. 2569 หรือ ต่อเนื่อง',
   confirmDeleteGoal: 'กดอีกครั้งเพื่อลบเป้าหมายนี้', noGoals: 'ยังไม่มีเป้าหมาย เพิ่มเป้าหมายแรกได้เลย',
+  addPlanItem: 'เพิ่มรายการแผน', editPlanItem: 'แก้ไขรายการแผน', confirmDeletePlanItem: 'กดอีกครั้งเพื่อลบรายการนี้', noPlanItems: 'ยังไม่มีรายการในแผนนี้',
   periodLbl: 'ทำซ้ำทุก', everyMonth: 'ทุกเดือน', everyMonthsN: 'ทุก {n} เดือน', startMonthLbl: 'เริ่มเดือน', endMonthLbl: 'สิ้นสุดหลังเดือน (ไม่บังคับ)',
   dueDateLbl: 'วันที่ครบกำหนด', thisMonthBtn: 'เดือนนี้', prevMonth: 'เดือนก่อน', nextMonth: 'เดือนถัดไป',
   errors: {
