@@ -12,6 +12,7 @@ import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { fmt } from '@/lib/format';
 import { scheduledInstallment, toApr } from '@/server/debt/terms';
+import { Select } from '@/components/ui/select';
 
 const KINDS = ['paylater', 'cashloan', 'bankloan', 'creditcard', 'personal'] as const;
 type Kind = (typeof KINDS)[number];
@@ -125,17 +126,13 @@ export function AddDebtDialog() {
             <Field id="debt-rate" label={ui.rate}>
               <div className="flex gap-2">
                 {input('rate')}
-                <select aria-label={ui.rate} value={unit} onChange={(e) => setUnit(e.target.value === 'year' ? 'year' : 'month')} className="h-9 rounded-md border border-input bg-transparent px-2 text-sm">
-                  <option value="month">{ui.perMonthRate}</option>
-                  <option value="year">{ui.perYearRate}</option>
-                </select>
+                <Select aria-label={ui.rate} className="w-32 shrink-0" value={unit} onValueChange={(v) => setUnit(v === 'year' ? 'year' : 'month')}
+                  options={[{ value: 'month', label: ui.perMonthRate }, { value: 'year', label: ui.perYearRate }]} />
               </div>
             </Field>
             <Field id="debt-calc" label={ui.calcMethod}>
-              <select id="debt-calc" value={calc} onChange={(e) => setCalc(e.target.value === 'reducing' ? 'reducing' : 'flat')} className="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-                <option value="flat">{ui.calcFlat}</option>
-                <option value="reducing">{ui.calcReducing}</option>
-              </select>
+              <Select id="debt-calc" value={calc} onValueChange={(v) => setCalc(v === 'reducing' ? 'reducing' : 'flat')}
+                options={[{ value: 'flat', label: ui.calcFlat }, { value: 'reducing', label: ui.calcReducing }]} />
             </Field>
             <Field id="debt-termMonths" label={ui.termMonthsLbl}>{input('termMonths')}</Field>
             <Field id="debt-fixedPayment" label={`${ui.fixedPaymentLbl} (฿)`} hint={ui.fixedPaymentHint}>{input('fixedPayment')}</Field>

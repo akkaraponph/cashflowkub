@@ -14,6 +14,7 @@ import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { localized } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { Select } from '@/components/ui/select';
 
 type TxType = 'expense' | 'income';
 
@@ -88,10 +89,7 @@ export function AddTransactionDialog({ categories, accounts }: { categories: Cat
           ) : null}
           <div className="grid gap-2">
             <Label htmlFor="tx-account">{ui.account}</Label>
-            <select id="tx-account" value={acct} onChange={(e) => setAcct(e.target.value)}
-              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm">
-              {accounts.map((a) => <option key={a.id} value={a.name}>{a.name}</option>)}
-            </select>
+            <Select id="tx-account" value={acct} onValueChange={setAcct} options={accounts.map((a) => ({ value: a.name, label: a.name }))} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="tx-note">{ui.note}</Label>

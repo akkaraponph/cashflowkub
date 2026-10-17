@@ -16,6 +16,7 @@ import { listActiveDebtViews } from '@/server/debt/service';
 import { HttpError } from '@/server/errors';
 import type { DebtView } from '@/server/views';
 import { IncomeDialog } from './income-dialog';
+import { Select } from '@/components/ui/select';
 
 const BAND_TONE: Record<DsrBand, Tone> = { healthy: 'success', manageable: 'info', high: 'warning', critical: 'danger' };
 const BAND_COLOR: Record<DsrBand, string> = {
@@ -107,11 +108,9 @@ export default async function SmartPlanPage({ searchParams }: { searchParams: Pr
         <form method="get" className="flex flex-wrap items-end gap-2">
           <label className="grid gap-1 text-xs text-muted-foreground">
             {ui.strategy}
-            <select name="strategy" defaultValue={strategy} className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground">
-              <option value="avalanche">{ui.avalanche}</option>
-              <option value="snowball">{ui.snowball}</option>
-              <option value="custom">{ui.custom}</option>
-            </select>
+            <Select name="strategy" defaultValue={strategy} className="w-44" options={[
+              { value: 'avalanche', label: ui.avalanche }, { value: 'snowball', label: ui.snowball }, { value: 'custom', label: ui.custom },
+            ]} />
           </label>
           <label className="grid gap-1 text-xs text-muted-foreground">
             {ui.extraPerMonth}

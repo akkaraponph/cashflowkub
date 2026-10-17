@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { Account, Category } from '@/generated/prisma/client';
 import { Icon } from '@/components/cfk/icon';
+import { Select } from '@/components/ui/select';
 import { TxSummary } from '@/components/cfk/tx-summary';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
@@ -43,6 +44,9 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
   const catByKey = new Map(categories.map((c) => [c.key, c]));
   const inflight = useRef(new Map<string, Promise<void>>());
   const tableRef = useRef<HTMLTableElement>(null);
+  // While a dropdown is open focus lives in its portal; that must not count as leaving the row.
+  const openMenus = useRef(0);
+  const onMenu = (open: boolean) => { openMenus.current = Math.max(0, openMenus.current + (open ? 1 : -1)); };
 
   const blankDraft = (): RowDraft => ({ date: defaultDate, activity: 'expense', cat: '', acct: '', amount: '', interest: '', fee: '', goal: '', note: '', name: '' });
   const makeRow = (draft: RowDraft, body: TxBody | null = null, snap: RowDraft | null = null): Row => ({ key: `r${rowSeq++}`, draft, body, snap, incomplete: false });
@@ -157,6 +161,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
       edit(row.key, { [f]: row.snap?.[f] ?? blankDraft()[f] });
       return;
     }
+    if (t.getAttribute('role') === 'combobox') return; // Enter/arrows belong to the dropdown
     const arrows = t.tagName === 'INPUT' && f !== 'date';
     const dr = e.key === 'Enter' || (arrows && e.key === 'ArrowDown') ? 1 : arrows && e.key === 'ArrowUp' ? -1 : 0;
     if (dr === 0 || r + dr < 0) return;
@@ -206,7 +211,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                   <tr
                     key={row.key}
                     className="group border-t"
-                    onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) commit(row.key); }}
+                    onBlur={(e) => { if (openMenus.current === 0 && !e.currentTarget.contains(e.relatedTarget as Node | null)) commit(row.key); }}
                   >
                     <td
                       className={cn('w-8 border-l-2 border-r bg-muted text-center text-[10px] text-muted-foreground', row.incomplete ? 'border-l-amber-500' : 'border-l-transparent')}
@@ -223,22 +228,16 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                     </td>
                     <td className="w-28 border-r p-0"><input {...ctl('date')} type="date" className={CELL} value={d.date} onChange={(e) => edit(row.key, { date: e.target.value })} /></td>
                     <td className="w-24 border-r p-0">
-                      <select {...ctl('activity')} className={cn(CELL, tone)} value={d.activity} onChange={(e) => onActivity(row, e.target.value as Activity)}>
-                        <option value="income">{s.incomeAct}</option>
-                        <option value="expense">{s.expenseAct}</option>
-                      </select>
+                      <Select {...ctl('activity')} variant="cell" className={tone} value={d.activity} onValueChange={(v) => onActivity(row, v as Activity)} onOpenChange={onMenu}
+                        options={[{ value: 'income', label: s.incomeAct }, { value: 'expense', label: s.expenseAct }]} />
                     </td>
                     <td className="w-40 border-r p-0">
-                      <select {...ctl('cat')} className={CELL} value={d.cat} onChange={(e) => onCat(row, e.target.value)}>
-                        <option value="" />
-                        {cats.map((c) => <option key={c.key} value={c.key}>{catLabel(c)}</option>)}
-                      </select>
+                      <Select {...ctl('cat')} variant="cell" value={d.cat} onValueChange={(v) => onCat(row, v)} onOpenChange={onMenu}
+                        options={cats.map((c) => ({ value: c.key, label: catLabel(c) }))} />
                     </td>
                     <td className="w-40 border-r p-0">
-                      <select {...ctl('acct')} className={CELL} value={d.acct} onChange={(e) => edit(row.key, { acct: e.target.value })}>
-                        <option value="" />
-                        {accts.map((a) => <option key={a} value={a}>{a}</option>)}
-                      </select>
+                      <Select {...ctl('acct')} variant="cell" value={d.acct} onValueChange={(v) => edit(row.key, { acct: v })} onOpenChange={onMenu}
+                        options={accts.map((a) => ({ value: a, label: a }))} />
                     </td>
                     <td className="w-28 border-r p-0">
                       <input {...ctl('amount')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums', tone)} value={d.amount} onChange={(e) => edit(row.key, { amount: e.target.value })} />
@@ -251,10 +250,8 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                     ) : <td colSpan={2} className="border-r bg-muted" />}
                     {sub === 'saving' ? (
                       <td className="w-36 border-r p-0">
-                        <select {...ctl('goal')} className={CELL} value={d.goal} onChange={(e) => edit(row.key, { goal: e.target.value })}>
-                          <option value="" />
-                          {goalNames.map((g) => <option key={g} value={g}>{g}</option>)}
-                        </select>
+                        <Select {...ctl('goal')} variant="cell" value={d.goal} onValueChange={(v) => edit(row.key, { goal: v })} onOpenChange={onMenu} clearLabel="—"
+                          options={goalNames.map((g) => ({ value: g, label: g }))} />
                       </td>
                     ) : <td className="border-r bg-muted" />}
                     <td className="min-w-40 p-0"><input {...ctl('note')} className={CELL} value={d.note} onChange={(e) => edit(row.key, { note: e.target.value })} /></td>
