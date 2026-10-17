@@ -18,7 +18,7 @@ export default async function AccountsPage() {
 
   return (
     <>
-      <PageTitle title={ui.nav.accounts}>
+      <PageTitle title={ui.nav.accounts} addTransaction={false}>
         <AccountDialog />
       </PageTitle>
       <Card className="gap-1 p-6">
