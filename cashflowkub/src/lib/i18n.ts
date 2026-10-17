@@ -187,6 +187,7 @@ const en = {
     incomplete: 'Row incomplete — not saved yet',
     deleteRow: 'Delete row', prevMonth: 'Previous month', nextMonth: 'Next month', month: 'Month',
     sumIncome: 'Income', sumSaving: 'Savings / investing', sumNeed: 'Essential spending', sumWant: 'Other spending', sumDebt: 'Debt payments',
+    pageRange: 'Showing {from}–{to} of {total}', perPage: 'Per page', prevPage: 'Previous page', nextPage: 'Next page', pageTotals: 'Totals for this page',
   },
   menu: 'Menu', settingsProfile: 'Ploy Srichan', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };
@@ -372,6 +373,7 @@ const th: Dict = {
     incomplete: 'ข้อมูลไม่ครบ — ยังไม่ได้บันทึก',
     deleteRow: 'ลบแถว', prevMonth: 'เดือนก่อน', nextMonth: 'เดือนถัดไป', month: 'เดือน',
     sumIncome: 'รายรับ', sumSaving: 'เงินสะสม / การลงทุน', sumNeed: 'ค่าใช้จ่ายจำเป็น', sumWant: 'ค่าใช้จ่ายอื่นๆ', sumDebt: 'ชำระหนี้สิน',
+    pageRange: 'แสดง {from}–{to} จาก {total}', perPage: 'ต่อหน้า', prevPage: 'หน้าก่อน', nextPage: 'หน้าถัดไป', pageTotals: 'ยอดรวมเฉพาะหน้านี้',
   },
   menu: 'เมนู', settingsProfile: 'พลอย ศรีจันทร์', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
 };

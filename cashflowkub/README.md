@@ -26,7 +26,7 @@ pnpm test:e2e    # page smoke tests against a running `pnpm start`
 Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error": "..." }`.
 
 - CRUD: `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (`GET/POST /<r>`, `GET/PUT/PATCH/DELETE /<r>/:id`)
-- `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
+- `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=&offset=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
 - `GET /dashboard`, `/networth`, `/reports`, `/setup`, `/plan?month=YYYY-MM`, `/plan/snapshots`, `/bills/summary`, `/debts/:id/schedule`
 - `PATCH /bills/:id/pay` (`{ "paid"?: boolean }`)
 - `GET/POST /debts/:id/payments`: POST body `{ "amount": number (positive int), "date"?: "YYYY-MM-DD", "note"?: string }`; responds `201 { payment, debt, excess }`. The payment is split fee → interest → principal; only the applied amount is stored, and `excess` is the part of `amount` beyond what was owed (0 otherwise). A closed debt gives 409.

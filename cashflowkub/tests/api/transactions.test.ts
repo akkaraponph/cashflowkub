@@ -21,6 +21,14 @@ describe('GET /api/v1/transactions', () => {
     expect(await get('from=2026-06-15&to=2026-06-15')).toHaveLength(3);
     expect(await get('limit=5')).toHaveLength(5);
   });
+  it('pages with offset', async () => {
+    const get = async (qs: string) => (await call(collection.GET, { url: `/api/v1/transactions?${qs}` })).json.data;
+    const all = await get('');
+    const page = await get('limit=5&offset=5');
+    expect(page).toHaveLength(5);
+    expect(page[0].id).toBe(all[5].id);
+    expect(await get('offset=100')).toEqual([]);
+  });
   it('400s an invalid date filter', async () => {
     expect((await call(collection.GET, { url: '/api/v1/transactions?from=nope' })).status).toBe(400);
   });

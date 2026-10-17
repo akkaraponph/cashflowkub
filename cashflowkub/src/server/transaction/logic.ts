@@ -84,6 +84,7 @@ export interface TxFilter {
   from?: Date;
   to?: Date;
   limit?: number;
+  offset?: number;
 }
 
 /** Reads list filters from a query string. Unknown type / bad limit are ignored; bad dates are a 400. */
@@ -104,5 +105,7 @@ export function parseTxFilter(params: URLSearchParams): TxFilter {
   }
   const limit = Number(params.get('limit'));
   if (Number.isInteger(limit) && limit > 0) f.limit = Math.min(limit, 500);
+  const offset = Number(params.get('offset'));
+  if (params.get('offset') && Number.isInteger(offset) && offset >= 0) f.offset = offset;
   return f;
 }

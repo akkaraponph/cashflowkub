@@ -32,12 +32,13 @@ interface Row {
 
 type EditableField = Exclude<keyof RowDraft, 'id' | 'name'>;
 
-export function TxSheet({ rows: initialRows, categories, accounts, goals, defaultDate }: {
+export function TxSheet({ rows: initialRows, categories, accounts, goals, defaultDate, summaryCaption }: {
   rows: TxView[];
   categories: Category[];
   accounts: Account[];
   goals: { name: string }[];
   defaultDate: string;
+  summaryCaption?: string;
 }) {
   const { ui, lang } = useI18n();
   const s = ui.sheet;
@@ -176,7 +177,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
 
   return (
     <div className="hidden items-start gap-4 md:grid md:grid-cols-[13.5rem_minmax(0,1fr)]">
-      <TxSummary totals={summarize(saved, categories)} />
+      <TxSummary totals={summarize(saved, categories)} caption={summaryCaption} />
       <div className="grid gap-1.5">
         <div className="overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10">
           <table ref={tableRef} className="w-full min-w-[60rem] border-collapse text-xs" onPaste={onPaste} onKeyDown={onKeyDown}>

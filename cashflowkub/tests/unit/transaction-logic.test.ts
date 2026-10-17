@@ -58,3 +58,11 @@ describe('hasAtMostTwoDecimals', () => {
     expect(hasAtMostTwoDecimals(12.345)).toBe(false);
   });
 });
+
+describe('parseTxFilter offset', () => {
+  it('reads a non-negative integer offset and ignores junk', () => {
+    expect(parseTxFilter(new URLSearchParams('offset=10')).offset).toBe(10);
+    expect(parseTxFilter(new URLSearchParams('offset=-1')).offset).toBeUndefined();
+    expect(parseTxFilter(new URLSearchParams('offset=x')).offset).toBeUndefined();
+  });
+});
