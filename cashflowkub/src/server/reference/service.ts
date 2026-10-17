@@ -2,6 +2,7 @@
 import type { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { notFound } from '@/server/errors';
+import { assertAccountNameFree, assertAccountUnused, renameAccountInTransactions } from './accounts';
 import { parseBody } from '@/server/validate';
 import { RESOURCE_SCHEMAS, type ResourceName, type ResourceRows } from './resources';
 
@@ -43,14 +44,42 @@ export async function getResource<K extends ResourceName>(name: K, id: number): 
   return row;
 }
 
-export function createResource<K extends ResourceName>(name: K, body: unknown): Promise<ResourceRows[K]> {
-  return delegate(name).create({ data: parseBody(schemaOf(name), body) });
+export async function createResource<K extends ResourceName>(name: K, body: unknown): Promise<ResourceRows[K]> {
+  const data = parseBody(schemaOf(name), body);
+  if (name === 'accounts') {
+    return prisma.$transaction(async (tx) => {
+      await assertAccountNameFree(tx, String(data.name));
+      return tx.account.create({ data: data as never }) as Promise<ResourceRows[K]>;
+    });
+  }
+  return delegate(name).create({ data });
 }
 
-export function updateResource<K extends ResourceName>(name: K, id: number, body: unknown): Promise<ResourceRows[K]> {
-  return delegate(name).update({ where: { id }, data: parseBody(schemaOf(name).partial(), body) });
+export async function updateResource<K extends ResourceName>(name: K, id: number, body: unknown): Promise<ResourceRows[K]> {
+  const data = parseBody(schemaOf(name).partial(), body);
+  if (name === 'accounts') {
+    return prisma.$transaction(async (tx) => {
+      const current = await tx.account.findUnique({ where: { id } });
+      if (!current) throw notFound();
+      if (typeof data.name === 'string' && data.name !== current.name) {
+        await assertAccountNameFree(tx, data.name, id);
+        await renameAccountInTransactions(tx, current.name, data.name);
+      }
+      return tx.account.update({ where: { id }, data: data as never }) as Promise<ResourceRows[K]>;
+    });
+  }
+  return delegate(name).update({ where: { id }, data });
 }
 
 export async function deleteResource(name: ResourceName, id: number): Promise<void> {
+  if (name === 'accounts') {
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.account.findUnique({ where: { id } });
+      if (!current) throw notFound();
+      await assertAccountUnused(tx, current.name);
+      await tx.account.delete({ where: { id } });
+    });
+    return;
+  }
   await delegate(name).delete({ where: { id } });
 }
