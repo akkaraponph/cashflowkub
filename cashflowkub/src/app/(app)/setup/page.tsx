@@ -11,6 +11,7 @@ import { firstParam, type SearchParams } from '@/lib/search-params';
 import type { SetupGoalRow } from '@/server/setup/logic';
 import { getSetup } from '@/server/setup/service';
 import type { DebtView } from '@/server/views';
+import { CategoryEditDialog } from './category-edit-dialog';
 
 const TABS = ['categories', 'channels', 'accounts', 'debts', 'goals'] as const;
 type Tab = (typeof TABS)[number];
@@ -107,12 +108,17 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
       {tab === 'categories' ? (
         <>
           <Section title={ui.incomeCats} sub={ui.incomeCatsSub}>
-            {s.incomeSources.map((x) => <ListRow key={x.id} icon={x.icon} tint={x.tint} title={localized(lang, x.name, x.th)} right={<ToneBadge label={subLabel(x.sub)} tone="info" />} className="border-t" />)}
+            {s.incomeSources.map((x) => <ListRow key={x.id} icon={x.icon} tint={x.tint} title={localized(lang, x.name, x.th)} right={<div className="flex items-center gap-1"><ToneBadge label={subLabel(x.sub)} tone="info" /><CategoryEditDialog kind="income" id={x.id} en={x.name} th={x.th} /></div>} className="border-t" />)}
           </Section>
           <Section title={ui.expenseCats} sub={ui.expenseCatsSub}>
             {s.expenseCategories.map((c) => (
               <ListRow key={c.id} icon={c.icon} tint={c.tint} title={localized(lang, c.label, c.th)} className="border-t"
-                right={<ToneBadge label={expenseSubLabel(c.sub)} tone={c.sub === 'need' ? 'success' : c.sub === 'want' ? 'warning' : 'info'} />} />
+                right={(
+                  <div className="flex items-center gap-1">
+                    <ToneBadge label={expenseSubLabel(c.sub)} tone={c.sub === 'need' ? 'success' : c.sub === 'want' ? 'warning' : 'info'} />
+                    <CategoryEditDialog kind="expense" id={c.id} en={c.label} th={c.th} />
+                  </div>
+                )} />
             ))}
           </Section>
         </>
