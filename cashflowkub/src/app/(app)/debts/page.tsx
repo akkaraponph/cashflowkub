@@ -8,12 +8,14 @@ import { ListRow } from '@/components/cfk/list-row';
 import { PageTitle } from '@/components/cfk/page-title';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { ToneBadge } from '@/components/cfk/tone-badge';
-import { fmt } from '@/lib/format';
+import { Progress } from '@/components/cfk/progress';
+import { fmt, pct } from '@/lib/format';
 import { localized, pickLabel } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseStrategy, sortByStrategy } from '@/server/debt/logic';
 import { listDebts } from '@/server/debt/service';
+import { debtSummary } from '@/server/debt/summary';
 import { AddDebtDialog } from './add-debt-dialog';
 import { DueBadge } from './due-badge';
 
@@ -21,10 +23,7 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
   const { ui, lang } = await getI18n();
   const strategy = parseStrategy(firstParam(await searchParams, 'strategy'));
   const [active, paid] = await Promise.all([listDebts('active'), listDebts('paid')]);
-  const totalRemaining = active.reduce((s, d) => s + d.remaining, 0);
-  const totalOriginal = active.reduce((s, d) => s + d.original, 0);
-  const monthlyTotal = active.reduce((s, d) => s + d.installment, 0);
-  const progress = totalOriginal > 0 ? active.reduce((s, d) => s + d.paid, 0) / totalOriginal : 0;
+  const { totalRemaining, totalOriginal, totalPaid, monthlyTotal, progress, avgApr, avgMonthlyRate } = debtSummary(active);
 
   return (
     <>
@@ -41,12 +40,13 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{ui.totalDebt}</p>
             <p className="mt-1 text-4xl font-extrabold tabular-nums">{fmt(totalRemaining)}</p>
-            <p className="text-sm opacity-75 tabular-nums">{ui.of} {fmt(totalOriginal)}</p>
+            <p className="text-sm opacity-75 tabular-nums">{ui.of} {fmt(totalOriginal)} · {ui.paidSoFar} {fmt(totalPaid)}</p>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2.5">
           <HeroPill><span className="tabular-nums">{active.length}</span> {ui.active}</HeroPill>
           <HeroPill><span className="tabular-nums">{paid.length}</span> {ui.paidOff}</HeroPill>
+          <HeroPill>{ui.avgRate} <span className="tabular-nums">{avgApr.toFixed(1)}%</span> <span className="tabular-nums opacity-75">({avgMonthlyRate.toFixed(2)}%{ui.perMonth})</span></HeroPill>
           <HeroPill>{ui.monthlyDebtPay} <span className="tabular-nums">{fmt(monthlyTotal)}</span></HeroPill>
         </div>
       </Hero>
@@ -72,9 +72,14 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
             icon={d.icon}
             tint={d.tint}
             title={localized(lang, d.name, d.th)}
-            subtitle={`${pickLabel(ui.debtKind, d.kind)} · ${ui.apr} ${d.apr}% · ${fmt(d.installment)}${ui.perMonth}`}
+            subtitle={`${pickLabel(ui.debtKind, d.kind)} · ${ui.apr} ${d.apr}% · ${fmt(d.installment)}${ui.perMonth} · ${pct(d.progress)}`}
             right={fmt(d.remaining)}
-            rightSub={<DueBadge due={d.due} />}
+            rightSub={
+              <div className="flex flex-col items-end gap-1">
+                <DueBadge due={d.due} />
+                <Progress value={d.progress} className="h-1.5 w-20" />
+              </div>
+            }
             href={`/debts/${d.id}`}
             className="border-t"
           />

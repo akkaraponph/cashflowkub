@@ -12,6 +12,7 @@ import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
 import { amountOwedNow } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
+import { planVsActual } from '@/server/debt/summary';
 import { DueBadge } from '../due-badge';
 import { DeletePaymentButton } from './delete-payment-button';
 import { RecordPaymentDialog } from './record-payment-dialog';
@@ -24,6 +25,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
   const due = d.due;
   const owedNow = amountOwedNow(due);
+  const pva = planVsActual(d, payments);
   const suggested = Math.max(1, due.state === 'paid' ? d.installment : owedNow);
 
   return (
@@ -89,6 +91,38 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
 
       {tab === 'overview' ? (
         <>
+          <Card className="gap-0 overflow-x-auto bg-secondary p-0">
+            <h2 className="px-4 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.planVsActual}</h2>
+            <table className="w-full text-xs tabular-nums">
+              <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 text-left" />
+                  <th className="px-2 text-right">{ui.amount}</th>
+                  <th className="px-2 text-right">{ui.principal}</th>
+                  <th className="px-2 text-right">{ui.interest}</th>
+                  <th className="px-4 text-right">{ui.monthsLbl}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {([
+                  [ui.planned, pva.planned],
+                  [ui.actual, { ...pva.actual, months: null }],
+                  [ui.remaining, pva.remaining],
+                ] as const).map(([label, r]) => (
+                  <tr key={label} className="border-t">
+                    <td className="px-4 py-2.5 font-semibold text-muted-foreground">{label}</td>
+                    <td className="px-2 text-right font-semibold">{r ? fmt(r.payment) : '—'}</td>
+                    <td className="px-2 text-right">{r ? fmt(r.principal) : '—'}</td>
+                    <td className="px-2 text-right text-destructive">{r ? fmt(r.interest) : '—'}</td>
+                    <td className="px-4 text-right">{r && r.months !== null ? r.months : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {pva.actual.fees > 0 ? (
+              <p className="border-t px-4 py-2 text-xs text-destructive tabular-nums">{ui.fee} {fmt(pva.actual.fees)}</p>
+            ) : null}
+          </Card>
           <Card className="gap-0 bg-secondary p-0">
             {([
               [ui.instalmentPreview, fmt(d.installment)],
