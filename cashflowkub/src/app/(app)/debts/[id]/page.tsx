@@ -10,10 +10,12 @@ import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
-import { amountOwedNow } from '@/server/debt/cycle';
+import { today } from '@/lib/clock';
+import { amountOwedNow, isoDate } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
 import { planVsActual } from '@/server/debt/summary';
 import { DueBadge } from '../due-badge';
+import { SchedulePlanner } from './schedule-planner';
 import { DeletePaymentButton } from './delete-payment-button';
 import { RecordPaymentDialog } from './record-payment-dialog';
 
@@ -21,10 +23,11 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const { ui, lang } = await getI18n();
   const { id } = await params;
   const tab = firstParam(await searchParams, 'tab') === 'schedule' ? 'schedule' : 'overview';
-  const { debt: d, schedule, totalInterest, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
+  const { debt: d, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
   const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
   const due = d.due;
   const owedNow = amountOwedNow(due);
+  const terms = { original: d.original, paid: d.paid, apr: d.apr, calc: d.calc, monthly: d.monthly, fixedPayment: d.fixedPayment, termMonths: d.termMonths };
   const pva = planVsActual(d, payments);
   const suggested = Math.max(1, due.state === 'paid' ? d.installment : owedNow);
 
@@ -158,37 +161,10 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
             ))}
           </Card>
         </>
-      ) : d.neverPaysOff ? null : (
-        <>
-          <Card className="gap-0 overflow-x-auto bg-secondary p-0">
-            <table className="w-full text-xs tabular-nums">
-              <thead className="bg-background text-[10px] uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="px-3.5 py-2.5 text-left">#</th>
-                  <th className="px-2 text-left">{ui.amount}</th>
-                  <th className="px-2 text-left">{ui.principal}</th>
-                  <th className="px-2 text-left">{ui.interest}</th>
-                  <th className="px-3.5 text-right">{ui.remaining}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedule.slice(0, 24).map((r) => (
-                  <tr key={r.month} className="border-t">
-                    <td className="px-3.5 py-2.5 font-semibold text-muted-foreground">{r.month}</td>
-                    <td className="px-2 font-semibold">{fmt(r.payment)}</td>
-                    <td className="px-2">{fmt(r.principal)}</td>
-                    <td className="px-2 text-destructive">{fmt(r.interest)}</td>
-                    <td className="px-3.5 text-right font-semibold">{fmt(r.balance)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-          <div className="flex justify-between px-1 text-sm">
-            <span className="text-muted-foreground">{ui.totalInterest}</span>
-            <span className="font-bold text-destructive tabular-nums">{fmt(totalInterest)}</span>
-          </div>
-        </>
+      ) : d.done ? (
+        <p className="py-4 text-center text-sm text-muted-foreground">{ui.debtClosed}</p>
+      ) : (
+        <SchedulePlanner debtId={d.id} base={terms} todayIso={isoDate(today())} />
       )}
     </>
   );
