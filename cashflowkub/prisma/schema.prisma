@@ -160,6 +160,7 @@ model Bill {
   paid   Boolean @default(false)
   freq   String  @default("monthly") /// monthly | once
   cat    String  @default("bills") @map("cat_key")
+  kind   String  @default("bill") /// bill | subscription
   sort   Int     @default(0)
 
   @@map("bills")
