@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/transactions/route';
 import * as item from '@/app/api/v1/transactions/[id]/route';
+import * as batch from '@/app/api/v1/transactions/batch/route';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -59,5 +60,26 @@ describe('/api/v1/transactions/:id', () => {
   });
   it('400s a bad id', async () => {
     expect((await call(item.GET, { params: { id: '1.5' } })).status).toBe(400);
+  });
+});
+
+describe('POST /api/v1/transactions/batch', () => {
+  const row = (o: object = {}) => ({ name: 'Lunch', cat: 'food', acct: 'Cash Wallet', amount: -90, date: '2026-06-01', ...o });
+  const post = (items: unknown[]) => call(batch.POST, { method: 'POST', body: { items } });
+  const count = async () => (await call(collection.GET, { url: '/api/v1/transactions' })).json.data.length;
+
+  it('creates every item', async () => {
+    const { status, json } = await post([row(), row({ amount: -10 }), row({ cat: 'debt', interest: 5, fee: 1 })]);
+    expect(status).toBe(201);
+    expect(json.data).toHaveLength(3);
+    expect(json.data[2]).toMatchObject({ interest: 5, fee: 1 });
+    expect(await count()).toBe(15);
+  });
+  it('is all-or-nothing', async () => {
+    expect((await post([row(), row(), row({ amount: 0 })])).status).toBe(400);
+    expect(await count()).toBe(12);
+  });
+  it('rejects an empty list', async () => {
+    expect((await post([])).status).toBe(400);
   });
 });

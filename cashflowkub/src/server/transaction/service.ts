@@ -49,6 +49,17 @@ export async function createTransaction(body: unknown): Promise<TxView> {
   return toTxView(row, today());
 }
 
+const batchSchema = z.object({ items: z.array(txSchema).min(1).max(500) });
+
+/** Creates all items in one database transaction: any invalid item rejects the whole batch. */
+export async function createTransactions(body: unknown): Promise<TxView[]> {
+  const { items } = parseBody(batchSchema, body);
+  const fallback = today();
+  const data = items.map(({ date, ...input }) => ({ ...input, date: toDate(date) ?? fallback }));
+  const rows = await prisma.$transaction(data.map((d) => prisma.transaction.create({ data: d })));
+  return rows.map((t) => toTxView(t, fallback));
+}
+
 export async function updateTransaction(id: number, body: unknown): Promise<TxView> {
   const { date, ...input } = parseBody(txSchema.partial(), body);
   const row = await prisma.transaction.update({ where: { id }, data: { ...input, date: toDate(date) } });
