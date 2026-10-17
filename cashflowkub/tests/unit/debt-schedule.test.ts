@@ -91,3 +91,26 @@ describe('paymentForTarget', () => {
     expect(() => paymentForTarget(terms(), m)).toThrow(RangeError);
   });
 });
+
+describe('projectSchedule per-month overrides', () => {
+  const d = terms({ original: 70000, paid: 24300, apr: 25, calc: 'reducing', monthly: 2783 });
+  it('a bigger payment in one month cuts balance and shortens the schedule', () => {
+    const s = projectSchedule(d, { 1: 5000 });
+    expect(s.rows[0]).toEqual({ month: 1, payment: 5000, principal: 4048, interest: 952, balance: 41652 });
+    expect(s.rows[1].payment).toBe(2783);
+    expect(s.rows.length).toBeLessThan(projectSchedule(d).rows.length);
+  });
+  it('a zero payment capitalises the interest instead of aborting', () => {
+    const s = projectSchedule(d, { 1: 0 });
+    expect(s.rows[0]).toMatchObject({ payment: 0, principal: -952, balance: 46652 });
+    expect(s.neverPaysOff).toBe(false);
+  });
+  it('an override above what is owed closes the debt that month', () => {
+    const s = projectSchedule(d, { 1: 1_000_000 });
+    expect(s.rows).toHaveLength(1);
+    expect(s.rows[0]).toMatchObject({ payment: 46652, balance: 0 });
+  });
+  it('overrides past the end are ignored', () => {
+    expect(projectSchedule(d, { 99: 10 })).toEqual(projectSchedule(d));
+  });
+});

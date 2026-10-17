@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { fmt } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { fill, localized } from '@/lib/i18n';
 import { paymentForTarget } from '@/server/debt/schedule';
 import type { DebtTerms } from '@/server/debt/terms';
@@ -24,6 +25,13 @@ function parse(v: string, min: number, max: number, round: boolean): number | un
   return round ? Math.round(n) : n;
 }
 
+/** Copy of `rec` without `key`. */
+function without<T>(rec: Record<number, T>, key: number): Record<number, T> {
+  const next = { ...rec };
+  delete next[key];
+  return next;
+}
+
 export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; base: DebtTerms; todayIso: string }) {
   const { ui, lang } = useI18n();
   const router = useRouter();
@@ -32,6 +40,9 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
   const [apr, setApr] = useState('');
   const [calc, setCalc] = useState<'flat' | 'reducing' | ''>('');
   const [target, setTarget] = useState('');
+  const [overrides, setOverrides] = useState<Record<number, number>>({});
+  const [editing, setEditing] = useState<Record<number, string>>({});
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const w = {
     payment: parse(payment, 1, 10_000_000, true),
@@ -39,14 +50,37 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
     calc: calc || undefined,
     targetMonths: parse(target, 1, 600, true),
   };
-  const dirty = Object.values(w).some((v) => v !== undefined);
-  const plan = useAmortization(base, w, todayIso);
+  const overridden = Object.keys(overrides).length > 0;
+  const dirty = overridden || Object.values(w).some((v) => v !== undefined);
+  const plan = useAmortization(base, w, todayIso, overrides);
   const baseline = useAmortization(base, {}, todayIso);
   const delta = plan.totalInterest - baseline.totalInterest;
   const totals = plan.rows.reduce((t, r) => ({ payment: t.payment + r.payment, principal: t.principal + r.principal, interest: t.interest + r.interest }), { payment: 0, principal: 0, interest: 0 });
   const needed = w.targetMonths !== undefined ? paymentForTarget({ ...base, apr: w.apr ?? base.apr, calc: w.calc ?? base.calc }, w.targetMonths) : null;
 
-  const reset = () => { setPayment(''); setApr(''); setCalc(''); setTarget(''); };
+  const reset = () => { setPayment(''); setApr(''); setCalc(''); setTarget(''); setOverrides({}); setEditing({}); };
+
+  // The regular payment for each month without an override; an edit equal to it is not an override.
+  const regular = useAmortization(base, w, todayIso).rows;
+  const commitCell = (month: number) => {
+    const text = editing[month];
+    setEditing((p) => without(p, month));
+    if (text === undefined) return;
+    const n = parse(text.replace(/[,฿\s]/g, ''), 0, 10_000_000, true);
+    const normal = regular[month - 1]?.payment;
+    setOverrides((p) => (n === undefined || n === normal ? without(p, month) : { ...p, [month]: n }));
+  };
+  const focusCell = (month: number) => tableRef.current?.querySelector<HTMLInputElement>(`[data-m="${month}"]`)?.focus();
+  const onCellKey = (e: React.KeyboardEvent<HTMLInputElement>, month: number) => {
+    if (e.key === 'Escape') {
+      setEditing((p) => without(p, month));
+      return;
+    }
+    const dm = e.key === 'Enter' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+    if (dm === 0) return;
+    e.preventDefault();
+    focusCell(month + dm);
+  };
   const apply = () =>
     startTransition(async () => {
       try {
@@ -83,10 +117,11 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
             <Input id="wi-target" type="number" inputMode="numeric" min={1} max={600} value={target} onChange={(e) => { setTarget(e.target.value); setPayment(''); }} />
           </div>
         </div>
+        <p className="text-xs text-muted-foreground">{ui.scheduleEditHint}</p>
         {needed !== null ? <p className="text-sm font-semibold tabular-nums">{fill(ui.needsPerMonth, { amount: fmt(needed) })}</p> : null}
         <div className="flex gap-2">
           <Button type="button" size="sm" variant="outline" disabled={!dirty} onClick={reset}>{ui.reset}</Button>
-          <Button type="button" size="sm" disabled={!dirty || plan.neverPaysOff || pending} onClick={apply}><Icon name="check" size={16} />{ui.applyToDebt}</Button>
+          <Button type="button" size="sm" disabled={!dirty || overridden || plan.neverPaysOff || pending} onClick={apply}><Icon name="check" size={16} />{ui.applyToDebt}</Button>
         </div>
       </Card>
 
@@ -106,37 +141,51 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
               {delta !== 0 ? <p className={`text-[11px] tabular-nums ${delta < 0 ? 'text-type-xls-fg' : 'text-destructive'}`}>{delta > 0 ? '+' : '−'}{fmt(Math.abs(delta))} {ui.interestDelta}</p> : null}
             </Card>
           </div>
-          <Card className="max-h-[70svh] gap-0 overflow-auto bg-secondary p-0">
-            <table className="w-full text-xs tabular-nums">
-              <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="max-h-[70svh] overflow-auto rounded-xl bg-card ring-1 ring-foreground/10">
+            <table ref={tableRef} className="w-full min-w-[28rem] border-collapse text-xs tabular-nums">
+              <thead>
                 <tr>
-                  {[['#', 'text-left px-3.5'], [ui.amount, 'text-right px-2'], [ui.principal, 'text-right px-2'], [ui.interest, 'text-right px-2'], [ui.remaining, 'text-right px-3.5']].map(([h, c]) => (
-                    <th key={h} className={`sticky top-0 bg-background py-2.5 ${c}`}>{h}</th>
+                  {[['#', 'w-10'], [ui.amount, ''], [ui.principal, ''], [ui.interest, ''], [ui.remaining, '']].map(([h, c]) => (
+                    <th key={h} className={cn('sticky top-0 z-10 border border-border bg-secondary px-1.5 py-1 text-center text-[11px] font-semibold', c)}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {plan.rows.map((r) => (
-                  <tr key={r.month} className="border-t">
-                    <td className="px-3.5 py-2.5 font-semibold text-muted-foreground">{r.month}</td>
-                    <td className="px-2 text-right font-semibold">{fmt(r.payment)}</td>
-                    <td className="px-2 text-right">{fmt(r.principal)}</td>
-                    <td className="px-2 text-right text-destructive">{fmt(r.interest)}</td>
-                    <td className="px-3.5 text-right font-semibold">{fmt(r.balance)}</td>
-                  </tr>
-                ))}
+                {plan.rows.map((r) => {
+                  const edited = overrides[r.month] !== undefined;
+                  return (
+                    <tr key={r.month} className="border-t">
+                      <td className="w-10 border-r bg-muted text-center text-[10px] text-muted-foreground">{r.month}</td>
+                      <td className={cn('border-r p-0', edited && 'bg-amber-500/15')}>
+                        <input
+                          data-m={r.month}
+                          inputMode="numeric"
+                          className="h-7 w-full bg-transparent px-1.5 text-right text-xs font-semibold outline-none focus:ring-1 focus:ring-inset focus:ring-primary"
+                          value={editing[r.month] ?? String(r.payment)}
+                          onFocus={(e) => { setEditing((p) => ({ ...p, [r.month]: String(r.payment) })); e.currentTarget.select(); }}
+                          onChange={(e) => setEditing((p) => ({ ...p, [r.month]: e.target.value }))}
+                          onBlur={() => commitCell(r.month)}
+                          onKeyDown={(e) => onCellKey(e, r.month)}
+                        />
+                      </td>
+                      <td className="border-r px-1.5 text-right">{fmt(r.principal)}</td>
+                      <td className="border-r px-1.5 text-right text-destructive">{fmt(r.interest)}</td>
+                      <td className="px-1.5 text-right font-semibold">{fmt(r.balance)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 font-bold">
-                  <td className="px-3.5 py-2.5">{ui.totalLbl}</td>
-                  <td className="px-2 text-right">{fmt(totals.payment)}</td>
-                  <td className="px-2 text-right">{fmt(totals.principal)}</td>
-                  <td className="px-2 text-right text-destructive">{fmt(totals.interest)}</td>
-                  <td className="px-3.5" />
+                <tr className="border-t-2 bg-secondary font-semibold">
+                  <td className="px-1.5 py-1 text-center">{ui.totalLbl}</td>
+                  <td className="px-1.5 py-1 text-right">{fmt(totals.payment)}</td>
+                  <td className="px-1.5 py-1 text-right">{fmt(totals.principal)}</td>
+                  <td className="px-1.5 py-1 text-right text-destructive">{fmt(totals.interest)}</td>
+                  <td />
                 </tr>
               </tfoot>
             </table>
-          </Card>
+          </div>
         </>
       )}
     </>
