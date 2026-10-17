@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatDay } from '@/lib/format';
+import { formatDay, formatMonth } from '@/lib/format';
 
 describe('formatDay', () => {
   it('formats in Thai and English', () => {
@@ -14,5 +14,15 @@ describe('formatDay', () => {
     expect(formatDay('', 'th')).toBe('');
     expect(formatDay('not-a-date', 'th')).toBe('not-a-date');
     expect(formatDay('2026-13-40', 'th')).toBe('2026-13-40');
+  });
+});
+
+describe('formatMonth', () => {
+  it('formats a YYYY-MM month in Thai and English', () => {
+    expect(formatMonth('2026-06', 'en')).toBe('Jun 2026');
+    expect(formatMonth('2026-12', 'th')).toBe('ธ.ค. 2026');
+  });
+  it('returns anything unparseable as given', () => {
+    expect(formatMonth('garbage', 'en')).toBe('garbage');
   });
 });

@@ -13,18 +13,19 @@ import { Icon } from '@/components/cfk/icon';
 import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { errorText } from '@/lib/api-error';
-import { localized } from '@/lib/i18n';
+import { RECUR_PERIODS } from '@/lib/bill-schedule';
+import { fill, localized } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { Bill } from '@/generated/prisma/client';
 import { BILL_KINDS, KIND_PRESETS, billBody, emptyBillForm, formFromBill, type BillForm, type BillKind } from './bill-form';
 
-/** Add dialog when `bill` is omitted (pass `kind` to preselect bill or subscription); edit with delete when it is given. */
-export function BillDialog({ bill, kind }: { bill?: Bill; kind?: BillKind }) {
+/** Add dialog when `bill` is omitted (pass `kind` to preselect bill or subscription); edit with delete when it is given. `month` is the month being planned: new bills start in it. */
+export function BillDialog({ bill, kind, month }: { bill?: Bill; kind?: BillKind; month: string }) {
   const { ui, lang } = useI18n();
   const { categories } = useShellData();
   const router = useRouter();
   const editing = bill !== undefined;
-  const fresh = (): BillForm => ({ ...emptyBillForm, kind: kind ?? 'bill', cat: KIND_PRESETS[kind ?? 'bill'].cat });
+  const fresh = (): BillForm => ({ ...emptyBillForm, kind: kind ?? 'bill', cat: KIND_PRESETS[kind ?? 'bill'].cat, startMonth: month, date: `${month}-01` });
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -115,22 +116,46 @@ export function BillDialog({ bill, kind }: { bill?: Bill; kind?: BillKind }) {
               <Input id={`${idp}-amount`} inputMode="decimal" value={form.amount} onChange={(e) => set({ amount: e.target.value })} onKeyDown={onEnter} />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={`${idp}-due`}>{ui.dueDayLbl}</Label>
-              <Input id={`${idp}-due`} inputMode="numeric" value={form.dueDay} onChange={(e) => set({ dueDay: e.target.value })} onKeyDown={onEnter} />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor={`${idp}-freq`}>{ui.freqLbl}</Label>
-              <Select id={`${idp}-freq`} value={form.freq} onValueChange={(v) => set({ freq: v === 'once' ? 'once' : 'monthly' })}
-                options={[{ value: 'monthly', label: ui.freqMonthly }, { value: 'once', label: ui.freqOnce }]} />
-            </div>
-            <div className="grid gap-1.5">
               <Label htmlFor={`${idp}-cat`}>{ui.category}</Label>
               <Select id={`${idp}-cat`} value={form.cat} onValueChange={(v) => set({ cat: v })}
                 options={expenseCats.map((c) => ({ value: c.key, label: localized(lang, c.label, c.th) }))} />
             </div>
           </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor={`${idp}-freq`}>{ui.freqLbl}</Label>
+            <Select id={`${idp}-freq`} value={form.freq} onValueChange={(v) => set({ freq: v === 'once' ? 'once' : 'monthly' })}
+              options={[{ value: 'monthly', label: ui.freqMonthly }, { value: 'once', label: ui.freqOnce }]} />
+          </div>
+          {form.freq === 'once' ? (
+            <div className="grid gap-1.5">
+              <Label htmlFor={`${idp}-date`}>{ui.dueDateLbl}</Label>
+              <Input id={`${idp}-date`} type="date" value={form.date} onChange={(e) => set({ date: e.target.value })} onKeyDown={onEnter} />
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${idp}-due`}>{ui.dueDayLbl}</Label>
+                  <Input id={`${idp}-due`} inputMode="numeric" value={form.dueDay} onChange={(e) => set({ dueDay: e.target.value })} onKeyDown={onEnter} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${idp}-period`}>{ui.periodLbl}</Label>
+                  <Select id={`${idp}-period`} value={form.everyMonths} onValueChange={(v) => set({ everyMonths: v })}
+                    options={RECUR_PERIODS.map((n) => ({ value: String(n), label: n === 1 ? ui.everyMonth : fill(ui.everyMonthsN, { n }) }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${idp}-start`}>{ui.startMonthLbl}</Label>
+                  <Input id={`${idp}-start`} type="month" value={form.startMonth} onChange={(e) => set({ startMonth: e.target.value })} />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`${idp}-end`}>{ui.endMonthLbl}</Label>
+                  <Input id={`${idp}-end`} type="month" value={form.endMonth} onChange={(e) => set({ endMonth: e.target.value })} />
+                </div>
+              </div>
+            </>
+          )}
           <DialogFooter className="sm:flex-col">
             <Button className="w-full" disabled={!body || pending} onClick={save}>{ui.save}</Button>
             {editing ? (
