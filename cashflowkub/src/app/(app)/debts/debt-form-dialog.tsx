@@ -29,16 +29,16 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 
 /** Add dialog when `debt` is omitted, edit dialog when it is given. */
 export function DebtFormDialog({ debt }: { debt?: DebtView }) {
-  const { ui } = useI18n();
+  const { ui, lang } = useI18n();
   const router = useRouter();
   const editing = debt !== undefined;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [form, setForm] = useState<DebtForm>(() => (debt ? formFromDebt(debt) : emptyForm));
+  const [form, setForm] = useState<DebtForm>(() => (debt ? formFromDebt(debt, lang) : emptyForm));
   const { kind, unit, calc, revolving, fields: f } = form;
 
   const openDialog = () => {
-    if (debt) setForm(formFromDebt(debt));
+    if (debt) setForm(formFromDebt(debt, lang));
     setOpen(true);
   };
 
@@ -102,7 +102,6 @@ export function DebtFormDialog({ debt }: { debt?: DebtView }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field id="debt-name" label={ui.debtName}>{input('name', 'text')}</Field>
-            <Field id="debt-th" label={`${ui.debtName} (ไทย)`}>{input('th', 'text')}</Field>
             <Field id="debt-lender" label={ui.lender}>{input('lender', 'text')}</Field>
             <Field id="debt-original" label={`${ui.originalDebt} (฿)`}>{input('original')}</Field>
             <Field id="debt-openingPaid" label={`${ui.alreadyPaid} (฿)`}>{input('openingPaid')}</Field>

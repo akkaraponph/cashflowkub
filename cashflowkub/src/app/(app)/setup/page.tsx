@@ -108,7 +108,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
       {tab === 'categories' ? (
         <>
           <Section title={ui.incomeCats} sub={ui.incomeCatsSub}>
-            {s.incomeSources.map((x) => <ListRow key={x.id} icon={x.icon} tint={x.tint} title={localized(lang, x.name, x.th)} right={<div className="flex items-center gap-1"><ToneBadge label={subLabel(x.sub)} tone="info" /><CategoryEditDialog kind="income" id={x.id} en={x.name} th={x.th} /></div>} className="border-t" />)}
+            {s.incomeSources.map((x) => <ListRow key={x.id} icon={x.icon} tint={x.tint} title={localized(lang, x.name, x.th)} right={<div className="flex items-center gap-1"><ToneBadge label={subLabel(x.sub)} tone="info" /><CategoryEditDialog kind="income" id={x.id} name={localized(lang, x.name, x.th)} /></div>} className="border-t" />)}
           </Section>
           <Section title={ui.expenseCats} sub={ui.expenseCatsSub}>
             {s.expenseCategories.map((c) => (
@@ -116,7 +116,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
                 right={(
                   <div className="flex items-center gap-1">
                     <ToneBadge label={expenseSubLabel(c.sub)} tone={c.sub === 'need' ? 'success' : c.sub === 'want' ? 'warning' : 'info'} />
-                    <CategoryEditDialog kind="expense" id={c.id} en={c.label} th={c.th} />
+                    <CategoryEditDialog kind="expense" id={c.id} name={localized(lang, c.label, c.th)} />
                   </div>
                 )} />
             ))}
