@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/transactions/route';
 import * as item from '@/app/api/v1/transactions/[id]/route';
+import * as batch from '@/app/api/v1/transactions/batch/route';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -9,7 +10,7 @@ describe('GET /api/v1/transactions', () => {
   it('lists newest first with derived date and group', async () => {
     const { json } = await call(collection.GET, { url: '/api/v1/transactions' });
     expect(json.data).toHaveLength(12);
-    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today' });
+    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today', interest: 0, fee: 0, goal: '', isoDate: '2026-06-18' });
     expect(json.data[3].group).toBe('Yesterday');
   });
   it('filters by type, category, date range and limit', async () => {
@@ -35,6 +36,13 @@ describe('POST /api/v1/transactions', () => {
     const { json } = await call(collection.POST, { method: 'POST', body: { name: 'Gift', cat: 'income', acct: 'Cash Wallet', amount: 500, date: 'Jun 1, 2026' } });
     expect(json).toMatchObject({ date: 'Jun 1, 2026', group: 'Jun 1' });
   });
+  it('stores loan interest, fee and saving goal', async () => {
+    const post = (body: object) => call(collection.POST, { method: 'POST', body });
+    const { status, json } = await post({ name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1358, interest: 120, fee: 15 });
+    expect(status).toBe(201);
+    expect(json).toMatchObject({ interest: 120, fee: 15, goal: '' });
+    expect((await post({ name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1, interest: -1 })).status).toBe(400);
+  });
   it('rejects zero amounts, blank names and bad dates', async () => {
     const post = (body: object) => call(collection.POST, { method: 'POST', body });
     expect((await post({ name: 'X', cat: 'food', acct: 'Cash', amount: 0 })).status).toBe(400);
@@ -52,5 +60,26 @@ describe('/api/v1/transactions/:id', () => {
   });
   it('400s a bad id', async () => {
     expect((await call(item.GET, { params: { id: '1.5' } })).status).toBe(400);
+  });
+});
+
+describe('POST /api/v1/transactions/batch', () => {
+  const row = (o: object = {}) => ({ name: 'Lunch', cat: 'food', acct: 'Cash Wallet', amount: -90, date: '2026-06-01', ...o });
+  const post = (items: unknown[]) => call(batch.POST, { method: 'POST', body: { items } });
+  const count = async () => (await call(collection.GET, { url: '/api/v1/transactions' })).json.data.length;
+
+  it('creates every item', async () => {
+    const { status, json } = await post([row(), row({ amount: -10 }), row({ cat: 'debt', interest: 5, fee: 1 })]);
+    expect(status).toBe(201);
+    expect(json.data).toHaveLength(3);
+    expect(json.data[2]).toMatchObject({ interest: 5, fee: 1 });
+    expect(await count()).toBe(15);
+  });
+  it('is all-or-nothing', async () => {
+    expect((await post([row(), row(), row({ amount: 0 })])).status).toBe(400);
+    expect(await count()).toBe(12);
+  });
+  it('rejects an empty list', async () => {
+    expect((await post([])).status).toBe(400);
   });
 });

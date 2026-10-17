@@ -30,7 +30,7 @@ describe('seedDatabase', () => {
       setupGoals: await prisma.setupGoal.count(),
       setupGoalChannels: await prisma.setupGoalChannel.count(),
     }).toEqual({
-      categories: 7, accounts: 5, transactions: 12, budgets: 6, goals: 3, debts: 16, debtPayments: 6, settings: 1, assets: 8, bills: 13,
+      categories: 9, accounts: 5, transactions: 12, budgets: 6, goals: 3, debts: 16, debtPayments: 6, settings: 1, assets: 8, bills: 13,
       channels: 9, incomeCategories: 9, planItems: 16, assetSnapshots: 14, netWorthHistory: 6,
       monthlyCashflow: 6, daySpend: 11, setupGoals: 6, setupGoalChannels: 11,
     });

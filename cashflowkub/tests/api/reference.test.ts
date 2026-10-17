@@ -10,7 +10,7 @@ describe('GET /api/v1/:resource', () => {
   it('lists rows in sort order inside a data envelope', async () => {
     const { status, json } = await call(collection.GET, { params: { resource: 'categories' } });
     expect(status).toBe(200);
-    expect(json.data).toHaveLength(7);
+    expect(json.data).toHaveLength(9);
     expect(json.data[0]).toMatchObject({ id: 1, key: 'food', label: 'Food & Dining' });
   });
   it('404s an unknown resource', async () => {

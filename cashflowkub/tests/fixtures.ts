@@ -18,7 +18,7 @@ export const bill = (o: Partial<Bill> = {}): Bill => ({
   id: 1, name: 'Bill', th: 'บิล', icon: 'receipt', tint: 'pdf', amount: 100, dueDay: 20, paid: false, freq: 'monthly', cat: 'bills', sort: 1, ...o,
 });
 export const tx = (o: Partial<Transaction> = {}): Transaction => ({
-  id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', ...o,
+  id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', interest: 0, fee: 0, goal: '', ...o,
 });
 export const budget = (o: Partial<Budget> = {}): Budget => ({ id: 1, cat: 'food', spent: 0, limit: 1000, sort: 1, ...o });
 export const category = (o: Partial<Category> = {}): Category => ({

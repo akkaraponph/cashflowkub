@@ -33,7 +33,7 @@ model Category {
   icon  String @default("circle")
   tint  String @default("doc")
   type  String @default("expense") /// income | expense
-  sub   String @default("") /// need | want
+  sub   String @default("") /// need | want | saving | debt
   sort  Int    @default(0)
 
   @@map("categories")
@@ -41,13 +41,19 @@ model Category {
 
 /// One money movement. Signed amount: negative = expense.
 model Transaction {
-  id     Int      @id @default(autoincrement())
-  name   String
-  cat    String   @map("cat_key")
-  acct   String   @map("account")
-  amount Int
-  date   DateTime @db.Date
-  note   String   @default("")
+  id       Int      @id @default(autoincrement())
+  name     String
+  cat      String   @map("cat_key")
+  acct     String   @map("account")
+  amount   Int
+  date     DateTime @db.Date
+  note     String   @default("")
+  /// Loan interest part of a debt payment (baht, >= 0).
+  interest Int      @default(0)
+  /// Other loan fees, excluding interest (baht, >= 0).
+  fee      Int      @default(0)
+  /// Saving goal name for saving-category rows.
+  goal     String   @default("")
 
   @@index([date])
   @@map("transactions")

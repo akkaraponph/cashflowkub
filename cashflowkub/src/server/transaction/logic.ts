@@ -11,6 +11,11 @@ export interface TxView {
   acct: string;
   amount: number;
   note: string;
+  interest: number;
+  fee: number;
+  goal: string;
+  /** "2026-06-18" */
+  isoDate: string;
   /** "Jun 18, 2026" */
   date: string;
   /** "Today" | "Yesterday" | "Jun 15" */
@@ -36,6 +41,7 @@ export function groupLabel(date: Date, today: Date): string {
 export function toTxView(t: Transaction, today: Date): TxView {
   return {
     id: t.id, name: t.name, cat: t.cat, acct: t.acct, amount: t.amount, note: t.note,
+    interest: t.interest, fee: t.fee, goal: t.goal, isoDate: t.date.toISOString().slice(0, 10),
     date: formatLongDate(t.date), group: groupLabel(t.date, today),
   };
 }

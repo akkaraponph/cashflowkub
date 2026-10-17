@@ -20,7 +20,7 @@ describe('groupLabel', () => {
 describe('toTxView', () => {
   it('formats date and group, and drops the raw Date', () => {
     const v = toTxView(tx({ id: 7, date: day('2026-06-15') }), TODAY);
-    expect(v).toEqual({ id: 7, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, note: '', date: 'Jun 15, 2026', group: 'Jun 15' });
+    expect(v).toEqual({ id: 7, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, note: '', interest: 0, fee: 0, goal: '', isoDate: '2026-06-15', date: 'Jun 15, 2026', group: 'Jun 15' });
     expect(formatLongDate(day('2026-01-02'))).toBe('Jan 2, 2026');
   });
 });
