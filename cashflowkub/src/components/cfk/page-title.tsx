@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AddTransactionDialog } from '@/components/app-shell/add-transaction-dialog';
 import { Icon } from './icon';
 
 export function PageTitle({ title, back, children }: { title: string; back?: string; children?: React.ReactNode }) {
@@ -11,6 +12,7 @@ export function PageTitle({ title, back, children }: { title: string; back?: str
       ) : null}
       <h1 className="flex-1 truncate text-2xl font-bold tracking-tight">{title}</h1>
       {children}
+      <AddTransactionDialog />
     </div>
   );
 }

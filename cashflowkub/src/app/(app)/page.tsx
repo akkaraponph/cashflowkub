@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
+import { AddTransactionDialog } from '@/components/app-shell/add-transaction-dialog';
 import { CashflowBars, Donut, MiniBars } from '@/components/cfk/charts';
 import { Hero, HeroPill } from '@/components/cfk/hero';
 import { Icon } from '@/components/cfk/icon';
@@ -48,9 +49,12 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{ui.greeting}</h1>
-        <p className="text-sm text-muted-foreground">{ui.today}</p>
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold tracking-tight">{ui.greeting}</h1>
+          <p className="text-sm text-muted-foreground">{ui.today}</p>
+        </div>
+        <AddTransactionDialog />
       </div>
 
       <Hero>

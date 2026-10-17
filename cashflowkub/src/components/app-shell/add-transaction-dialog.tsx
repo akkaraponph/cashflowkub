@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import type { Account, Category } from '@/generated/prisma/client';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/cfk/icon';
 import { Tile } from '@/components/cfk/tile';
 import { useI18n } from '@/components/i18n-provider';
+import { useShellData } from './shell-data';
 import { apiFetch } from '@/lib/api-client';
 import { localized } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -18,8 +18,9 @@ import { Select } from '@/components/ui/select';
 
 type TxType = 'expense' | 'income';
 
-export function AddTransactionDialog({ categories, accounts }: { categories: Category[]; accounts: Account[] }) {
+export function AddTransactionDialog() {
   const { ui, lang } = useI18n();
+  const { categories, accounts } = useShellData();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TxType>('expense');
@@ -53,7 +54,7 @@ export function AddTransactionDialog({ categories, accounts }: { categories: Cat
     <>
       <Button size="sm" onClick={() => setOpen(true)}>
         <Icon name="plus" size={16} />
-        <span className="hidden sm:inline">{ui.add}</span>
+        <span className="hidden sm:inline">{ui.addTx}</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-md">
