@@ -1,5 +1,5 @@
 // Pure form model shared by the add and edit debt dialogs.
-import { localized, type Lang } from '@/lib/i18n';
+import { localized, type Dict, type Lang } from '@/lib/i18n';
 import { toApr } from '@/server/debt/terms';
 import type { DebtView } from '@/server/views';
 
@@ -80,4 +80,9 @@ export function isFormValid(f: DebtForm): boolean {
   if (!base) return false;
   if (f.calc !== 'fixed') return true;
   return int(x.fixedPayment) > 0 && int(x.termMonths) > 0 && fixedTotal(f) >= int(x.original);
+}
+
+/** Display name of an interest method; unknown values read as reducing balance. */
+export function calcLabel(ui: Pick<Dict, 'calcFlat' | 'calcReducing' | 'calcFixed'>, calc: string): string {
+  return calc === 'flat' ? ui.calcFlat : calc === 'fixed' ? ui.calcFixed : ui.calcReducing;
 }

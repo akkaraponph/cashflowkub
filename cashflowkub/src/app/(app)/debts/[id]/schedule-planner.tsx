@@ -51,6 +51,7 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
     calc: calc || undefined,
     targetMonths: parse(target, 1, 600, true),
   };
+  const isFixed = base.calc === 'fixed';
   const overridden = Object.keys(overrides).length > 0;
   const dirty = overridden || Object.values(w).some((v) => v !== undefined);
   const plan = useAmortization(base, w, todayIso, overrides);
@@ -98,12 +99,14 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
     <>
       <Card className="gap-3 p-4">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.whatIf}</h2>
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className={cn('grid gap-3', isFixed ? 'sm:grid-cols-2' : 'sm:grid-cols-4')}>
           <div className="grid gap-1.5">
             <Label htmlFor="wi-payment">{ui.monthlyPaymentLbl} (฿)</Label>
             <Input id="wi-payment" type="number" inputMode="numeric" min={1} placeholder={String(baseline.terms.fixedPayment || base.monthly || '')}
               value={payment} onChange={(e) => { setPayment(e.target.value); setTarget(''); }} />
           </div>
+          {isFixed ? null : (
+            <>
           <div className="grid gap-1.5">
             <Label htmlFor="wi-apr">{ui.apr} (%)</Label>
             <Input id="wi-apr" type="number" inputMode="decimal" min={0} max={200} placeholder={String(base.apr)} value={apr} onChange={(e) => setApr(e.target.value)} />
@@ -113,6 +116,8 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
             <Select id="wi-calc" value={calc || base.calc} onValueChange={(v) => setCalc(v === 'flat' || v === 'reducing' ? (v === base.calc ? '' : v) : '')}
               options={[{ value: 'flat', label: ui.calcFlat }, { value: 'reducing', label: ui.calcReducing }]} />
           </div>
+            </>
+          )}
           <div className="grid gap-1.5">
             <Label htmlFor="wi-target">{ui.targetPayoff}</Label>
             <Input id="wi-target" type="number" inputMode="numeric" min={1} max={600} value={target} onChange={(e) => { setTarget(e.target.value); setPayment(''); }} />
@@ -122,7 +127,7 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
         {needed !== null ? <p className="text-sm font-semibold tabular-nums">{fill(ui.needsPerMonth, { amount: fmt(needed) })}</p> : null}
         <div className="flex gap-2">
           <Button type="button" size="sm" variant="outline" disabled={!dirty} onClick={reset}>{ui.reset}</Button>
-          <Button type="button" size="sm" disabled={!dirty || overridden || plan.neverPaysOff || pending} onClick={apply}><Icon name="check" size={16} />{ui.applyToDebt}</Button>
+          <Button type="button" size="sm" disabled={isFixed || !dirty || overridden || plan.neverPaysOff || pending} onClick={apply}><Icon name="check" size={16} />{ui.applyToDebt}</Button>
         </div>
       </Card>
 

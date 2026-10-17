@@ -14,6 +14,7 @@ import { today } from '@/lib/clock';
 import { amountOwedNow, isoDate } from '@/server/debt/cycle';
 import { getDebtDetail } from '@/server/debt/service';
 import { planVsActual } from '@/server/debt/summary';
+import { calcLabel } from '../debt-form';
 import { DebtFormDialog } from '../debt-form-dialog';
 import { DueBadge } from '../due-badge';
 import { SchedulePlanner } from './schedule-planner';
@@ -25,7 +26,8 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const { id } = await params;
   const tab = firstParam(await searchParams, 'tab') === 'schedule' ? 'schedule' : 'overview';
   const { debt: d, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
-  const method = d.calc === 'reducing' ? ui.calcReducing : ui.calcFlat;
+  const method = calcLabel(ui, d.calc);
+  const isFixed = d.calc === 'fixed';
   const due = d.due;
   const owedNow = amountOwedNow(due);
   const terms = { original: d.original, paid: d.paid, apr: d.apr, calc: d.calc, monthly: d.monthly, fixedPayment: d.fixedPayment, termMonths: d.termMonths };
@@ -41,7 +43,9 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
         <Tile icon={d.icon} tint={d.tint} size={48} />
         <div>
           <p className="text-sm font-semibold">{pickLabel(ui.debtKind, d.kind)}{d.lender ? ` · ${d.lender}` : ''}</p>
-          <p className="text-sm text-muted-foreground">{ui.apr} {d.apr}% · {method}</p>
+          <p className="text-sm text-muted-foreground">
+            {isFixed ? `${fmt(d.fixedPayment)} × ${d.termMonths} · ${method} (${ui.flatEquivalent} ${d.apr.toFixed(1)}%)` : `${ui.apr} ${d.apr}% · ${method}`}
+          </p>
         </div>
       </div>
 
@@ -136,6 +140,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
               [ui.dueDayLbl, String(d.dueDay)],
               [ui.lateFeeLbl, fmt(d.lateFee)],
               [ui.originalDebt, fmt(d.original)],
+              ...(isFixed ? [[ui.totalPayable, fmt(d.fixedPayment * d.termMonths)] as const] : []),
               ...(d.neverPaysOff ? [] : [[ui.totalInterest, fmt(d.totalInterestLeft)] as const]),
             ] as readonly (readonly [string, string])[]).map(([label, value]) => (
               <div key={label} className="flex justify-between border-b px-4 py-3 text-sm last:border-0">

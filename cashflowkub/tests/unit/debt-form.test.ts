@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyForm, fixedTotal, formFromDebt, formToBody, isFormValid, type DebtForm } from '@/app/(app)/debts/debt-form';
+import { calcLabel, emptyForm, fixedTotal, formFromDebt, formToBody, isFormValid, type DebtForm } from '@/app/(app)/debts/debt-form';
 import type { DebtView } from '@/server/views';
 
 const debt = {
@@ -55,5 +55,10 @@ describe('debt form', () => {
   });
   it('fixedTotal multiplies instalment by months', () => {
     expect(fixedTotal(fixedForm())).toBe(12000);
+  });
+
+  it('calcLabel names all three methods', () => {
+    const ui = { calcFlat: 'F', calcReducing: 'R', calcFixed: 'X' };
+    expect([calcLabel(ui, 'flat'), calcLabel(ui, 'reducing'), calcLabel(ui, 'fixed'), calcLabel(ui, '??')]).toEqual(['F', 'R', 'X', 'R']);
   });
 });
