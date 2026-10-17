@@ -104,7 +104,7 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
               value={payment} onChange={(e) => { setPayment(e.target.value); setTarget(''); }} />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="wi-apr">{ui.apr} (%/yr)</Label>
+            <Label htmlFor="wi-apr">{ui.apr} (%)</Label>
             <Input id="wi-apr" type="number" inputMode="decimal" min={0} max={200} placeholder={String(base.apr)} value={apr} onChange={(e) => setApr(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
