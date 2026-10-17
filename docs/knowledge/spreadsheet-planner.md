@@ -425,6 +425,11 @@ Goals (the `Goal` model behind `/goals`) are added, edited and deleted in the ap
 goal with tagged transactions cannot be deleted (409 `goalInUse`). `Goal.saved` is typed in by hand; it is not yet
 computed from tagged savings transactions as the planner does (section 9).
 
+Plan items (the `PlanItem` model behind `/plan?tab=monthly`) are added, edited and deleted in the app, one list per
+`type` (`income`, `expense`, `savings`) and `month` (`?month=YYYY-MM`; a malformed month shows the current month). A new item
+goes to the end of its month and type. `planned` and `actual` are both typed in by hand (whole baht); `actual` is not yet
+computed from transactions as the planner does (section 5). There are no suggested amounts or due dates yet.
+
 Bills (the `Bill` model behind `/bills`) are recurring templates planned month by month. `startMonth`, optional `endMonth`,
 `freq` (`monthly` = recurring, `once` = only in `startMonth`) and `everyMonths` (1-12) decide which months a bill occurs in;
 a one-time bill is entered as an exact date (stored as `startMonth` + `dueDay`). Paid state is per month, one row per bill

@@ -37,4 +37,10 @@ describe('plan item edge cases', () => {
     const moved = await call(plan.GET, { url: '/api/v1/plan?month=2031-02' });
     expect(moved.json.savings.items.map((i: { name: string }) => i.name)).toEqual(['Move']);
   });
+
+  it('appends a new item after the seeded ones in its month and type', async () => {
+    await create({ type: 'expense', name: 'Gifts', month: '2026-06' });
+    const { json } = await call(plan.GET, { url: '/api/v1/plan?month=2026-06' });
+    expect(json.expense.items.at(-1).name).toBe('Gifts');
+  });
 });

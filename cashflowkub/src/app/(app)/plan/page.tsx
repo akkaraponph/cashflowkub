@@ -13,6 +13,8 @@ import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { cn } from '@/lib/utils';
 import type { PlanGroup } from '@/server/plan/logic';
+import { PlanItemDialog } from './plan-item-dialog';
+import type { PlanType } from './plan-form';
 import { getPlan, getSnapshots } from '@/server/plan/service';
 
 const GROUP_META: Record<string, { label: keyof Dict; icon: string; tint: string }> = {
@@ -22,16 +24,20 @@ const GROUP_META: Record<string, { label: keyof Dict; icon: string; tint: string
   other: { label: 'otherAssetsGroup', icon: 'package', tint: 'image' },
 };
 
-function PlanSection({ title, group, expense, ui, lang }: { title: string; group: PlanGroup; expense?: boolean; ui: Dict; lang: Lang }) {
+function PlanSection({ title, group, type, month, expense, ui, lang }: { title: string; group: PlanGroup; type: PlanType; month: string; expense?: boolean; ui: Dict; lang: Lang }) {
   return (
     <Card className="gap-0 px-5 py-3">
-      <h2 className="py-1 font-bold">{title}</h2>
+      <div className="flex items-center justify-between gap-2 py-1">
+        <h2 className="font-bold">{title}</h2>
+        <PlanItemDialog type={type} month={month} />
+      </div>
       {group.items.length === 0 ? <p className="border-t py-3 text-sm text-muted-foreground">{ui.noPlanItems}</p> : null}
       {group.items.map((it) => (
         <div key={it.id} className="grid gap-1.5 border-t py-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="flex-1 truncate text-sm font-semibold">{localized(lang, it.name, it.th)}</span>
             <span className="text-xs text-muted-foreground tabular-nums">{ui.planned} {fmt(it.planned)} · {ui.actualLbl} {fmt(it.actual)}</span>
+            <PlanItemDialog type={type} month={month} item={it} />
           </div>
           <Progress value={it.planned ? it.actual / it.planned : 0} tone={expense && it.actual > it.planned ? 'danger' : 'primary'} />
         </div>
@@ -72,9 +78,9 @@ export default async function PlanPage({ searchParams }: { searchParams: SearchP
       />
       {tab === 'monthly' ? (
         <>
-          <PlanSection title={ui.incomeplan} group={plan.income} ui={ui} lang={lang} />
-          <PlanSection title={ui.expenseplan} group={plan.expense} expense ui={ui} lang={lang} />
-          <PlanSection title={ui.savingsplan} group={plan.savings} ui={ui} lang={lang} />
+          <PlanSection title={ui.incomeplan} group={plan.income} type="income" month={month} ui={ui} lang={lang} />
+          <PlanSection title={ui.expenseplan} group={plan.expense} type="expense" month={month} expense ui={ui} lang={lang} />
+          <PlanSection title={ui.savingsplan} group={plan.savings} type="savings" month={month} ui={ui} lang={lang} />
         </>
       ) : null}
       {tab === 'summary' ? (

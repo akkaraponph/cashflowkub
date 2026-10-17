@@ -31,8 +31,14 @@ export async function getSnapshots(): Promise<SnapshotsView> {
   return buildSnapshots(snaps, hist);
 }
 
-export function createPlanItem(body: unknown): Promise<PlanItem> {
-  return prisma.planItem.create({ data: parseBody(planItemSchema, body) });
+/** Without an explicit `sort` the item goes to the end of its month and type. */
+export async function createPlanItem(body: unknown): Promise<PlanItem> {
+  const data = parseBody(planItemSchema, body);
+  if (data.sort === undefined) {
+    const last = await prisma.planItem.aggregate({ where: { month: data.month, type: data.type }, _max: { sort: true } });
+    data.sort = (last._max.sort ?? 0) + 1;
+  }
+  return prisma.planItem.create({ data });
 }
 
 export function updatePlanItem(id: number, body: unknown): Promise<PlanItem> {
