@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/cfk/icon';
 import { Tile } from '@/components/cfk/tile';
+import { parseAmount, sanitizeAmountInput } from '@/lib/tx-sheet';
 import { useI18n } from '@/components/i18n-provider';
 import { useShellData } from './shell-data';
 import { apiFetch } from '@/lib/api-client';
@@ -31,7 +32,7 @@ export function AddTransactionDialog() {
   const [pending, startTransition] = useTransition();
 
   const expenseCats = categories.filter((c) => c.type === 'expense');
-  const value = Math.round(Number(amount));
+  const value = parseAmount(amount) ?? 0;
   const valid = Number.isFinite(value) && value > 0 && acct !== '';
 
   const save = () => {
@@ -71,7 +72,7 @@ export function AddTransactionDialog() {
           </div>
           <div className="grid gap-2">
             <Label htmlFor="tx-amount">{ui.amount} (฿)</Label>
-            <Input id="tx-amount" inputMode="numeric" type="number" min={1} step={1} value={amount} onChange={(e) => setAmount(e.target.value)}
+            <Input id="tx-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(sanitizeAmountInput(e.target.value))}
               className="h-14 text-center text-3xl font-extrabold tabular-nums" autoFocus />
           </div>
           {type === 'expense' ? (

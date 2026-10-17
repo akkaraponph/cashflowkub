@@ -11,7 +11,7 @@ import { apiFetch } from '@/lib/api-client';
 import { fmt } from '@/lib/format';
 import { fill, localized } from '@/lib/i18n';
 import {
-  columnTotals, draftFromView, parsePaste, summarize, validateRow, type Activity, type RowDraft, type TxBody,
+  columnTotals, draftFromView, parsePaste, sanitizeAmountInput, summarize, validateRow, type Activity, type RowDraft, type TxBody,
 } from '@/lib/tx-sheet';
 import { cn } from '@/lib/utils';
 import type { TxView } from '@/server/transaction/logic';
@@ -240,12 +240,12 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, defaul
                         options={accts.map((a) => ({ value: a, label: a }))} />
                     </td>
                     <td className="w-28 border-r p-0">
-                      <input {...ctl('amount')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums', tone)} value={d.amount} onChange={(e) => edit(row.key, { amount: e.target.value })} />
+                      <input {...ctl('amount')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums', tone)} value={d.amount} onChange={(e) => edit(row.key, { amount: sanitizeAmountInput(e.target.value) })} />
                     </td>
                     {sub === 'debt' ? (
                       <>
-                        <td className="w-24 border-r p-0"><input {...ctl('interest')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.interest} onChange={(e) => edit(row.key, { interest: e.target.value })} /></td>
-                        <td className="w-24 border-r p-0"><input {...ctl('fee')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.fee} onChange={(e) => edit(row.key, { fee: e.target.value })} /></td>
+                        <td className="w-24 border-r p-0"><input {...ctl('interest')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.interest} onChange={(e) => edit(row.key, { interest: sanitizeAmountInput(e.target.value) })} /></td>
+                        <td className="w-24 border-r p-0"><input {...ctl('fee')} inputMode="decimal" className={cn(CELL, 'text-right tabular-nums')} value={d.fee} onChange={(e) => edit(row.key, { fee: sanitizeAmountInput(e.target.value) })} /></td>
                       </>
                     ) : <td colSpan={2} className="border-r bg-muted" />}
                     {sub === 'saving' ? (

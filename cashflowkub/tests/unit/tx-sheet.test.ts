@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  columnTotals, monthRange, shiftMonth, parseAmount, parsePaste, parseThaiOrIsoDate, summarize, validateRow, type RowDraft,
+  columnTotals, monthRange, shiftMonth, parseAmount, sanitizeAmountInput, parsePaste, parseThaiOrIsoDate, summarize, validateRow, type RowDraft,
 } from '@/lib/tx-sheet';
 import { category } from '../fixtures';
 
@@ -14,17 +14,40 @@ const cats = [
 const blank: RowDraft = { date: '2026-01-01', activity: 'expense', cat: '', acct: '', amount: '', interest: '', fee: '', goal: '', note: '', name: '' };
 
 describe('parseAmount', () => {
-  it('strips baht sign, commas and sign; rounds', () => {
+  it('strips baht sign, commas and sign; keeps satang', () => {
     expect(parseAmount('1,358.00')).toBe(1358);
     expect(parseAmount('฿550')).toBe(550);
     expect(parseAmount('-100')).toBe(100);
-    expect(parseAmount('2.6')).toBe(3);
   });
   it('returns null for blanks and junk', () => {
     expect(parseAmount('abc')).toBeNull();
     expect(parseAmount('')).toBeNull();
     expect(parseAmount('1.2.3')).toBeNull();
   });
+});
+
+describe('satang', () => {
+it('keeps satang and rejects finer precision', () => {
+  expect(parseAmount('1,358.25')).toBe(1358.25);
+  expect(parseAmount('2.6')).toBe(2.6);
+  expect(parseAmount('.5')).toBe(0.5);
+  expect(parseAmount('1.234')).toBeNull();
+  expect(parseAmount('1e3')).toBeNull();
+});
+describe('sanitizeAmountInput', () => {
+  it('lets only a positive decimal through', () => {
+    expect(sanitizeAmountInput('abc12.345')).toBe('12.34');
+    expect(sanitizeAmountInput('1,000.5')).toBe('1000.5');
+    expect(sanitizeAmountInput('-1.2.3')).toBe('1.23');
+    expect(sanitizeAmountInput('฿ 99')).toBe('99');
+    expect(sanitizeAmountInput('.')).toBe('.');
+    expect(sanitizeAmountInput('ห้าสิบ')).toBe('');
+  });
+});
+it('parsePaste rejects a three-decimal amount with its line number', () => {
+  const r = parsePaste('2026-01-05\tจ่ายเงิน\tfood\tCash\t12.345', { date: '2026-01-01', acct: 'Cash' }, cats);
+  expect(r).toEqual({ ok: false, line: 1, error: 'invalid amount: 12.345' });
+});
 });
 
 describe('validateRow', () => {

@@ -3,7 +3,10 @@ import type { Lang } from '@/lib/i18n';
 // Money + number formatting, done by hand so output is identical on server and client.
 
 function group(n: number): string {
-  return Math.round(Math.abs(n)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const cents = Math.round(Math.abs(n) * 100);
+  const whole = Math.floor(cents / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const sat = cents % 100;
+  return sat ? `${whole}.${sat.toString().padStart(2, '0')}` : whole;
 }
 
 /** "฿1,234": absolute value, no sign. */
