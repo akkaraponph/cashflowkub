@@ -28,6 +28,11 @@ function trim(v: number): string {
   return (Math.round(v * 10) / 10).toString();
 }
 
+/** Interest rate for display: at most 2 decimals, trailing zeros trimmed (25 -> "25", 17.3316 -> "17.33"). */
+export function fmtRate(n: number): string {
+  return (Math.round(n * 100) / 100).toString();
+}
+
 /** "62%" from a 0..1 ratio. */
 export function pct(ratio: number): string {
   return Math.round(ratio * 100) + '%';

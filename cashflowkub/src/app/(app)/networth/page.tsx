@@ -5,7 +5,7 @@ import { ListRow } from '@/components/cfk/list-row';
 import { PageTitle } from '@/components/cfk/page-title';
 import { SplitBar } from '@/components/cfk/progress';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
-import { fmt } from '@/lib/format';
+import { fmt, fmtRate } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
@@ -43,7 +43,7 @@ export default async function NetWorthPage({ searchParams }: { searchParams: Sea
                 rightSub={`${nw.totalAssets ? Math.round((a.value / nw.totalAssets) * 100) : 0}%`} className={i > 0 ? 'border-t' : undefined} />
             ))
           : nw.liabilities.map((d, i) => (
-              <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${d.apr}%`}
+              <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${fmtRate(d.apr)}%`}
                 right={<span className="text-sm font-bold text-destructive tabular-nums">-{fmt(d.remaining)}</span>}
                 href={`/debts/${d.id}`} className={i > 0 ? 'border-t' : undefined} />
             ))}

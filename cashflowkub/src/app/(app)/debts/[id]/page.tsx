@@ -4,7 +4,7 @@ import { PageTitle } from '@/components/cfk/page-title';
 import { Progress } from '@/components/cfk/progress';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
-import { fmt, formatDay, pct } from '@/lib/format';
+import { fmt, formatDay, pct, fmtRate } from '@/lib/format';
 import { localized, pickLabel } from '@/lib/i18n';
 import { loadOr404 } from '@/lib/load-or-404';
 import { getI18n } from '@/lib/prefs-server';
@@ -44,7 +44,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
         <div>
           <p className="text-sm font-semibold">{pickLabel(ui.debtKind, d.kind)}{d.lender ? ` · ${d.lender}` : ''}</p>
           <p className="text-sm text-muted-foreground">
-            {isFixed ? `${fmt(d.fixedPayment)} × ${d.termMonths} · ${method} (${ui.flatEquivalent} ${d.apr.toFixed(1)}%)` : `${ui.apr} ${d.apr}% · ${method}`}
+            {isFixed ? `${fmt(d.fixedPayment)} × ${d.termMonths} · ${method} (${ui.flatEquivalent} ${fmtRate(d.apr)}%)` : `${ui.apr} ${fmtRate(d.apr)}% · ${method}`}
           </p>
         </div>
       </div>

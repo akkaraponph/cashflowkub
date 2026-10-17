@@ -101,6 +101,19 @@ describe('fixed instalment debts', () => {
     const repriced = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { fixedPayment: 1100 } });
     expect(repriced.json.apr).toBeCloseTo(12, 10);
   });
+  it('rejects PATCH termMonths 0 on a fixed debt and leaves the row unchanged', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { termMonths: 0 } });
+    expect([r.status, r.json.code]).toEqual([400, 'fixedTermsRequired']);
+    const after = await call(item.GET, { params: { id: String(d.id) } });
+    expect(after.json).toMatchObject({ fixedPayment: 1200, termMonths: 10 });
+    expect(after.json.apr).toBeCloseTo(24, 10);
+  });
+  it('PATCH ignores a sent apr on a fixed debt', async () => {
+    const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { apr: 99 } });
+    expect(r.json.apr).toBeCloseTo(24, 10);
+  });
   it('switching away from fixed keeps the sent apr', async () => {
     const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
     const r = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { calc: 'reducing', apr: 12, fixedPayment: 0 } });

@@ -45,13 +45,13 @@ export function SchedulePlanner({ debtId, base, todayIso }: { debtId: number; ba
   const [editing, setEditing] = useState<Record<number, string>>({});
   const tableRef = useRef<HTMLTableElement>(null);
 
+  const isFixed = base.calc === 'fixed';
   const w = {
     payment: parse(payment, 1, 10_000_000, true),
-    apr: parse(apr, 0, 200, false),
-    calc: calc || undefined,
+    apr: isFixed ? undefined : parse(apr, 0, 200, false),
+    calc: isFixed ? undefined : calc || undefined,
     targetMonths: parse(target, 1, 600, true),
   };
-  const isFixed = base.calc === 'fixed';
   const overridden = Object.keys(overrides).length > 0;
   const dirty = overridden || Object.values(w).some((v) => v !== undefined);
   const plan = useAmortization(base, w, todayIso, overrides);
