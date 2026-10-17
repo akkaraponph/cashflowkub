@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amountDueThisMonth, interestForMonth, remainingPrincipal, scheduledInstallment, toApr, type DebtTerms } from '@/server/debt/terms';
+import { amountDueThisMonth, deriveFixedApr, interestForMonth, remainingPrincipal, scheduledInstallment, toApr, type DebtTerms } from '@/server/debt/terms';
 
 const terms = (o: Partial<DebtTerms> = {}): DebtTerms => ({ original: 10000, paid: 0, apr: 0, calc: 'reducing', monthly: 0, fixedPayment: 0, termMonths: 0, ...o });
 
@@ -44,5 +44,25 @@ describe('amountDueThisMonth / remainingPrincipal / toApr', () => {
   it('converts a monthly rate to nominal annual', () => {
     expect(toApr(1.5, 'month')).toBe(18);
     expect(toApr(25, 'year')).toBe(25);
+  });
+});
+
+describe('deriveFixedApr', () => {
+  it('turns ฿1,200 × 10 on ฿10,000 into 24% flat', () => {
+    expect(deriveFixedApr(10000, 1200, 10)).toBeCloseTo(24, 10);
+  });
+  it('is 0 when instalments only repay the principal', () => {
+    expect(deriveFixedApr(6000, 1000, 6)).toBe(0);
+  });
+});
+
+describe('interestForMonth (fixed)', () => {
+  it('charges on the original amount regardless of balance, rounded down', () => {
+    const d = terms({ original: 10000, apr: deriveFixedApr(10000, 1000, 12), calc: 'fixed', fixedPayment: 1000, termMonths: 12 });
+    expect(interestForMonth(d, 10000)).toBe(166);
+    expect(interestForMonth(d, 500)).toBe(166);
+  });
+  it('survives float error on an exact division', () => {
+    expect(interestForMonth(terms({ original: 10000, apr: deriveFixedApr(10000, 1200, 10), calc: 'fixed' }), 10000)).toBe(200);
   });
 });

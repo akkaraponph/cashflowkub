@@ -1,12 +1,13 @@
 // Pure form model shared by the add and edit debt dialogs.
-import { localized, type Lang } from '@/lib/i18n';
+import { localized, type Dict, type Lang } from '@/lib/i18n';
 import { toApr } from '@/server/debt/terms';
 import type { DebtView } from '@/server/views';
 
 export const KINDS = ['paylater', 'cashloan', 'bankloan', 'creditcard', 'personal'] as const;
 export type Kind = (typeof KINDS)[number];
 export type RateUnit = 'month' | 'year';
-export type Calc = 'flat' | 'reducing';
+export type Calc = 'flat' | 'reducing' | 'fixed';
+export const CALCS: readonly Calc[] = ['flat', 'reducing', 'fixed'];
 
 // Sensible defaults per product type; every field stays editable.
 export const PRESETS: Record<Kind, { icon: string; tint: string; calc: Calc; unit: RateUnit; revolving: boolean; lender: string }> = {
@@ -47,7 +48,7 @@ export function formFromDebt(d: DebtView, lang: Lang): DebtForm {
   return {
     kind: isKind(d.kind) ? d.kind : 'personal',
     unit: 'year',
-    calc: d.calc === 'flat' ? 'flat' : 'reducing',
+    calc: d.calc === 'flat' || d.calc === 'fixed' ? d.calc : 'reducing',
     revolving: d.revolving,
     fields: {
       name: localized(lang, d.name, d.th), lender: d.lender, original: String(d.original), openingPaid: String(d.openingPaid), rate: String(d.apr),
@@ -64,8 +65,24 @@ export function formToBody(f: DebtForm, mode: 'add' | 'edit' = 'add'): Record<st
   return {
     name, th: name, kind: f.kind, lender: x.lender.trim(),
     ...(mode === 'add' ? { icon: PRESETS[f.kind].icon, tint: PRESETS[f.kind].tint } : {}),
-    original: int(x.original), openingPaid: int(x.openingPaid), apr: toApr(num(x.rate), f.unit), calc: f.calc,
-    termMonths: int(x.termMonths), fixedPayment: int(x.fixedPayment), monthly: int(x.monthly),
+    original: int(x.original), openingPaid: int(x.openingPaid), apr: f.calc === 'fixed' ? 0 : toApr(num(x.rate), f.unit), calc: f.calc,
+    termMonths: int(x.termMonths), fixedPayment: int(x.fixedPayment), monthly: f.calc === 'fixed' ? 0 : int(x.monthly),
     dueDay: int(x.dueDay), graceDays: int(x.graceDays), lateFee: int(x.lateFee), penaltyApr: num(x.penaltyApr), revolving: f.revolving,
   };
+}
+
+/** Total repaid under a fixed-instalment plan. */
+export const fixedTotal = (f: DebtForm): number => int(f.fields.fixedPayment) * int(f.fields.termMonths);
+
+export function isFormValid(f: DebtForm): boolean {
+  const x = f.fields;
+  const base = x.name.trim() !== '' && int(x.original) > 0 && int(x.openingPaid) <= int(x.original) && int(x.dueDay) >= 1 && int(x.dueDay) <= 31;
+  if (!base) return false;
+  if (f.calc !== 'fixed') return true;
+  return int(x.fixedPayment) > 0 && int(x.termMonths) > 0 && fixedTotal(f) >= int(x.original);
+}
+
+/** Display name of an interest method; unknown values read as reducing balance. */
+export function calcLabel(ui: Pick<Dict, 'calcFlat' | 'calcReducing' | 'calcFixed'>, calc: string): string {
+  return calc === 'flat' ? ui.calcFlat : calc === 'fixed' ? ui.calcFixed : ui.calcReducing;
 }

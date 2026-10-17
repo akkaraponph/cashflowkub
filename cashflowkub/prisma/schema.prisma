@@ -96,7 +96,7 @@ model Debt {
   openingPaid  Int           @default(0) @map("opening_paid") /// principal repaid before tracking started
   paid         Int           @default(0)
   apr          Float         @default(0) /// nominal annual %
-  calc         String        @default("reducing") /// flat | reducing
+  calc         String        @default("reducing") /// flat | reducing | fixed (fixed: apr derived from fixed_payment × term_months)
   monthly      Int           @default(0) /// minimum payment (open-ended / revolving)
   fixedPayment Int           @default(0) @map("fixed_payment") /// statement instalment; > 0 overrides calc
   termMonths   Int           @default(0) @map("term_months")

@@ -37,7 +37,7 @@ export function paymentForTarget(d: DebtTerms, months: number): number {
   if (balance === 0) return 0;
   const r = monthlyRate(d);
   let p: number;
-  if (d.calc === 'flat') p = Math.ceil(balance / months) + Math.round(d.original * r);
+  if (d.calc !== 'reducing') p = Math.ceil(balance / months) + interestForMonth(d, balance);
   else if (r === 0) p = Math.ceil(balance / months);
   else p = Math.ceil((balance * r) / (1 - (1 + r) ** -months));
   for (let i = 0; i < 5 && projectSchedule({ ...d, fixedPayment: p }).rows.length > months; i++) p += 1;

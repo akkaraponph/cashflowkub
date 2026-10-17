@@ -4,7 +4,7 @@ import { PageTitle } from '@/components/cfk/page-title';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { Tile } from '@/components/cfk/tile';
 import { ToneBadge } from '@/components/cfk/tone-badge';
-import { fmt } from '@/lib/format';
+import { fmt, fmtRate } from '@/lib/format';
 import { localized, pickLabel, type Dict, type Lang } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
@@ -80,7 +80,7 @@ function GoalCard({ goal, ui, lang }: { goal: SetupGoalRow; ui: Dict; lang: Lang
 
 function DebtRows({ debts, ui, lang }: { debts: DebtView[]; ui: Dict; lang: Lang }) {
   return debts.map((d) => (
-    <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${d.apr}% · ${ui.minPay} ${fmt(d.installment)}`}
+    <ListRow key={d.id} icon={d.icon} tint={d.tint} title={localized(lang, d.name, d.th)} subtitle={`${ui.apr} ${fmtRate(d.apr)}% · ${ui.minPay} ${fmt(d.installment)}`}
       right={<span className="font-bold text-destructive tabular-nums">{fmt(d.remaining)}</span>} href={`/debts/${d.id}`} className="border-t" />
   ));
 }

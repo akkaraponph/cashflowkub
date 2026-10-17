@@ -9,7 +9,7 @@ import { PageTitle } from '@/components/cfk/page-title';
 import { SegmentedLinks } from '@/components/cfk/segmented-links';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { Progress } from '@/components/cfk/progress';
-import { fmt, pct } from '@/lib/format';
+import { fmt, pct, fmtRate } from '@/lib/format';
 import { localized, pickLabel } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
@@ -72,7 +72,7 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
             icon={d.icon}
             tint={d.tint}
             title={localized(lang, d.name, d.th)}
-            subtitle={`${pickLabel(ui.debtKind, d.kind)} · ${ui.apr} ${d.apr}% · ${fmt(d.installment)}${ui.perMonth} · ${pct(d.progress)}`}
+            subtitle={`${pickLabel(ui.debtKind, d.kind)} · ${ui.apr} ${fmtRate(d.apr)}% · ${fmt(d.installment)}${ui.perMonth} · ${pct(d.progress)}`}
             right={fmt(d.remaining)}
             rightSub={
               <div className="flex flex-col items-end gap-1">

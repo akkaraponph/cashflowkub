@@ -10,7 +10,7 @@ import { Tile } from '@/components/cfk/tile';
 import { tintFg } from '@/components/cfk/tint';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { TxRow } from '@/components/cfk/tx-row';
-import { compact, fmt, pct, signed } from '@/lib/format';
+import { compact, fmt, pct, signed, fmtRate } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
             <Link href={`/debts/${d.debt.focus.id}`} className="flex items-center gap-3 rounded-xl bg-secondary p-3 hover:opacity-90">
               <Tile icon={d.debt.focus.icon} tint={d.debt.focus.tint} size={32} />
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.payFirst} · {d.debt.focus.apr}% {ui.apr}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{ui.payFirst} · {fmtRate(d.debt.focus.apr)}% {ui.apr}</p>
                 <p className="truncate text-[13px] font-semibold">{localized(lang, d.debt.focus.name, d.debt.focus.th)}</p>
               </div>
               <span className="text-[13px] font-bold tabular-nums">{fmt(d.debt.focus.remaining)}</span>
