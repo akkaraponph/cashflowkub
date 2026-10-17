@@ -12,6 +12,9 @@ const txSchema = z.object({
   acct: z.string().min(1),
   amount: z.number().int().refine((n) => n !== 0, 'amount must not be zero'),
   note: z.string().optional(),
+  interest: z.number().int().min(0).optional(),
+  fee: z.number().int().min(0).optional(),
+  goal: z.string().optional(),
   date: z.string().optional(),
 });
 

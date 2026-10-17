@@ -9,7 +9,7 @@ describe('GET /api/v1/transactions', () => {
   it('lists newest first with derived date and group', async () => {
     const { json } = await call(collection.GET, { url: '/api/v1/transactions' });
     expect(json.data).toHaveLength(12);
-    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today' });
+    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today', interest: 0, fee: 0, goal: '', isoDate: '2026-06-18' });
     expect(json.data[3].group).toBe('Yesterday');
   });
   it('filters by type, category, date range and limit', async () => {
@@ -34,6 +34,13 @@ describe('POST /api/v1/transactions', () => {
   it('accepts an explicit date', async () => {
     const { json } = await call(collection.POST, { method: 'POST', body: { name: 'Gift', cat: 'income', acct: 'Cash Wallet', amount: 500, date: 'Jun 1, 2026' } });
     expect(json).toMatchObject({ date: 'Jun 1, 2026', group: 'Jun 1' });
+  });
+  it('stores loan interest, fee and saving goal', async () => {
+    const post = (body: object) => call(collection.POST, { method: 'POST', body });
+    const { status, json } = await post({ name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1358, interest: 120, fee: 15 });
+    expect(status).toBe(201);
+    expect(json).toMatchObject({ interest: 120, fee: 15, goal: '' });
+    expect((await post({ name: 'KTC', cat: 'debt', acct: 'SCB Current', amount: -1, interest: -1 })).status).toBe(400);
   });
   it('rejects zero amounts, blank names and bad dates', async () => {
     const post = (body: object) => call(collection.POST, { method: 'POST', body });

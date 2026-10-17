@@ -13,6 +13,8 @@ export const categories: Prisma.CategoryCreateManyInput[] = [
   { key: 'fun', label: 'Entertainment', th: 'บันเทิง', short: 'Fun', icon: 'clapperboard', tint: 'video', type: 'expense', sub: 'want', sort: 5 },
   { key: 'health', label: 'Health', th: 'สุขภาพ', short: 'Health', icon: 'heart-pulse', tint: 'xls', type: 'expense', sub: 'need', sort: 6 },
   { key: 'income', label: 'Income', th: 'รายรับ', short: 'Income', icon: 'arrow-down-left', tint: 'xls', type: 'income', sub: '', sort: 7 },
+  { key: 'saving', label: 'Savings & Investing', th: 'เงินสะสม / การลงทุน', short: 'Saving', icon: 'piggy-bank', tint: 'xls', type: 'expense', sub: 'saving', sort: 8 },
+  { key: 'debt', label: 'Debt payment', th: 'ชำระหนี้สิน', short: 'Debt', icon: 'hand-coins', tint: 'pdf', type: 'expense', sub: 'debt', sort: 9 },
 ];
 
 export const accounts: Prisma.AccountCreateManyInput[] = [

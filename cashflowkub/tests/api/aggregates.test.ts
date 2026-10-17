@@ -47,7 +47,7 @@ describe('GET /api/v1/setup', () => {
   it('partitions the configuration', async () => {
     const { json } = await call(setup);
     expect(json.incomeCategories).toHaveLength(1);
-    expect(json.expenseCategories).toHaveLength(6);
+    expect(json.expenseCategories).toHaveLength(8);
     expect(json.incomeSources).toHaveLength(9);
     expect(json.debts.closing.map((d: { id: number }) => d.id)).toEqual([1, 2, 4, 16]);
     expect(json.debts.revolving.map((d: { id: number }) => d.id)).toEqual([3, 5, 15]);
