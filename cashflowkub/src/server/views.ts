@@ -1,5 +1,6 @@
 // Derived read shapes rendered by more than one feature.
 import type { Bill, Debt, DebtPayment } from '@/generated/prisma/client';
+import { dueDateIn } from '@/lib/bill-schedule';
 import { dueStatus, type DueStatus } from '@/server/debt/cycle';
 import { payoffLabel, projectSchedule } from '@/server/debt/schedule';
 import { amountDueThisMonth } from '@/server/debt/terms';
@@ -43,17 +44,27 @@ export function toDebtView(d: DebtWithPayments, today: Date): DebtView {
 export type BillStatus = 'paid' | 'overdue' | 'dueToday' | 'dueSoon' | 'upcoming';
 
 export interface BillView extends Bill {
+  /** Paid for `month` (the stored `paid` column is deprecated and ignored). */
+  paid: boolean;
+  /** The month this view is for, YYYY-MM. */
+  month: string;
+  /** YYYY-MM-DD in `month`; a due day past the month's end falls on its last day. */
+  dueDate: string;
   status: BillStatus;
-  /** dueDay - today (negative = late) */
+  /** dueDate - today in whole days (negative = late) */
   daysDiff: number;
 }
 
-export function toBillView(b: Bill, todayDay: number): BillView {
-  const daysDiff = b.dueDay - todayDay;
+const DAY_MS = 86_400_000;
+
+export function toBillView(b: Bill, ctx: { month: string; paid: boolean; today: Date }): BillView {
+  const dueDate = dueDateIn(ctx.month, b.dueDay);
+  const todayUtc = Date.UTC(ctx.today.getUTCFullYear(), ctx.today.getUTCMonth(), ctx.today.getUTCDate());
+  const daysDiff = Math.round((Date.parse(`${dueDate}T00:00:00Z`) - todayUtc) / DAY_MS);
   let status: BillStatus = 'upcoming';
-  if (b.paid) status = 'paid';
+  if (ctx.paid) status = 'paid';
   else if (daysDiff < 0) status = 'overdue';
   else if (daysDiff === 0) status = 'dueToday';
   else if (daysDiff <= 5) status = 'dueSoon';
-  return { ...b, status, daysDiff };
+  return { ...b, paid: ctx.paid, month: ctx.month, dueDate, status, daysDiff };
 }

@@ -8,7 +8,7 @@ import { useI18n } from '@/components/i18n-provider';
 import { apiFetch } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
-export function BillCheck({ id, paid, onDone }: { id: number; paid: boolean; onDone?: () => void }) {
+export function BillCheck({ id, paid, month, onDone }: { id: number; paid: boolean; month: string; onDone?: () => void }) {
   const router = useRouter();
   const { ui } = useI18n();
   const [pending, startTransition] = useTransition();
@@ -22,7 +22,7 @@ export function BillCheck({ id, paid, onDone }: { id: number; paid: boolean; onD
       onClick={() =>
         startTransition(async () => {
           try {
-            await apiFetch(`/bills/${id}/pay`, { method: 'PATCH', body: { paid: !paid } });
+            await apiFetch(`/bills/${id}/pay`, { method: 'PATCH', body: { paid: !paid, month } });
             router.refresh();
             onDone?.();
           } catch (err) {

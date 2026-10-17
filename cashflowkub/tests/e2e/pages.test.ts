@@ -24,6 +24,8 @@ const PAGES: [string, string, string][] = [
   ['/networth?tab=liabilities', 'Student Loan', 'กยศ'],
   ['/budgets', 'Total budget', 'งบรวม'],
   ['/accounts', 'Kasikorn Savings', 'บัญชี'],
+  ['/bills?month=2026-07', 'Apartment Rent', 'ค่าเช่าบ้าน'],
+  ['/bills?month=garbage', 'Apartment Rent', 'ค่าเช่าบ้าน'],
   ['/goals', 'Japan Trip', 'เที่ยวญี่ปุ่น'],
   ['/reports', 'Central Ladprao', 'ร้านค้ายอดนิยม'],
   ['/plan', 'Income plan', 'แผนรายรับ'],

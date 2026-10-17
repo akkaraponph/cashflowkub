@@ -1,6 +1,6 @@
 // Pure analytics: spending breakdown, net worth, debt roll-up, merchants, screen views.
-import type { Asset, Bill, Budget, Category, Goal, MonthlyCashflow, NetWorthHistory, Transaction } from '@/generated/prisma/client';
-import { toBillView, type BillView, type DebtView } from '@/server/views';
+import type { Asset, Budget, Category, Goal, MonthlyCashflow, NetWorthHistory, Transaction } from '@/generated/prisma/client';
+import type { BillView, DebtView } from '@/server/views';
 
 export interface CategorySpend {
   cat: string;
@@ -79,10 +79,10 @@ export interface DashboardInput {
   budgets: Budget[];
   categories: Category[];
   cashflow: MonthlyCashflow[];
-  unpaidBills: Bill[];
+  /** This month's unpaid bills, ordered by due day. */
+  unpaidBills: BillView[];
   goals: Goal[];
   netWorthHist: NetWorthHistory[];
-  todayDay: number;
 }
 
 export interface DashboardView {
@@ -105,7 +105,6 @@ export function buildDashboard(input: DashboardInput): DashboardView {
   const income = last?.income ?? 0;
   const expense = last?.expense ?? 0;
   const { items, total } = spendingByCategory(input.budgets, input.categories);
-  const first = input.unpaidBills[0];
   return {
     ...totals,
     month: { income, expense, net: income - expense },
@@ -113,7 +112,7 @@ export function buildDashboard(input: DashboardInput): DashboardView {
     spending: items,
     spendTotal: total,
     debt: debtRollup(input.activeDebts),
-    nextBill: first ? toBillView(first, input.todayDay) : null,
+    nextBill: input.unpaidBills[0] ?? null,
     goals: input.goals,
     netWorthHist: input.netWorthHist,
   };

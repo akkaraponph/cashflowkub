@@ -20,6 +20,7 @@ describe('seedDatabase', () => {
       settings: await prisma.setting.count(),
       assets: await prisma.asset.count(),
       bills: await prisma.bill.count(),
+      billPayments: await prisma.billPayment.count(),
       channels: await prisma.channel.count(),
       incomeCategories: await prisma.incomeCategory.count(),
       planItems: await prisma.planItem.count(),
@@ -30,7 +31,7 @@ describe('seedDatabase', () => {
       setupGoals: await prisma.setupGoal.count(),
       setupGoalChannels: await prisma.setupGoalChannel.count(),
     }).toEqual({
-      categories: 9, accounts: 5, transactions: 12, budgets: 6, goals: 3, debts: 16, debtPayments: 6, settings: 1, assets: 8, bills: 13,
+      categories: 9, accounts: 5, transactions: 12, budgets: 6, goals: 3, debts: 16, debtPayments: 6, settings: 1, assets: 8, bills: 13, billPayments: 5,
       channels: 9, incomeCategories: 9, planItems: 16, assetSnapshots: 14, netWorthHistory: 6,
       monthlyCashflow: 6, daySpend: 11, setupGoals: 6, setupGoalChannels: 11,
     });
@@ -47,6 +48,11 @@ describe('seedDatabase', () => {
     expect((await prisma.debt.findUniqueOrThrow({ where: { id: 1 } })).name).toBe('Student Loan (กยศ)');
     expect((await prisma.bill.findUniqueOrThrow({ where: { id: 6 } })).name).toBe('KTC Credit Card');
     expect((await prisma.transaction.findUniqueOrThrow({ where: { id: 3 } })).name).toBe('Grab');
+  });
+
+  it('starts every seeded bill in June as a monthly recurring bill', async () => {
+    const bills = await prisma.bill.findMany();
+    for (const b of bills) expect(b, b.name).toMatchObject({ startMonth: '2026-06', endMonth: '', everyMonths: 1, freq: 'monthly' });
   });
 
   it('stores transaction dates as calendar dates', async () => {

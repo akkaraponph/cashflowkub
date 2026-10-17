@@ -3,6 +3,8 @@ import * as collection from '@/app/api/v1/bills/route';
 import { GET as summary } from '@/app/api/v1/bills/summary/route';
 import { PATCH as pay } from '@/app/api/v1/bills/[id]/pay/route';
 import * as item from '@/app/api/v1/bills/[id]/route';
+import { GET as dashboard } from '@/app/api/v1/dashboard/route';
+import { prisma } from '@/lib/db';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -61,5 +63,75 @@ describe('subscriptions', () => {
   });
   it('summarizes subscriptions per month', async () => {
     expect((await call(summary)).json).toMatchObject({ subscriptionsCount: 3, subscriptionsTotal: 667 });
+  });
+});
+
+describe('recurring bills by month', () => {
+  const mk = (b: object) => call(collection.POST, { method: 'POST', body: { name: 'Insurance', amount: 3000, dueDay: 10, ...b } });
+  const listIn = async (m: string) => (await call(collection.GET, { url: `/api/v1/bills?month=${m}` })).json.data as { id: number; name: string; paid: boolean }[];
+  const names = async (m: string) => (await listIn(m)).map((b) => b.name);
+
+  it('lists only bills that occur in the month', async () => {
+    const r = await mk({ everyMonths: 3, startMonth: '2026-06' });
+    expect(r.json).toMatchObject({ startMonth: '2026-06', endMonth: '', everyMonths: 3 });
+    expect(await names('2026-09')).toContain('Insurance');
+    expect(await names('2026-07')).not.toContain('Insurance');
+    expect(await names('2026-03')).not.toContain('Insurance');
+  });
+  it('defaults a new bill to a monthly bill starting in the current month', async () => {
+    expect((await mk({})).json).toMatchObject({ startMonth: '2026-06', endMonth: '', everyMonths: 1, freq: 'monthly' });
+  });
+  it('a one-time bill and an ended bill drop out of other months', async () => {
+    await mk({ name: 'Fine', freq: 'once', startMonth: '2026-08', dueDay: 23 });
+    await mk({ name: 'Trial', startMonth: '2026-06', endMonth: '2026-07' });
+    expect(await names('2026-08')).toContain('Fine');
+    expect(await names('2026-09')).not.toContain('Fine');
+    expect(await names('2026-07')).toContain('Trial');
+    expect(await names('2026-08')).not.toContain('Trial');
+  });
+  it('rejects a malformed month and bad recurrence', async () => {
+    expect((await call(collection.GET, { url: '/api/v1/bills?month=2026-13' })).status).toBe(400);
+    expect((await call(summary, { url: '/api/v1/bills/summary?month=nope' })).status).toBe(400);
+    expect((await mk({ everyMonths: 0 })).status).toBe(400);
+    expect((await mk({ everyMonths: 13 })).status).toBe(400);
+    expect((await mk({ startMonth: 'soon' })).status).toBe(400);
+    expect((await mk({ startMonth: '2026-08', endMonth: '2026-07' })).status).toBe(400);
+  });
+  it('paid is tracked per month', async () => {
+    const r = await call(pay, { method: 'PATCH', params: { id: '6' }, body: { paid: true, month: '2026-07' } });
+    expect(r.json).toMatchObject({ paid: true, month: '2026-07', status: 'paid' });
+    expect((await listIn('2026-06')).find((b) => b.id === 6)?.paid).toBe(false);
+    expect((await listIn('2026-07')).find((b) => b.id === 6)?.paid).toBe(true);
+  });
+  it('refuses to pay a bill in a month it does not occur', async () => {
+    const r = await call(pay, { method: 'PATCH', params: { id: '6' }, body: { paid: true, month: '2026-05' } });
+    expect(r.status).toBe(400);
+    expect(r.json.code).toBe('billNotInMonth');
+  });
+  it('summarizes any month', async () => {
+    expect((await call(summary, { url: '/api/v1/bills/summary?month=2026-07' })).json).toMatchObject({ month: '2026-07', paid: 0, count: 13 });
+  });
+  it('payments survive an edit that hides the month', async () => {
+    await call(pay, { method: 'PATCH', params: { id: '6' }, body: { paid: true } });
+    const total = (await call(summary)).json.total;
+    await call(item.PATCH, { method: 'PATCH', params: { id: '6' }, body: { startMonth: '2026-07' } });
+    expect((await listIn('2026-06')).some((b) => b.id === 6)).toBe(false);
+    expect((await call(summary)).json).toMatchObject({ count: 12 });
+    expect((await call(summary)).json.total).toBeLessThan(total);
+    await call(item.PATCH, { method: 'PATCH', params: { id: '6' }, body: { startMonth: '2026-06' } });
+    expect((await listIn('2026-06')).find((b) => b.id === 6)?.paid).toBe(true);
+  });
+  it('checks the end month against the stored start month on a partial update', async () => {
+    expect((await call(item.PATCH, { method: 'PATCH', params: { id: '6' }, body: { endMonth: '2026-05' } })).status).toBe(400);
+  });
+  it('deleting a bill removes its payments', async () => {
+    await call(pay, { method: 'PATCH', params: { id: '6' }, body: { paid: true } });
+    expect(await prisma.billPayment.count({ where: { billId: 6 } })).toBe(1);
+    await call(item.DELETE, { method: 'DELETE', params: { id: '6' } });
+    expect(await prisma.billPayment.count({ where: { billId: 6 } })).toBe(0);
+  });
+  it('dashboard next bill ignores bills not due this month', async () => {
+    await mk({ name: 'Early', amount: 10, dueDay: 1, startMonth: '2026-07' });
+    expect((await call(dashboard)).json.nextBill).toMatchObject({ id: 6 });
   });
 });

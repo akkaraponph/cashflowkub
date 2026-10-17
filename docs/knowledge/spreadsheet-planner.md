@@ -425,6 +425,12 @@ Goals (the `Goal` model behind `/goals`) are added, edited and deleted in the ap
 goal with tagged transactions cannot be deleted (409 `goalInUse`). `Goal.saved` is typed in by hand; it is not yet
 computed from tagged savings transactions as the planner does (section 9).
 
+Bills (the `Bill` model behind `/bills`) are recurring templates planned month by month. `startMonth`, optional `endMonth`,
+`freq` (`monthly` = recurring, `once` = only in `startMonth`) and `everyMonths` (1-12) decide which months a bill occurs in;
+a one-time bill is entered as an exact date (stored as `startMonth` + `dueDay`). Paid state is per month, one row per bill
+per month in `bill_payments`; `Bill.paid` is deprecated and unread. A due day past a month's end falls on its last day.
+Unlike the spreadsheet planner (section 6), paid is ticked by hand, not matched from transactions.
+
 Behaviour to check the app covers, since the planner relies on it:
 
 - transfer between accounts (เปลี่ยนบัญชี) and withdrawal from a channel or credit line (เบิกเงิน);

@@ -52,3 +52,9 @@ export function formatDay(iso: string, lang: Lang): string {
   if (month < 1 || month > 12 || day < 1 || day > 31) return iso;
   return `${day} ${MONTHS[lang][month - 1]} ${m[1]}`;
 }
+
+/** "2026-06" → "Jun 2026" / "มิ.ย. 2026" (Gregorian year). Anything unparseable is returned as given. */
+export function formatMonth(month: string, lang: Lang): string {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(month);
+  return m ? `${MONTHS[lang][Number(m[2]) - 1]} ${m[1]}` : month;
+}

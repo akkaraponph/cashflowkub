@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDashboard, buildNetWorth, buildReports, netWorthTotals, spendingByCategory, topMerchants } from '@/server/analytics/logic';
-import { asset, bill, budget, cashflow, category, debtView, goal, nwPoint, tx } from '../fixtures';
+import { asset, billView, budget, cashflow, category, debtView, goal, nwPoint, tx } from '../fixtures';
 
 const cats = [category({ key: 'food', label: 'Food', tint: 'folder' }), category({ id: 2, key: 'fun', label: 'Fun', tint: 'video' })];
 const budgets = [budget({ cat: 'food', spent: 750 }), budget({ id: 2, cat: 'fun', spent: 250 }), budget({ id: 3, cat: 'ghost', spent: 0 })];
@@ -46,10 +46,9 @@ describe('buildDashboard', () => {
     budgets,
     categories: cats,
     cashflow: [cashflow({ income: 1, expense: 1 }), cashflow({ id: 2, income: 62000, expense: 17700 })],
-    unpaidBills: [bill({ id: 6, dueDay: 16 }), bill({ id: 7, dueDay: 20 })],
+    unpaidBills: [billView({ id: 6, dueDay: 16, status: 'overdue' }), billView({ id: 7, dueDay: 20 })],
     goals: [goal()],
     netWorthHist: [nwPoint()],
-    todayDay: 18,
   });
   it('uses the latest cashflow month', () => expect(view.month).toEqual({ income: 62000, expense: 17700, net: 44300 }));
   it('rolls up debt and focuses the first highest-APR debt', () => {
@@ -59,7 +58,7 @@ describe('buildDashboard', () => {
   });
   it('surfaces the first unpaid bill with status', () => expect(view.nextBill).toMatchObject({ id: 6, status: 'overdue' }));
   it('handles empty inputs', () => {
-    const empty = buildDashboard({ assets: [], activeDebts: [], budgets: [], categories: [], cashflow: [], unpaidBills: [], goals: [], netWorthHist: [], todayDay: 18 });
+    const empty = buildDashboard({ assets: [], activeDebts: [], budgets: [], categories: [], cashflow: [], unpaidBills: [], goals: [], netWorthHist: [] });
     expect(empty).toMatchObject({ netWorth: 0, month: { income: 0, expense: 0, net: 0 }, nextBill: null, debt: { progress: 0, focus: null } });
   });
 });
