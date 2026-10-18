@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/transactions/route';
 import * as item from '@/app/api/v1/transactions/[id]/route';
 import * as batch from '@/app/api/v1/transactions/batch/route';
+import { prisma } from '@/lib/db';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -53,9 +54,9 @@ describe('POST /api/v1/transactions', () => {
   });
   it('rejects zero amounts, blank names and bad dates', async () => {
     const post = (body: object) => call(collection.POST, { method: 'POST', body });
-    expect((await post({ name: 'X', cat: 'food', acct: 'Cash', amount: 0 })).status).toBe(400);
-    expect((await post({ name: ' ', cat: 'food', acct: 'Cash', amount: -1 })).status).toBe(400);
-    expect((await post({ name: 'X', cat: 'food', acct: 'Cash', amount: -1, date: '2026-02-30' })).status).toBe(400);
+    expect((await post({ name: 'X', cat: 'food', acct: 'Cash Wallet', amount: 0 })).status).toBe(400);
+    expect((await post({ name: ' ', cat: 'food', acct: 'Cash Wallet', amount: -1 })).status).toBe(400);
+    expect((await post({ name: 'X', cat: 'food', acct: 'Cash Wallet', amount: -1, date: '2026-02-30' })).status).toBe(400);
   });
 });
 
@@ -67,7 +68,7 @@ describe('/api/v1/transactions/:id', () => {
     expect((await call(item.GET, { params: { id: '1' } })).status).toBe(404);
   });
   it('PATCH keeps satang as a number', async () => {
-    const { json } = await call(item.PATCH, { method: 'PATCH', params: { id: '1' }, body: { amount: -45.5 } });
+    const { json } = await call(item.PATCH, { method: 'PATCH', params: { id: '2' }, body: { amount: -45.5 } });
     expect(json.amount).toBe(-45.5);
     expect(typeof json.amount).toBe('number');
   });
@@ -107,7 +108,7 @@ describe('decimal amounts', () => {
     expect(debt.json).toMatchObject({ amount: -1358.25, interest: 120.75, fee: 15.1 });
   });
   it('rejects more than two decimal places', async () => {
-    const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'X', cat: 'food', acct: 'Cash', ...body } });
+    const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'X', cat: 'food', acct: 'Cash Wallet', ...body } });
     expect((await post({ amount: -12.345 })).status).toBe(400);
     expect((await post({ amount: -1, interest: 0.001 })).status).toBe(400);
   });
@@ -131,5 +132,69 @@ describe('DELETE /api/v1/transactions/batch', () => {
       expect((await del(body)).status).toBe(400);
     }
     expect(await count()).toBe(12);
+  });
+});
+
+describe('activities', () => {
+  const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'x', acct: 'SCB Current', ...body } });
+  const count = () => prisma.transaction.count();
+
+  it('infers activity when omitted', async () => {
+    const { status, json } = await post({ cat: 'food', amount: -50 });
+    expect(status).toBe(201);
+    expect(json.activity).toBe('pay');
+  });
+  it('sets cat from the activity', async () => {
+    const { json } = await post({ name: 'Gold', activity: 'save', item: 'Gold savings', amount: -1000 });
+    expect(json).toMatchObject({ cat: 'saving', activity: 'save', item: 'Gold savings' });
+  });
+  it('records a transfer as one row into acct out of item', async () => {
+    const { status, json } = await post({ name: 'ATM', activity: 'transfer', item: 'SCB Current', acct: 'Cash Wallet', amount: 500 });
+    expect(status).toBe(201);
+    expect(json).toMatchObject({ activity: 'transfer', cat: '', acct: 'Cash Wallet', item: 'SCB Current' });
+  });
+  it('rejects activity problems', async () => {
+    const bad = [
+      { activity: 'pay', cat: 'food', amount: 50 },
+      { activity: 'save', amount: -10 },
+      { activity: 'transfer', item: 'SCB Current', acct: ' scb current ', amount: 5 },
+      { cat: 'food', amount: -10, goal: 'Japan Trip' },
+    ];
+    for (const b of bad) {
+      const r = await post(b);
+      expect(r.status, JSON.stringify(b)).toBe(400);
+      expect(r.json.code, JSON.stringify(b)).toBe('activityMismatch');
+    }
+  });
+  it('rejects unknown account and item', async () => {
+    const a = await post({ cat: 'food', amount: -1, acct: 'Nope' });
+    expect([a.status, a.json.code]).toEqual([400, 'unknownAccount']);
+    const i = await post({ activity: 'save', item: 'Nope', amount: -1 });
+    expect([i.status, i.json.code]).toEqual([400, 'unknownItem']);
+  });
+  it('lets a legacy row be edited without an item', async () => {
+    const row = await prisma.transaction.create({ data: { name: 'old', cat: 'saving', acct: 'Nowhere', amount: -100, date: new Date('2026-06-01T00:00:00Z'), activity: 'save', item: '' } });
+    const params = { id: String(row.id) };
+    expect((await call(item.PATCH, { method: 'PATCH', params, body: { note: 'n' } })).status).toBe(200);
+    const r = await call(item.PATCH, { method: 'PATCH', params, body: { activity: 'save' } });
+    expect([r.status, r.json.code]).toEqual([400, 'activityMismatch']);
+  });
+  it('keeps a seeded row on pay when only its note changes', async () => {
+    const r = await call(item.PATCH, { method: 'PATCH', params: { id: '2' }, body: { note: 'n' } });
+    expect([r.status, r.json.activity]).toEqual([200, 'pay']);
+  });
+  it('rejects the whole batch on one unknown item', async () => {
+    const before = await count();
+    const ok = { name: 'a', cat: 'food', acct: 'Cash Wallet', amount: -1 };
+    const r = await call(batch.POST, { method: 'POST', body: { items: [ok, { ...ok, activity: 'save', item: 'Nope' }] } });
+    expect([r.status, r.json.code]).toEqual([400, 'unknownItem']);
+    expect(await count()).toBe(before);
+  });
+  it('keeps transfers and withdrawals out of the income and expense filters', async () => {
+    await post({ activity: 'transfer', item: 'SCB Current', acct: 'Cash Wallet', amount: 500 });
+    const list = async (q: string) => (await call(collection.GET, { url: `/api/v1/transactions?${q}` })).json.data as { activity: string }[];
+    expect((await list('type=income')).some((t) => t.activity === 'transfer')).toBe(false);
+    expect((await list('type=expense')).some((t) => t.activity === 'transfer')).toBe(false);
+    expect((await list('activity=transfer')).map((t) => t.activity)).toEqual(['transfer']);
   });
 });

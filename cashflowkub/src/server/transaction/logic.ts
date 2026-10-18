@@ -1,6 +1,6 @@
 // Pure transaction logic: read view, date-relative group label, date parsing, list filter.
 import type { Transaction } from '@/generated/prisma/client';
-import type { Activity } from '@/lib/activity';
+import { ACTIVITIES, type Activity } from '@/lib/activity';
 import { badRequest } from '@/server/errors';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -82,6 +82,7 @@ export function parseFlexDate(raw: string): Date | null {
 
 export interface TxFilter {
   type?: 'income' | 'expense';
+  activity?: Activity;
   category?: string;
   account?: string;
   from?: Date;
@@ -95,6 +96,8 @@ export function parseTxFilter(params: URLSearchParams): TxFilter {
   const f: TxFilter = {};
   const type = params.get('type');
   if (type === 'income' || type === 'expense') f.type = type;
+  const activity = params.get('activity');
+  if (ACTIVITIES.some((a) => a === activity)) f.activity = activity as Activity;
   const category = params.get('category');
   if (category) f.category = category;
   const account = params.get('account');
