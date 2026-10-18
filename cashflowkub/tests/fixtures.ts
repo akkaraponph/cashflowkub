@@ -22,7 +22,7 @@ export const billView = (o: Partial<BillView> = {}): BillView => ({
   ...bill(), month: '2026-06', dueDate: '2026-06-20', status: 'upcoming', daysDiff: 2, ...o,
 });
 export const tx = (o: Partial<TxPlain> = {}): TxPlain => ({
-  id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', interest: 0, fee: 0, goal: '', ...o,
+  id: 1, name: 'Coffee', cat: 'food', acct: 'Cash', amount: -100, date: new Date('2026-06-18T00:00:00Z'), note: '', interest: 0, fee: 0, goal: '', activity: 'pay', item: '', ...o,
 });
 export const budget = (o: Partial<Budget> = {}): Budget => ({ id: 1, cat: 'food', spent: 0, limit: 1000, sort: 1, ...o });
 export const category = (o: Partial<Category> = {}): Category => ({

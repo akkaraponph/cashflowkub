@@ -1,5 +1,6 @@
 // Pure transaction logic: read view, date-relative group label, date parsing, list filter.
 import type { Transaction } from '@/generated/prisma/client';
+import type { Activity } from '@/lib/activity';
 import { badRequest } from '@/server/errors';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -14,6 +15,8 @@ export interface TxView {
   interest: number;
   fee: number;
   goal: string;
+  activity: Activity;
+  item: string;
   /** "2026-06-18" */
   isoDate: string;
   /** "Jun 18, 2026" */
@@ -52,7 +55,7 @@ export function hasAtMostTwoDecimals(n: number): boolean {
 export function toTxView(t: TxPlain, today: Date): TxView {
   return {
     id: t.id, name: t.name, cat: t.cat, acct: t.acct, amount: t.amount, note: t.note,
-    interest: t.interest, fee: t.fee, goal: t.goal, isoDate: t.date.toISOString().slice(0, 10),
+    interest: t.interest, fee: t.fee, goal: t.goal, activity: t.activity as Activity, item: t.item, isoDate: t.date.toISOString().slice(0, 10),
     date: formatLongDate(t.date), group: groupLabel(t.date, today),
   };
 }

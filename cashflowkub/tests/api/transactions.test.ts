@@ -10,7 +10,7 @@ describe('GET /api/v1/transactions', () => {
   it('lists newest first with derived date and group', async () => {
     const { json } = await call(collection.GET, { url: '/api/v1/transactions' });
     expect(json.data).toHaveLength(12);
-    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today', interest: 0, fee: 0, goal: '', isoDate: '2026-06-18' });
+    expect(json.data[0]).toEqual({ id: 3, name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, note: 'Ride to office', date: 'Jun 18, 2026', group: 'Today', interest: 0, fee: 0, goal: '', activity: 'pay', item: '', isoDate: '2026-06-18' });
     expect(json.data[3].group).toBe('Yesterday');
   });
   it('filters by type, category, date range and limit', async () => {

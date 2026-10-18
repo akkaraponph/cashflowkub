@@ -59,4 +59,13 @@ describe('seedDatabase', () => {
     const salary = await prisma.transaction.findUniqueOrThrow({ where: { id: 1 } });
     expect(salary.date.toISOString()).toBe('2026-06-18T00:00:00.000Z');
   });
+
+  it('gives every seeded transaction an activity consistent with its sign', async () => {
+    const incomeNames = (await prisma.incomeCategory.findMany()).map((c) => c.name);
+    for (const t of await prisma.transaction.findMany()) {
+      expect(t.activity === 'receive', t.name).toBe(t.amount.toNumber() > 0);
+      if (t.activity === 'receive') expect(t.item === '' || incomeNames.includes(t.item), t.name).toBe(true);
+      else expect(t.item, t.name).toBe('');
+    }
+  });
 });

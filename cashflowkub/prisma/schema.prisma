@@ -54,8 +54,13 @@ model Transaction {
   fee      Decimal  @default(0) @db.Decimal(14, 2)
   /// Saving goal name for saving-category rows.
   goal     String   @default("")
+  /// receive | pay | save | pay_debt | withdraw | transfer
+  activity String   @default("pay")
+  /// income item / channel / debt / source account name, by activity
+  item     String   @default("")
 
   @@index([date])
+  @@index([activity, item])
   @@map("transactions")
 }
 

@@ -26,7 +26,7 @@ export const accounts: Prisma.AccountCreateManyInput[] = [
 ];
 
 export const transactions: Prisma.TransactionCreateManyInput[] = [
-  { name: 'Monthly Salary', cat: 'income', acct: 'Kasikorn Savings', amount: 62000, date: d('2026-06-18'), note: 'Acme Co. payroll' },
+  { name: 'Monthly Salary', cat: 'income', activity: 'receive', item: 'Monthly salary', acct: 'Kasikorn Savings', amount: 62000, date: d('2026-06-18'), note: 'Acme Co. payroll' },
   { name: 'Starbucks', cat: 'food', acct: 'SCB Current', amount: -185, date: d('2026-06-18'), note: 'Latte + croissant' },
   { name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, date: d('2026-06-18'), note: 'Ride to office' },
   { name: '7-Eleven', cat: 'food', acct: 'Cash Wallet', amount: -248, date: d('2026-06-17'), note: 'Snacks' },
