@@ -27,7 +27,7 @@ export default async function DebtsPage({ searchParams }: { searchParams: Search
 
   return (
     <>
-      <PageTitle title={ui.nav.debts}>
+      <PageTitle title={ui.nav.debts} addTransaction={false}>
         <Button asChild size="sm">
           <Link href="/debts/plan"><Icon name="lightbulb" size={16} />{ui.smartPlan}</Link>
         </Button>
