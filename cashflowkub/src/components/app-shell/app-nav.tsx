@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Icon } from '@/components/cfk/icon';
+import { LogoMark } from '@/components/cfk/logo';
 import { useI18n } from '@/components/i18n-provider';
 import { cn } from '@/lib/utils';
 import { isActive, NAV_ITEMS } from './nav';
@@ -12,7 +13,7 @@ import { isActive, NAV_ITEMS } from './nav';
 function Brand() {
   return (
     <div className="flex items-center gap-2.5 px-3 py-4">
-      <span className="flex size-8 items-center justify-center rounded-[9px] bg-linear-to-br from-(--brand-from) to-(--brand-to) text-[15px] font-extrabold text-white">C</span>
+      <LogoMark size={32} />
       <span className="text-base font-bold">CashflowKub</span>
     </div>
   );
