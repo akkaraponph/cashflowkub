@@ -35,3 +35,10 @@ describe('tax copy', () => {
     }
   });
 });
+
+describe('plan CRUD copy', () => {
+  it.each(['addPlanItem', 'editPlanItem', 'confirmDeletePlanItem', 'noPlanItems'] as const)('has en and th %s', (key) => {
+    expect(DICT.en[key]).not.toBe('');
+    expect(DICT.th[key]).not.toBe('');
+  });
+});

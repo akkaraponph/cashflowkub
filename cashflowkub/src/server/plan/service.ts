@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import type { PlanItem } from '@/generated/prisma/client';
+import { MONTH_RE } from '@/lib/month';
 import { badRequest } from '@/server/errors';
 import { parseBody } from '@/server/validate';
 import { buildPlan, buildSnapshots, type PlanView, type SnapshotsView } from './logic';
 
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 const text = z.string().optional();
 const int = z.number().int().nonnegative().optional();
 const planItemSchema = z.object({
@@ -13,14 +13,14 @@ const planItemSchema = z.object({
   name: z.string().trim().min(1),
   th: text, icon: text, tint: text, cat: text, sub: text,
   planned: int, actual: int,
-  month: z.string().regex(MONTH, 'month must be YYYY-MM'),
+  month: z.string().regex(MONTH_RE, 'month must be YYYY-MM'),
   sort: z.number().int().optional(),
 });
 
 /** month omitted = every month (Go parity); malformed = 400. */
 export async function getPlan(month?: string): Promise<PlanView> {
-  if (month !== undefined && !MONTH.test(month)) throw badRequest(`invalid month: ${month} (expected YYYY-MM)`);
-  return buildPlan(await prisma.planItem.findMany({ where: month ? { month } : {}, orderBy: { sort: 'asc' } }));
+  if (month !== undefined && !MONTH_RE.test(month)) throw badRequest(`invalid month: ${month} (expected YYYY-MM)`);
+  return buildPlan(await prisma.planItem.findMany({ where: month ? { month } : {}, orderBy: [{ sort: 'asc' }, { id: 'asc' }] }));
 }
 
 export async function getSnapshots(): Promise<SnapshotsView> {
@@ -31,8 +31,14 @@ export async function getSnapshots(): Promise<SnapshotsView> {
   return buildSnapshots(snaps, hist);
 }
 
-export function createPlanItem(body: unknown): Promise<PlanItem> {
-  return prisma.planItem.create({ data: parseBody(planItemSchema, body) });
+/** Without an explicit `sort` the item goes to the end of its month and type. */
+export async function createPlanItem(body: unknown): Promise<PlanItem> {
+  const data = parseBody(planItemSchema, body);
+  if (data.sort === undefined) {
+    const last = await prisma.planItem.aggregate({ where: { month: data.month, type: data.type }, _max: { sort: true } });
+    data.sort = (last._max.sort ?? 0) + 1;
+  }
+  return prisma.planItem.create({ data });
 }
 
 export function updatePlanItem(id: number, body: unknown): Promise<PlanItem> {
