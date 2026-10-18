@@ -81,14 +81,16 @@ const PROBLEM_FIELD: Record<ActivityProblem, keyof RowDraft> = {
   interestOnlyOnDebt: 'interest', goalOnlyOnSave: 'goal',
 };
 
-export function validateRow(d: RowDraft, cats: Category[]): RowCheck {
+/** `requireItem: false` is for rows loaded from the server: legacy save and debt rows have no item yet but still count in totals. */
+export function validateRow(d: RowDraft, cats: Category[], opts: { requireItem?: boolean } = {}): RowCheck {
+  const requireItem = opts.requireItem ?? true;
   const touched = [d.cat, d.item, d.acct, d.amount, d.interest, d.fee, d.goal, d.note, d.name].some((v) => v.trim() !== '');
   if (!touched) return { kind: 'empty' };
   const missing: (keyof RowDraft)[] = [];
   const fixed = fixedCat(d.activity);
   const category = cats.find((c) => c.key === (fixed ?? d.cat));
   if (fixed === null && !category) missing.push('cat');
-  if (itemRequired(d.activity) && d.item.trim() === '') missing.push('item');
+  if (requireItem && itemRequired(d.activity) && d.item.trim() === '') missing.push('item');
   if (d.acct.trim() === '') missing.push('acct');
   const amount = parseAmount(d.amount);
   if (!amount) missing.push('amount');
@@ -102,7 +104,7 @@ export function validateRow(d: RowDraft, cats: Category[]): RowCheck {
     name: d.name.trim() || category?.label || d.item.trim() || d.activity, activity: d.activity, item: d.item.trim(), cat: fixed ?? d.cat,
     acct: d.acct.trim(), amount: signedAmount(d.activity, amount), interest, fee, goal: d.goal, note: d.note, date: d.date,
   };
-  const problem = checkActivity(body, category?.sub);
+  const problem = checkActivity(body, category?.sub, { requireItem });
   if (problem) return { kind: 'incomplete', missing: [PROBLEM_FIELD[problem]] };
   return { kind: 'ready', body };
 }

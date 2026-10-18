@@ -197,4 +197,11 @@ describe('activities', () => {
     expect((await list('type=expense')).some((t) => t.activity === 'transfer')).toBe(false);
     expect((await list('activity=transfer')).map((t) => t.activity)).toEqual(['transfer']);
   });
+  it('stores the matched account and item names, not the typed spelling', async () => {
+    const r = await post({ activity: 'pay_debt', item: ' kbank nano 3 ', acct: 'scb CURRENT', amount: -100 });
+    expect(r.status).toBe(201);
+    expect(r.json).toMatchObject({ item: 'Kbank Nano 3', acct: 'SCB Current' });
+    const t = await call(item.PATCH, { method: 'PATCH', params: { id: String(r.json.id) }, body: { acct: 'cash wallet' } });
+    expect(t.json.acct).toBe('Cash Wallet');
+  });
 });

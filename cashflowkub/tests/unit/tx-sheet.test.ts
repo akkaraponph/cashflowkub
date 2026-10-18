@@ -98,6 +98,14 @@ describe('validateRow activities', () => {
   });
 });
 
+describe('validateRow on rows loaded from the server', () => {
+  it('lets a legacy save row without an item count as ready when asked not to require one', () => {
+    const d = { ...blank, activity: 'save' as const, acct: 'Cash', amount: '5000' };
+    expect(validateRow(d, cats)).toEqual({ kind: 'incomplete', missing: ['item'] });
+    expect(validateRow(d, cats, { requireItem: false })).toMatchObject({ kind: 'ready', body: { amount: -5000, activity: 'save', item: '' } });
+  });
+});
+
 describe('parseThaiOrIsoDate', () => {
   it('reads Thai CE/BE and ISO dates', () => {
     expect(parseThaiOrIsoDate('1 ม.ค. 2026')).toBe('2026-01-01');

@@ -65,7 +65,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
 
   const [rows, setRowsState] = useState<Row[]>(() => withPad(initialRows.map((t) => {
     const draft = draftFromView(t);
-    const check = validateRow(draft, categories);
+    const check = validateRow(draft, categories, { requireItem: false });
     return makeRow(draft, check.kind === 'ready' ? check.body : null, draft);
   })));
   const rowsRef = useRef(rows);

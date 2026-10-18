@@ -111,8 +111,8 @@ async function resolveRow(tx: Prisma.TransactionClient, input: Partial<Input>, c
   const touched = input.activity !== undefined || input.item !== undefined;
   const problem = checkActivity(row, catSub, { requireItem: current ? touched : input.activity !== undefined });
   if (problem) throw badRequest(problem, 'activityMismatch');
-  await assertActivityRefs(tx, row, current ? { acct: input.acct !== undefined, item: touched } : undefined);
-  return row;
+  const stored = await assertActivityRefs(tx, row, current ? { acct: input.acct !== undefined, item: touched } : undefined);
+  return { ...row, ...stored };
 }
 
 export async function createTransaction(body: unknown): Promise<TxView> {
@@ -132,7 +132,8 @@ export async function createTransactions(body: unknown): Promise<TxView[]> {
     const out = [];
     for (const { input, date } of dated) out.push(await tx.transaction.create({ data: { ...(await resolveRow(tx, input)), date } }));
     return out;
-  });
+    // Up to 500 rows with a few lookups each; Prisma's default 5s interactive-transaction limit is too tight on a remote database.
+  }, { maxWait: 10_000, timeout: 60_000 });
   return rows.map((t) => toTxView(toPlain(t), fallback));
 }
 

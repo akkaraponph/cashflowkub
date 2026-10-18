@@ -447,7 +447,7 @@ Transactions carry the planner's activity (section 2) in `Transaction.activity` 
 | `withdraw` | เบิกเงิน | a savings channel (required) | blank | + |
 | `transfer` | เปลี่ยนบัญชี | the **source** account (required) | blank | + |
 
-- `acct` is the account the row is on: paid from, received into, or a transfer's destination. It must be an existing account (400 `unknownAccount`).
+- `acct` is the account the row is on: paid from, received into, or a transfer's destination. It must be an existing account (400 `unknownAccount`). Account and item names match ignoring case and spaces, and the row stores the record's own spelling.
   A transfer is one row, credited to `acct` and debited from `item`; `item` must differ from `acct`.
 - The server sets `cat` from the activity except for `pay`. The rules live in `src/lib/activity.ts`, shared by the API and the sheet.
   A row that breaks them is 400 `activityMismatch` (wrong amount sign, missing or disallowed item, interest or fee outside `pay_debt`,
