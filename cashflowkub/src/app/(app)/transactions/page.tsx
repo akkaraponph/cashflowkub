@@ -12,6 +12,7 @@ import { getI18n } from '@/lib/prefs-server';
 import { DEFAULT_PAGE_SIZE, parsePaging } from '@/lib/pagination';
 import { byKey, firstParam, type SearchParams } from '@/lib/search-params';
 import { monthRange, shiftMonth } from '@/lib/tx-sheet';
+import { listDebtNames } from '@/server/debt/service';
 import { listResource } from '@/server/reference/service';
 import type { TxView } from '@/server/transaction/logic';
 import { listTransactionPage } from '@/server/transaction/service';
@@ -25,13 +26,16 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const month = asked && monthRange(asked) ? asked : CURRENT_MONTH;
   const range = monthRange(month)!;
   const { page: askedPage, size } = parsePaging(firstParam(sp, 'page'), firstParam(sp, 'size'));
-  const [{ rows: txs, total, page }, listing, categories, accounts, goals] = await Promise.all([
+  const [{ rows: txs, total, page }, listing, categories, accounts, goals, incomeItems, channels, debts] = await Promise.all([
     listTransactionPage({ from: range.from, to: range.to }, askedPage, size),
     // The ?type filter drives only the mobile list (its control is md:hidden); the desktop sheet always gets every row.
     type ? listTransactionPage({ from: range.from, to: range.to, type }, askedPage, size) : null,
     listResource('categories'),
     listResource('accounts'),
     listResource('goals'),
+    listResource('income-categories'),
+    listResource('channels'),
+    listDebtNames(),
   ]);
   const cats = byKey(categories);
   const defaultDate = month === CURRENT_MONTH ? today().toISOString().slice(0, 10) : `${month}-01`;
@@ -75,6 +79,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
         categories={categories}
         accounts={accounts}
         goals={goals.map((g) => ({ name: g.name }))}
+        incomeItems={incomeItems.map((i) => ({ name: i.name }))}
+        channels={channels.map((c) => ({ name: c.name }))}
+        debts={debts}
         defaultDate={defaultDate}
         summaryCaption={total > size ? ui.sheet.pageTotals : undefined}
       />

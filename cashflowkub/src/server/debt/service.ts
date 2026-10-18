@@ -195,3 +195,8 @@ export async function deleteDebt(id: number): Promise<void> {
     await tx.debt.delete({ where: { id } });
   });
 }
+
+/** Names for the transaction sheet's debt picker. */
+export function listDebtNames(): Promise<{ name: string; done: boolean }[]> {
+  return prisma.debt.findMany({ select: { name: true, done: true }, orderBy: { sort: 'asc' } });
+}

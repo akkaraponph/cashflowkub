@@ -8,6 +8,7 @@ const PAGES: [string, string, string][] = [
   ['/', 'Net worth', 'มูลค่าสุทธิ'],
   ['/', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
   ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
+  ['/transactions', 'Item (by activity)', 'รายการตามกิจกรรม'],
   ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
   ['/bills', 'KTC Credit Card', 'บิลเดือนนี้'],
   ['/bills?view=calendar', 'Bills this month', 'ปฏิทิน'],
