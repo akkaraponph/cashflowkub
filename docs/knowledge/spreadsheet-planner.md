@@ -411,7 +411,7 @@ Current models are in `cashflowkub/prisma/schema.prisma`.
 | Savings channels (Port) | Channel |
 | Debts to pay off, revolving lines | Debt, DebtPayment |
 | Goals (emergency, retirement, custom) + channel split | SetupGoal, SetupGoalChannel, Goal |
-| Daily transactions | Transaction (spreadsheet grid, monthly sheet) |
+| Daily transactions | Transaction (spreadsheet grid, monthly sheet), with `activity` and `item` columns |
 | Plan log with due dates | PlanItem, Bill |
 | Plan summary, 12 months | MonthlyCashflow, Plan screen |
 | Overview plan vs actual, daily spend | Dashboard, Reports, Budgets, DaySpend |
@@ -436,10 +436,34 @@ a one-time bill is entered as an exact date (stored as `startMonth` + `dueDay`).
 per month in `bill_payments`; `Bill.paid` is deprecated and unread. A due day past a month's end falls on its last day.
 Unlike the spreadsheet planner (section 6), paid is ticked by hand, not matched from transactions.
 
+Transactions carry the planner's activity (section 2) in `Transaction.activity` and the thing it applies to in `Transaction.item`:
+
+| `activity` | Planner | `item` names | `cat` | Sign |
+| --- | --- | --- | --- | --- |
+| `receive` | รับเงิน | an income item (optional) | `income` | + |
+| `pay` | จ่ายเงิน | nothing (always blank) | an expense category, not `saving` or `debt` | − |
+| `save` | สะสมเงิน | a savings channel (required) | `saving` | − |
+| `pay_debt` | ชำระหนี้ | a debt (required) | `debt` | − |
+| `withdraw` | เบิกเงิน | a savings channel (required) | blank | + |
+| `transfer` | เปลี่ยนบัญชี | the **source** account (required) | blank | + |
+
+- `acct` is the account the row is on: paid from, received into, or a transfer's destination. It must be an existing account (400 `unknownAccount`).
+  A transfer is one row, credited to `acct` and debited from `item`; `item` must differ from `acct`.
+- The server sets `cat` from the activity except for `pay`. The rules live in `src/lib/activity.ts`, shared by the API and the sheet.
+  A row that breaks them is 400 `activityMismatch` (wrong amount sign, missing or disallowed item, interest or fee outside `pay_debt`,
+  goal outside `save`, transfer to itself). An item that does not exist is 400 `unknownItem`.
+- A POST without `activity` still works: the activity is inferred from the amount's sign and the category's `sub`, and a missing item is allowed.
+  A PATCH only checks `acct` and `item` when the body sets them, so legacy rows can still be edited. Existing rows were backfilled by migration `20261018000000_tx_activity`.
+- Item names follow the account/goal pattern: unique ignoring case and spaces (409 `channelNameTaken`, `incomeNameTaken`, `debtNameTaken`),
+  renamed on transactions when the item is renamed, and undeletable while a transaction uses them (409 `channelInUse`, `incomeInUse`, `debtInUse`).
+  An account is also in use when it is the source of a transfer.
+- List filters: `?type=income` is `receive`, `?type=expense` is `pay`, `save` and `pay_debt`; transfers and withdrawals are in neither. `?activity=` filters on one activity.
+- Balances are not yet computed from these rows (roadmap phase 2, `docs/superpowers/plans/2026-10-18-planner-gaps-roadmap.md`).
+
 Behaviour to check the app covers, since the planner relies on it:
 
-- transfer between accounts (เปลี่ยนบัญชี) and withdrawal from a channel or credit line (เบิกเงิน);
-- indirect withdrawal when paying straight from a credit line or channel;
+- transfer between accounts (เปลี่ยนบัญชี) and withdrawal from a channel (เบิกเงิน): recorded, covered above; balances follow in roadmap phase 2;
+- indirect withdrawal when paying straight from a credit line or channel: not needed, a credit card is an `Account` of kind `credit`, so paying with it is an ordinary `pay`; paying directly from a channel is not allowed (the paying `acct` must be an account);
 - interest and fee on a debt payment, falling back to computed interest when left blank;
 - suggested plan amounts (last month's actual, debt minimum, goal monthly saving);
 - bill paid-matching by `activity-item` and occurrence count;
