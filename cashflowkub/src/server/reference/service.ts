@@ -2,8 +2,11 @@
 import type { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { notFound } from '@/server/errors';
+import type { Prisma } from '@/generated/prisma/client';
 import { assertAccountNameFree, assertAccountUnused, renameAccountInTransactions } from './accounts';
+import { assertChannelNameFree, assertChannelUnused, renameChannelInTransactions } from './channels';
 import { assertGoalNameFree, assertGoalUnused, renameGoalInTransactions } from './goals';
+import { assertIncomeNameFree, assertIncomeUnused, renameIncomeInTransactions } from './income';
 import { parseBody } from '@/server/validate';
 import { RESOURCE_SCHEMAS, type ResourceName, type ResourceRows } from './resources';
 
@@ -45,68 +48,60 @@ export async function getResource<K extends ResourceName>(name: K, id: number): 
   return row;
 }
 
+type Tx = Prisma.TransactionClient;
+
+/** Resources whose NAME is stored on transactions: unique, renamed in place, and undeletable while in use. */
+interface NameRef {
+  model: 'account' | 'goal' | 'channel' | 'incomeCategory';
+  free(tx: Tx, name: string, exceptId?: number): Promise<void>;
+  rename(tx: Tx, from: string, to: string): Promise<void>;
+  unused(tx: Tx, name: string): Promise<void>;
+}
+
+const NAME_REFS: Partial<Record<ResourceName, NameRef>> = {
+  accounts: { model: 'account', free: assertAccountNameFree, rename: renameAccountInTransactions, unused: assertAccountUnused },
+  goals: { model: 'goal', free: assertGoalNameFree, rename: renameGoalInTransactions, unused: assertGoalUnused },
+  channels: { model: 'channel', free: assertChannelNameFree, rename: renameChannelInTransactions, unused: assertChannelUnused },
+  'income-categories': { model: 'incomeCategory', free: assertIncomeNameFree, rename: renameIncomeInTransactions, unused: assertIncomeUnused },
+};
+
+const txDelegate = (tx: Tx, ref: NameRef) => tx[ref.model] as unknown as Omit<Delegate<{ name: string }>, 'findMany'>;
+
 export async function createResource<K extends ResourceName>(name: K, body: unknown): Promise<ResourceRows[K]> {
   const data = parseBody(schemaOf(name), body);
-  if (name === 'accounts') {
-    return prisma.$transaction(async (tx) => {
-      await assertAccountNameFree(tx, String(data.name));
-      return tx.account.create({ data: data as never }) as Promise<ResourceRows[K]>;
-    });
-  }
-  if (name === 'goals') {
-    return prisma.$transaction(async (tx) => {
-      await assertGoalNameFree(tx, String(data.name));
-      return tx.goal.create({ data: data as never }) as Promise<ResourceRows[K]>;
-    });
-  }
-  return delegate(name).create({ data });
+  const ref = NAME_REFS[name];
+  if (!ref) return delegate(name).create({ data });
+  return prisma.$transaction(async (tx) => {
+    await ref.free(tx, String(data.name));
+    return (await txDelegate(tx, ref).create({ data })) as ResourceRows[K];
+  });
 }
 
 export async function updateResource<K extends ResourceName>(name: K, id: number, body: unknown): Promise<ResourceRows[K]> {
   const data = parseBody(schemaOf(name).partial(), body);
-  if (name === 'accounts') {
-    return prisma.$transaction(async (tx) => {
-      const current = await tx.account.findUnique({ where: { id } });
-      if (!current) throw notFound();
-      if (typeof data.name === 'string' && data.name !== current.name) {
-        await assertAccountNameFree(tx, data.name, id);
-        await renameAccountInTransactions(tx, current.name, data.name);
-      }
-      return tx.account.update({ where: { id }, data: data as never }) as Promise<ResourceRows[K]>;
-    });
-  }
-  if (name === 'goals') {
-    return prisma.$transaction(async (tx) => {
-      const current = await tx.goal.findUnique({ where: { id } });
-      if (!current) throw notFound();
-      if (typeof data.name === 'string' && data.name !== current.name) {
-        await assertGoalNameFree(tx, data.name, id);
-        await renameGoalInTransactions(tx, current.name, data.name);
-      }
-      return tx.goal.update({ where: { id }, data: data as never }) as Promise<ResourceRows[K]>;
-    });
-  }
-  return delegate(name).update({ where: { id }, data });
+  const ref = NAME_REFS[name];
+  if (!ref) return delegate(name).update({ where: { id }, data });
+  return prisma.$transaction(async (tx) => {
+    const current = await txDelegate(tx, ref).findUnique({ where: { id } });
+    if (!current) throw notFound();
+    if (typeof data.name === 'string' && data.name !== current.name) {
+      await ref.free(tx, data.name, id);
+      await ref.rename(tx, current.name, data.name);
+    }
+    return (await txDelegate(tx, ref).update({ where: { id }, data })) as ResourceRows[K];
+  });
 }
 
 export async function deleteResource(name: ResourceName, id: number): Promise<void> {
-  if (name === 'accounts') {
-    await prisma.$transaction(async (tx) => {
-      const current = await tx.account.findUnique({ where: { id } });
-      if (!current) throw notFound();
-      await assertAccountUnused(tx, current.name);
-      await tx.account.delete({ where: { id } });
-    });
+  const ref = NAME_REFS[name];
+  if (!ref) {
+    await delegate(name).delete({ where: { id } });
     return;
   }
-  if (name === 'goals') {
-    await prisma.$transaction(async (tx) => {
-      const current = await tx.goal.findUnique({ where: { id } });
-      if (!current) throw notFound();
-      await assertGoalUnused(tx, current.name);
-      await tx.goal.delete({ where: { id } });
-    });
-    return;
-  }
-  await delegate(name).delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    const current = await txDelegate(tx, ref).findUnique({ where: { id } });
+    if (!current) throw notFound();
+    await ref.unused(tx, current.name);
+    await txDelegate(tx, ref).delete({ where: { id } });
+  });
 }

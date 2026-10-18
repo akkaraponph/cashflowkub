@@ -15,9 +15,10 @@ export async function assertAccountNameFree(tx: Tx, name: string, exceptId?: num
 
 export async function renameAccountInTransactions(tx: Tx, from: string, to: string): Promise<void> {
   await tx.transaction.updateMany({ where: { acct: from }, data: { acct: to } });
+  await tx.transaction.updateMany({ where: { activity: 'transfer', item: from }, data: { item: to } });
 }
 
-/** An account that transactions still use cannot be deleted; that would orphan them. */
+/** An account that transactions still use, as the account or as a transfer's source, cannot be deleted; that would orphan them. */
 export async function assertAccountUnused(tx: Tx, name: string): Promise<void> {
-  if ((await tx.transaction.count({ where: { acct: name } })) > 0) throw conflict('account is used by transactions', 'accountInUse');
+  if ((await tx.transaction.count({ where: { OR: [{ acct: name }, { activity: 'transfer', item: name }] } })) > 0) throw conflict('account is used by transactions', 'accountInUse');
 }

@@ -3,6 +3,7 @@ import * as collection from '@/app/api/v1/[resource]/route';
 import * as item from '@/app/api/v1/[resource]/[id]/route';
 import { GET as health } from '@/app/api/health/route';
 import * as transactions from '@/app/api/v1/transactions/route';
+import { prisma } from '@/lib/db';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -92,5 +93,31 @@ describe('renaming categories', () => {
     expect(after.map((t: { id: number; name: string }) => [t.id, t.name])).toEqual(before.map((t: { id: number; name: string }) => [t.id, t.name]));
     const budgets = (await call(collection.GET, { params: { resource: 'budgets' } })).json.data;
     expect(budgets.some((b: { cat: string }) => b.cat === 'food')).toBe(true);
+  });
+});
+
+describe.each([
+  { resource: 'channels', id: '8', name: 'Gold savings', activity: 'save', amount: -100, taken: 'channelNameTaken', inUse: 'channelInUse' },
+  { resource: 'income-categories', id: '4', name: 'Freelance work', activity: 'receive', amount: 100, taken: 'incomeNameTaken', inUse: 'incomeInUse' },
+])('transaction item guards on $resource', ({ resource, id, name, activity, amount, taken, inUse }) => {
+  const params = { resource, id };
+  const use = () => call(transactions.POST, { method: 'POST', body: { name: 'x', activity, item: name, acct: 'SCB Current', amount } });
+  const rowItem = async () => (await prisma.transaction.findFirstOrThrow({ where: { activity }, orderBy: { id: 'desc' } })).item;
+
+  it('refuses a duplicate name ignoring case and spaces', async () => {
+    const r = await call(collection.POST, { method: 'POST', params: { resource }, body: { name: ` ${name.toUpperCase()} ` } });
+    expect([r.status, r.json.code]).toEqual([409, taken]);
+  });
+  it('renames the item on transactions that use it', async () => {
+    expect((await use()).status).toBe(201);
+    expect((await call(item.PATCH, { method: 'PATCH', params, body: { name: 'Renamed' } })).status).toBe(200);
+    expect(await rowItem()).toBe('Renamed');
+  });
+  it('refuses to delete one that transactions use, and deletes an unused one', async () => {
+    await use();
+    const r = await call(item.DELETE, { method: 'DELETE', params });
+    expect([r.status, r.json.code]).toEqual([409, inUse]);
+    const fresh = await call(collection.POST, { method: 'POST', params: { resource }, body: { name: 'Temp' } });
+    expect((await call(item.DELETE, { method: 'DELETE', params: { resource, id: String(fresh.json.id) } })).status).toBe(204);
   });
 });

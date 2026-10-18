@@ -9,6 +9,7 @@ import { toDebtView, type DebtView } from '@/server/views';
 import { buildSchedule, type ScheduleView } from './logic';
 import { isoDate } from './cycle';
 import { splitPayment } from './payment';
+import { assertDebtNameFree, assertDebtUnused, renameDebtInTransactions } from './refs';
 import { deriveFixedApr } from './terms';
 
 export const DEBT_KINDS = ['paylater', 'cashloan', 'bankloan', 'creditcard', 'personal'] as const;
@@ -155,7 +156,10 @@ export async function createDebt(body: unknown): Promise<DebtView> {
   const openingPaid = input.openingPaid ?? 0;
   if (openingPaid > input.original) throw badRequest('openingPaid cannot exceed original', 'openingPaidExceeds');
   const fixed = withFixedApr({ original: input.original, calc: input.calc ?? 'reducing', fixedPayment: input.fixedPayment ?? 0, termMonths: input.termMonths ?? 0 });
-  const row = await prisma.debt.create({ data: { ...input, ...fixed, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
+  const row = await prisma.$transaction(async (tx) => {
+    await assertDebtNameFree(tx, input.name);
+    return tx.debt.create({ data: { ...input, ...fixed, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
+  });
   return toDebtView(row, today());
 }
 
@@ -175,6 +179,10 @@ export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
       fixedPayment: input.fixedPayment ?? current.fixedPayment,
       termMonths: input.termMonths ?? current.termMonths,
     });
+    if (input.name !== undefined && input.name !== current.name) {
+      await assertDebtNameFree(tx, input.name, id);
+      await renameDebtInTransactions(tx, current.name, input.name);
+    }
     await tx.debt.update({ where: { id }, data: { ...input, ...fixed } });
     return toDebtView(await syncPaid(tx, id), today());
   });
@@ -183,6 +191,7 @@ export async function updateDebt(id: number, body: unknown): Promise<DebtView> {
 export async function deleteDebt(id: number): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await lockDebt(tx, id);
+    await assertDebtUnused(tx, (await findDebt(id, tx)).name);
     await tx.debt.delete({ where: { id } });
   });
 }

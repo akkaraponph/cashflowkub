@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as collection from '@/app/api/v1/[resource]/route';
 import * as item from '@/app/api/v1/[resource]/[id]/route';
 import * as transactions from '@/app/api/v1/transactions/route';
+import { prisma } from '@/lib/db';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -63,5 +64,22 @@ describe('delete', () => {
     const gone = await get(String(json.id));
     expect(gone.status).toBe(404);
     expect(gone.json.code).toBe('notFound');
+  });
+});
+
+describe('transfers', () => {
+  const transfer = () => call(transactions.POST, { method: 'POST', body: { name: 'ATM', activity: 'transfer', item: 'SCB Current', acct: 'Cash Wallet', amount: 500 } });
+  it('renames the source of a transfer and guards its deletion', async () => {
+    expect((await transfer()).status).toBe(201);
+    expect((await patch('2', { name: 'SCB Main' })).status).toBe(200);
+    const rows = (await call(transactions.GET, { url: '/api/v1/transactions?activity=transfer' })).json.data;
+    expect(rows.map((t: { item: string }) => t.item)).toEqual(['SCB Main']);
+    const r = await del('2');
+    expect([r.status, r.json.code]).toEqual([409, 'accountInUse']);
+  });
+  it('refuses to delete a source account even when no row names it as acct', async () => {
+    await call(transactions.POST, { method: 'POST', body: { name: 'x', activity: 'transfer', item: 'Cash Wallet', acct: 'TrueMoney', amount: 5 } });
+    await prisma.transaction.deleteMany({ where: { acct: 'Cash Wallet' } });
+    expect((await del('3')).json.code).toBe('accountInUse');
   });
 });

@@ -3,6 +3,8 @@ import * as collection from '@/app/api/v1/debts/route';
 import * as item from '@/app/api/v1/debts/[id]/route';
 import { GET as schedule } from '@/app/api/v1/debts/[id]/schedule/route';
 import * as payments from '@/app/api/v1/debts/[id]/payments/route';
+import * as transactions from '@/app/api/v1/transactions/route';
+import { prisma } from '@/lib/db';
 import { call, resetDb } from './helpers';
 
 beforeEach(resetDb);
@@ -32,7 +34,7 @@ describe('debt by id', () => {
 
 describe('debt create / update / delete', () => {
   it('creates, edits and removes a debt', async () => {
-    const created = await call(collection.POST, { method: 'POST', body: { name: 'Shopee SPayLater', original: 6000, monthly: 1000, calc: 'flat' } });
+    const created = await call(collection.POST, { method: 'POST', body: { name: 'Lazada PayLater', original: 6000, monthly: 1000, calc: 'flat' } });
     expect(created.status).toBe(201);
     expect(created.json).toMatchObject({ id: 17, paid: 0, remaining: 6000 });
     const id = String(created.json.id);
@@ -118,5 +120,25 @@ describe('fixed instalment debts', () => {
     const { json: d } = await call(collection.POST, { method: 'POST', body: { name: 'iPhone', original: 10000, calc: 'fixed', fixedPayment: 1200, termMonths: 10 } });
     const r = await call(item.PATCH, { method: 'PATCH', params: { id: String(d.id) }, body: { calc: 'reducing', apr: 12, fixedPayment: 0 } });
     expect(r.json).toMatchObject({ calc: 'reducing', apr: 12 });
+  });
+});
+
+describe('debt names as transaction items', () => {
+  const pay = () => call(transactions.POST, { method: 'POST', body: { name: 'x', activity: 'pay_debt', item: 'Kbank Nano 3', acct: 'SCB Current', amount: -100 } });
+  it('refuses a duplicate name ignoring case and spaces', async () => {
+    const r = await call(collection.POST, { method: 'POST', body: { name: '  kbank nano 3 ', original: 1000 } });
+    expect([r.status, r.json.code]).toEqual([409, 'debtNameTaken']);
+  });
+  it('renames the item on pay_debt transactions', async () => {
+    expect((await pay()).status).toBe(201);
+    const found = await prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } });
+    expect((await call(item.PATCH, { method: 'PATCH', params: { id: String(found.id) }, body: { name: 'Nano Three' } })).status).toBe(200);
+    expect((await prisma.transaction.findFirstOrThrow({ where: { activity: 'pay_debt' } })).item).toBe('Nano Three');
+  });
+  it('refuses to delete a debt that transactions use', async () => {
+    await pay();
+    const found = await prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } });
+    const r = await call(item.DELETE, { method: 'DELETE', params: { id: String(found.id) } });
+    expect([r.status, r.json.code]).toEqual([409, 'debtInUse']);
   });
 });
