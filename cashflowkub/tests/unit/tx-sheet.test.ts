@@ -11,7 +11,7 @@ const cats = [
   category({ id: 4, key: 'saving', label: 'Savings & Investing', th: 'เงินสะสม', sub: 'saving' }),
   category({ id: 5, key: 'debt', label: 'Debt payment', th: 'ชำระหนี้สิน', sub: 'debt' }),
 ];
-const blank: RowDraft = { date: '2026-01-01', activity: 'expense', cat: '', acct: '', amount: '', interest: '', fee: '', goal: '', note: '', name: '' };
+const blank: RowDraft = { date: '2026-01-01', activity: 'pay', item: '', cat: '', acct: '', amount: '', interest: '', fee: '', goal: '', note: '', name: '' };
 
 describe('parseAmount', () => {
   it('strips baht sign, commas and sign; keeps satang', () => {
@@ -72,12 +72,29 @@ describe('validateRow', () => {
   it('signs the amount from the activity and names the row after the category', () => {
     const exp = validateRow({ ...blank, cat: 'food', acct: 'Cash', amount: '100' }, cats);
     expect(exp).toMatchObject({ kind: 'ready', body: { amount: -100, name: 'Food & Dining', interest: 0, fee: 0, goal: '', date: '2026-01-01' } });
-    const inc = validateRow({ ...blank, activity: 'income', cat: 'income', acct: 'Cash', amount: '100', note: 'gift' }, cats);
+    const inc = validateRow({ ...blank, activity: 'receive', cat: 'income', acct: 'Cash', amount: '100', note: 'gift' }, cats);
     expect(inc).toMatchObject({ kind: 'ready', body: { amount: 100, note: 'gift' } });
   });
   it('keeps an existing name and flags an unknown category', () => {
     expect(validateRow({ ...blank, cat: 'food', acct: 'Cash', amount: '5', name: 'Starbucks' }, cats)).toMatchObject({ body: { name: 'Starbucks' } });
     expect(validateRow({ ...blank, cat: 'nope', acct: 'Cash', amount: '5' }, cats)).toEqual({ kind: 'incomplete', missing: ['cat'] });
+  });
+});
+
+describe('validateRow activities', () => {
+  it('requires an item for save', () => {
+    expect(validateRow({ ...blank, activity: 'save', acct: 'Cash', amount: '1000' }, cats)).toEqual({ kind: 'incomplete', missing: ['item'] });
+  });
+  it('builds a transfer body into acct out of item with no category', () => {
+    const r = validateRow({ ...blank, activity: 'transfer', acct: 'Cash Wallet', item: 'SCB Current', amount: '500' }, cats);
+    expect(r).toMatchObject({ kind: 'ready', body: { activity: 'transfer', amount: 500, cat: '', acct: 'Cash Wallet', item: 'SCB Current' } });
+  });
+  it('flags a transfer to the same account on the item field', () => {
+    expect(validateRow({ ...blank, activity: 'transfer', acct: 'Cash', item: 'cash', amount: '5' }, cats)).toEqual({ kind: 'incomplete', missing: ['item'] });
+  });
+  it('flags interest outside a debt payment and a saving category on pay', () => {
+    expect(validateRow({ ...blank, cat: 'food', acct: 'Cash', amount: '5', interest: '1' }, cats)).toEqual({ kind: 'incomplete', missing: ['interest'] });
+    expect(validateRow({ ...blank, cat: 'saving', acct: 'Cash', amount: '5' }, cats)).toEqual({ kind: 'incomplete', missing: ['cat'] });
   });
 });
 
@@ -97,13 +114,13 @@ describe('parseThaiOrIsoDate', () => {
 describe('parsePaste', () => {
   const defaults = { date: '2026-01-05', acct: 'Cash' };
   it('parses sheet-ordered rows, skipping blank lines', () => {
-    const text = '1 ม.ค. 2026\tรับเงิน\tincome\tKasikorn Savings\t100\t\t\t\tย่าให้\n\n2 ม.ค. 2026\tจ่ายเงิน\tdebt\tSCB Current\t550\t20\t5';
+    const text = '1 ม.ค. 2026\tรับเงิน\tincome\tKasikorn Savings\t100\t\t\t\tย่าให้\n\n2 ม.ค. 2026\tชำระหนี้\tKbank Nano 3\tSCB Current\t550\t20\t5';
     const r = parsePaste(text, defaults, cats);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.bodies).toHaveLength(2);
     expect(r.bodies[0]).toMatchObject({ date: '2026-01-01', amount: 100, cat: 'income', acct: 'Kasikorn Savings', note: 'ย่าให้', name: 'ย่าให้' });
-    expect(r.bodies[1]).toMatchObject({ date: '2026-01-02', amount: -550, interest: 20, fee: 5, name: 'Debt payment' });
+    expect(r.bodies[1]).toMatchObject({ date: '2026-01-02', amount: -550, interest: 20, fee: 5, activity: 'pay_debt', item: 'Kbank Nano 3', cat: 'debt', name: 'Debt payment' });
   });
   it('accepts category label or Thai name and falls back to defaults', () => {
     const r = parsePaste('\tจ่ายเงิน\tอาหาร\t\t90', defaults, cats);
@@ -125,7 +142,25 @@ describe('parsePaste rules match the grid', () => {
   it('rejects interest/fee outside debt categories and goal outside saving', () => {
     expect(parsePaste('2026-01-02\tจ่ายเงิน\tfood\tCash\t500\t120\t30', defaults, cats)).toMatchObject({ ok: false, line: 1 });
     expect(parsePaste('2026-01-02\tจ่ายเงิน\tfood\tCash\t500\t\t\tCar', defaults, cats)).toMatchObject({ ok: false, line: 1 });
-    expect(parsePaste('2026-01-02\tจ่ายเงิน\tsaving\tCash\t500\t\t\tCar', defaults, cats)).toMatchObject({ ok: true });
+    expect(parsePaste('2026-01-02\tสะสมเงิน\tGold savings\tCash\t500\t\t\tCar', defaults, cats)).toMatchObject({ ok: true });
+  });
+});
+
+describe('parsePaste activities', () => {
+  const defaults = { date: '2026-01-05', acct: 'Cash' };
+  it('reads a Thai save row whose third column is the item', () => {
+    const r = parsePaste('2026-06-01\tสะสมเงิน\tGold savings\tSCB Current\t1000', defaults, cats);
+    expect(r).toMatchObject({ ok: true, bodies: [{ activity: 'save', item: 'Gold savings', amount: -1000, cat: 'saving', acct: 'SCB Current' }] });
+  });
+  it('does not turn a blank activity with a non-category item into a pay', () => {
+    expect(parsePaste('2026-06-01\t\tGold savings\tSCB Current\t1000', defaults, cats)).toEqual({ ok: false, line: 1, error: 'unknown activity' });
+  });
+  it('rejects interest on a pay row naming the broken rule', () => {
+    expect(parsePaste('2026-06-01\tจ่ายเงิน\tfood\tSCB Current\t50\t5', defaults, cats)).toEqual({ ok: false, line: 1, error: 'interestOnlyOnDebt' });
+  });
+  it('rejects a saving category on pay and a transfer to itself', () => {
+    expect(parsePaste('2026-06-01\tจ่ายเงิน\tsaving\tCash\t5', defaults, cats)).toMatchObject({ ok: false, line: 1 });
+    expect(parsePaste('2026-06-01\tเปลี่ยนบัญชี\tCash\tcash\t5', defaults, cats)).toEqual({ ok: false, line: 1, error: 'transferToSelf' });
   });
 });
 
@@ -143,18 +178,20 @@ describe('monthRange', () => {
 
 describe('summarize / columnTotals', () => {
   const rows = [
-    { cat: 'income', amount: 1000, interest: 0, fee: 0 },
-    { cat: 'food', amount: -100, interest: 0, fee: 0 },
-    { cat: 'shopping', amount: -50, interest: 0, fee: 0 },
-    { cat: 'saving', amount: -200, interest: 0, fee: 0 },
-    { cat: 'debt', amount: -300, interest: 20, fee: 5 },
-    { cat: 'mystery', amount: -7, interest: 0, fee: 0 },
-  ];
+    { activity: 'receive', cat: 'income', amount: 1000, interest: 0, fee: 0 },
+    { activity: 'pay', cat: 'food', amount: -100, interest: 0, fee: 0 },
+    { activity: 'pay', cat: 'shopping', amount: -50, interest: 0, fee: 0 },
+    { activity: 'save', cat: 'saving', amount: -200, interest: 0, fee: 0 },
+    { activity: 'pay_debt', cat: 'debt', amount: -300, interest: 20, fee: 5 },
+    { activity: 'pay', cat: 'mystery', amount: -7, interest: 0, fee: 0 },
+    { activity: 'transfer', cat: '', amount: 500, interest: 0, fee: 0 },
+    { activity: 'withdraw', cat: '', amount: 300, interest: 0, fee: 0 },
+  ] as const;
   it('buckets by category sub, unknown counts as other spending', () => {
-    expect(summarize(rows, cats)).toEqual({ income: 1000, saving: 200, need: 100, want: 57, debt: 300 });
+    expect(summarize([...rows], cats)).toEqual({ income: 1000, saving: 200, need: 100, want: 57, debt: 300 });
   });
   it('totals income and expense separately', () => {
-    expect(columnTotals(rows)).toEqual({ income: 1000, expense: 657, interest: 20, fee: 5 });
+    expect(columnTotals([...rows])).toEqual({ income: 1000, expense: 657, interest: 20, fee: 5 });
   });
 });
 

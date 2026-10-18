@@ -1,14 +1,19 @@
 // Pure logic for the transaction sheet: row validation, paste parsing, month range, summaries.
 import type { Category } from '@/generated/prisma/client';
+import {
+  activityFromLabel, checkActivity, fixedCat, itemRequired, legacyActivity, signedAmount,
+  type Activity, type ActivityProblem,
+} from '@/lib/activity';
 import type { TxView } from '@/server/transaction/logic';
 
-export type Activity = 'income' | 'expense';
+export type { Activity };
 
 export interface RowDraft {
   id?: number;
   /** YYYY-MM-DD */
   date: string;
   activity: Activity;
+  item: string;
   cat: string;
   acct: string;
   amount: string;
@@ -21,6 +26,8 @@ export interface RowDraft {
 
 export interface TxBody {
   name: string;
+  activity: Activity;
+  item: string;
   cat: string;
   acct: string;
   amount: number;
@@ -69,12 +76,19 @@ export function parseThaiOrIsoDate(raw: string): string | null {
   return isoDate(year > 2400 ? year - 543 : year, m + 1, Number(th[1]));
 }
 
+const PROBLEM_FIELD: Record<ActivityProblem, keyof RowDraft> = {
+  amountSign: 'amount', catNotAllowed: 'cat', itemRequired: 'item', itemNotAllowed: 'item', transferToSelf: 'item',
+  interestOnlyOnDebt: 'interest', goalOnlyOnSave: 'goal',
+};
+
 export function validateRow(d: RowDraft, cats: Category[]): RowCheck {
-  const touched = [d.cat, d.acct, d.amount, d.interest, d.fee, d.goal, d.note, d.name].some((v) => v.trim() !== '');
+  const touched = [d.cat, d.item, d.acct, d.amount, d.interest, d.fee, d.goal, d.note, d.name].some((v) => v.trim() !== '');
   if (!touched) return { kind: 'empty' };
   const missing: (keyof RowDraft)[] = [];
-  const category = cats.find((c) => c.key === d.cat);
-  if (!category) missing.push('cat');
+  const fixed = fixedCat(d.activity);
+  const category = cats.find((c) => c.key === (fixed ?? d.cat));
+  if (fixed === null && !category) missing.push('cat');
+  if (itemRequired(d.activity) && d.item.trim() === '') missing.push('item');
   if (d.acct.trim() === '') missing.push('acct');
   const amount = parseAmount(d.amount);
   if (!amount) missing.push('amount');
@@ -83,36 +97,34 @@ export function validateRow(d: RowDraft, cats: Category[]): RowCheck {
   const fee = d.fee.trim() === '' ? 0 : parseAmount(d.fee);
   if (fee === null) missing.push('fee');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date) || !parseThaiOrIsoDate(d.date)) missing.push('date');
-  if (missing.length > 0 || !category || !amount || interest === null || fee === null) return { kind: 'incomplete', missing };
-  return {
-    kind: 'ready',
-    body: {
-      name: d.name.trim() || category.label, cat: d.cat, acct: d.acct.trim(), amount: d.activity === 'income' ? amount : -amount,
-      interest, fee, goal: d.goal, note: d.note, date: d.date,
-    },
+  if (missing.length > 0 || !amount || interest === null || fee === null) return { kind: 'incomplete', missing };
+  const body: TxBody = {
+    name: d.name.trim() || category?.label || d.item.trim() || d.activity, activity: d.activity, item: d.item.trim(), cat: fixed ?? d.cat,
+    acct: d.acct.trim(), amount: signedAmount(d.activity, amount), interest, fee, goal: d.goal, note: d.note, date: d.date,
   };
+  const problem = checkActivity(body, category?.sub);
+  if (problem) return { kind: 'incomplete', missing: [PROBLEM_FIELD[problem]] };
+  return { kind: 'ready', body };
 }
 
 export function draftFromView(t: TxView): RowDraft {
   return {
-    id: t.id, date: t.isoDate, activity: t.amount > 0 ? 'income' : 'expense', cat: t.cat, acct: t.acct, amount: String(Math.abs(t.amount)),
+    id: t.id, date: t.isoDate, activity: t.activity, item: t.item, cat: t.cat, acct: t.acct, amount: String(Math.abs(t.amount)),
     interest: t.interest ? String(t.interest) : '', fee: t.fee ? String(t.fee) : '', goal: t.goal, note: t.note, name: t.name,
   };
 }
 
-function parseActivity(raw: string, category: Category): Activity | null {
-  const s = raw.trim().toLowerCase();
-  if (s === 'รับเงิน' || s === 'income') return 'income';
-  if (s === 'จ่ายเงิน' || s === 'expense') return 'expense';
-  return s === '' ? (category.type === 'income' ? 'income' : 'expense') : null;
-}
-
-/** Parses tab-separated sheet rows: date, activity, category, account, amount, interest, fee, goal, note. All-or-nothing. */
+/**
+ * Parses tab-separated sheet rows: date, activity, category-or-item, account, amount, interest, fee, goal, note. All-or-nothing.
+ * Column 3 is the expense category for จ่ายเงิน and the item for every other activity (for รับเงิน it may be the income category, meaning no item).
+ * Whether an item exists is the server's call; here it only has to be present when the activity needs one.
+ */
 export function parsePaste(
   text: string, defaults: { date: string; acct: string }, cats: Category[],
 ): { ok: true; bodies: TxBody[] } | { ok: false; line: number; error: string } {
   const bodies: TxBody[] = [];
   const lines = text.split(/\r?\n/);
+  const find = (raw: string) => cats.find((x) => x.key === raw.toLowerCase() || x.label.toLowerCase() === raw.toLowerCase() || x.th === raw);
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].trim() === '') continue;
     const line = i + 1;
@@ -120,25 +132,43 @@ export function parsePaste(
     const c = lines[i].split('\t').map((v) => v.trim());
     const date = c[0] ? parseThaiOrIsoDate(c[0]) : defaults.date;
     if (!date) return fail(`invalid date: ${c[0]}`);
-    const key = (c[2] ?? '').toLowerCase();
-    const category = cats.find((x) => x.key === key || x.label.toLowerCase() === key || x.th === c[2]);
-    if (!category) return fail(`unknown category: ${c[2] ?? ''}`);
-    const activity = parseActivity(c[1] ?? '', category);
-    if (!activity) return fail(`unknown activity: ${c[1]}`);
-    if (c[1] && activity !== (category.type === 'income' ? 'income' : 'expense')) return fail(`activity does not match category: ${c[2]}`);
+    const third = c[2] ?? '';
+    const category = find(third);
+    let activity: Activity;
+    if (c[1]) {
+      const named = activityFromLabel(c[1]);
+      if (!named) return fail(`unknown activity: ${c[1]}`);
+      activity = named;
+    } else {
+      if (!category) return fail('unknown activity');
+      activity = legacyActivity(category.type === 'income' ? 1 : -1, category.sub);
+    }
+    const fixed = fixedCat(activity);
+    let cat: string;
+    let item = '';
+    if (activity === 'pay') {
+      if (!category || category.type === 'income') return fail(`unknown category: ${third}`);
+      cat = category.key;
+    } else {
+      cat = fixed ?? '';
+      const isIncomeCat = activity === 'receive' && category?.type === 'income';
+      if (activity === 'receive' && category && !isIncomeCat) return fail(`activity does not match category: ${third}`);
+      item = isIncomeCat ? '' : third;
+    }
     const amount = parseAmount(c[4] ?? '');
     if (!amount) return fail(`invalid amount: ${c[4] ?? ''}`);
     const interest = c[5] ? parseAmount(c[5]) : 0;
     if (interest === null) return fail(`invalid interest: ${c[5]}`);
     const fee = c[6] ? parseAmount(c[6]) : 0;
     if (fee === null) return fail(`invalid fee: ${c[6]}`);
-    if ((interest > 0 || fee > 0) && category.sub !== 'debt') return fail('interest and fee only apply to debt payments');
-    if (c[7] && category.sub !== 'saving') return fail('goal only applies to savings');
     const note = c[8] ?? '';
-    bodies.push({
-      name: note || category.label, cat: category.key, acct: c[3] || defaults.acct, amount: activity === 'income' ? amount : -amount,
+    const body: TxBody = {
+      name: note || cats.find((x) => x.key === cat)?.label || item || activity, activity, item, cat, acct: c[3] || defaults.acct, amount: signedAmount(activity, amount),
       interest, fee, goal: c[7] ?? '', note, date,
-    });
+    };
+    const problem = checkActivity(body, category?.sub);
+    if (problem) return fail(problem);
+    bodies.push(body);
   }
   if (bodies.length === 0) return { ok: false, line: 1, error: 'nothing to paste' };
   return { ok: true, bodies };
@@ -161,22 +191,23 @@ export function shiftMonth(month: string, delta: number): string {
   return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-export function summarize(rows: Pick<TxView, 'cat' | 'amount'>[], cats: Category[]): { income: number; saving: number; need: number; want: number; debt: number } {
+export function summarize(rows: Pick<TxView, 'activity' | 'cat' | 'amount'>[], cats: Category[]): { income: number; saving: number; need: number; want: number; debt: number } {
   const sub = new Map(cats.map((c) => [c.key, c.sub]));
   const out = { income: 0, saving: 0, need: 0, want: 0, debt: 0 };
   for (const r of rows) {
-    if (r.amount > 0) { out.income += r.amount; continue; }
-    const s = sub.get(r.cat);
-    out[s === 'saving' || s === 'debt' || s === 'need' ? s : 'want'] += -r.amount;
+    if (r.activity === 'receive') out.income += r.amount;
+    else if (r.activity === 'save') out.saving += -r.amount;
+    else if (r.activity === 'pay_debt') out.debt += -r.amount;
+    else if (r.activity === 'pay') out[sub.get(r.cat) === 'need' ? 'need' : 'want'] += -r.amount;
   }
   return out;
 }
 
-export function columnTotals(rows: Pick<TxView, 'amount' | 'interest' | 'fee'>[]): { income: number; expense: number; interest: number; fee: number } {
+export function columnTotals(rows: Pick<TxView, 'activity' | 'amount' | 'interest' | 'fee'>[]): { income: number; expense: number; interest: number; fee: number } {
   const out = { income: 0, expense: 0, interest: 0, fee: 0 };
   for (const r of rows) {
-    if (r.amount > 0) out.income += r.amount;
-    else out.expense += -r.amount;
+    if (r.activity === 'receive') out.income += r.amount;
+    else if (r.activity === 'pay' || r.activity === 'save' || r.activity === 'pay_debt') out.expense += -r.amount;
     out.interest += r.interest;
     out.fee += r.fee;
   }
