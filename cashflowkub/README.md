@@ -17,9 +17,15 @@ pnpm dev                          # http://localhost:3000
 ```bash
 pnpm test        # unit + api (api tests use TEST_DATABASE_URL)
 pnpm test:e2e    # page smoke tests against a running `pnpm start`
+pnpm test:pw     # Playwright browser tests of every feature
 ```
 
 `test:e2e` targets the server at `E2E_BASE_URL` (e.g. `E2E_BASE_URL=http://localhost:3111 pnpm test:e2e`).
+
+`test:pw` needs the browser once: `pnpm exec playwright install chromium`. It builds the app into `.next-e2e`, starts it on port 3210
+against `TEST_DATABASE_URL` and reseeds that database before every test, so it never touches your dev database or a running `pnpm dev`.
+Specs are in `tests/playwright/`, one file per feature area. Run one with `pnpm test:pw transactions`; reports and traces go to the
+system temp folder (`cashflowkub-playwright/`), and `pnpm exec playwright show-report` opens the last report.
 
 ## API
 

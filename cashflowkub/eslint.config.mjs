@@ -9,10 +9,13 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-e2e/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
   ]),
+  // Playwright fixtures are called `use`, which the React hooks rule mistakes for React's `use`.
+  { files: ["tests/playwright/**"], rules: { "react-hooks/rules-of-hooks": "off" } },
 ]);
 
 export default eslintConfig;
