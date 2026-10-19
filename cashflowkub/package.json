@@ -15,6 +15,7 @@
     "test:e2e": "vitest run --project e2e",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:claim": "tsx scripts/claim-legacy-data.ts",
     "test:pw": "playwright test"
   },
   "dependencies": {
