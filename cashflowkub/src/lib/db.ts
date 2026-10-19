@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma/client';
 import { currentScope, requireUserId } from '@/lib/user-context';
-import { decryptDeep, encryptData } from '@/server/crypto/fields';
+import { decryptResult, encryptData } from '@/server/crypto/fields';
 import { OWNED_MODELS, scopeArgs } from '@/server/tenancy';
 
 function createClient(): PrismaClient {
@@ -23,7 +23,7 @@ const WRITES_DATA = new Set(['create', 'update', 'updateMany', 'updateManyAndRet
 
 /** Encrypts the free-text columns in whatever write payload the operation carries. */
 function encryptArgs(model: string, operation: string, args: Args): Args {
-  const enc = (d: unknown): unknown => (Array.isArray(d) ? d.map((r) => encryptData(model, r as Args)) : encryptData(model, (d ?? {}) as Args));
+  const enc = (d: unknown): unknown => (Array.isArray(d) ? d.map((r) => encryptData(model, r as Args)) : d === undefined ? d : encryptData(model, d as Args));
   if (WRITES_DATA.has(operation) || operation === 'createMany' || operation === 'createManyAndReturn') return { ...args, data: enc(args.data) };
   if (operation === 'upsert') return { ...args, create: enc(args.create), update: enc(args.update) };
   return args;
@@ -43,7 +43,7 @@ export const prisma = basePrisma.$extends({
         if (!OWNED_MODELS.has(model)) return query(args);
         let a = args as Args;
         if (currentScope()?.kind !== 'system') a = scopeArgs(model, operation, a, await requireUserId());
-        return decryptDeep(await query(encryptArgs(model, operation, a) as typeof args));
+        return decryptResult(model, await query(encryptArgs(model, operation, a) as typeof args));
       },
     },
   },

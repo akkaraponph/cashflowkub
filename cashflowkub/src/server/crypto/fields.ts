@@ -8,6 +8,9 @@ export const ENCRYPTED_FIELDS: Record<string, readonly string[]> = {
 };
 
 const PREFIX = 'enc:v1:';
+const TAG_BYTES = 16;
+
+export const isEncrypted = (value: string): boolean => value.startsWith(PREFIX);
 
 // Read on every call (no fallback) so a missing or malformed key fails loudly instead of storing plaintext.
 function key(): Buffer {
@@ -21,31 +24,49 @@ function key(): Buffer {
 export function encryptField(plain: string): string {
   if (plain === '') return '';
   const iv = randomBytes(12);
-  const cipher = createCipheriv('aes-256-gcm', key(), iv);
+  const cipher = createCipheriv('aes-256-gcm', key(), iv, { authTagLength: TAG_BYTES });
   const ct = Buffer.concat([cipher.update(plain, 'utf8'), cipher.final()]);
   return `${PREFIX}${iv.toString('base64url')}:${cipher.getAuthTag().toString('base64url')}:${ct.toString('base64url')}`;
 }
 
 /** Values without the prefix are legacy plaintext and pass through; a bad tag throws. */
 export function decryptField(value: string): string {
-  if (!value.startsWith(PREFIX)) return value;
+  if (!isEncrypted(value)) return value;
   const [iv, tag, ct] = value.slice(PREFIX.length).split(':');
   if (iv === undefined || tag === undefined || ct === undefined) throw new Error('malformed encrypted value');
-  const decipher = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'));
-  decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+  const tagBytes = Buffer.from(tag, 'base64url');
+  if (tagBytes.length !== TAG_BYTES) throw new Error('malformed encrypted value');
+  const decipher = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'), { authTagLength: TAG_BYTES });
+  decipher.setAuthTag(tagBytes);
   return Buffer.concat([decipher.update(Buffer.from(ct, 'base64url')), decipher.final()]).toString('utf8');
 }
 
-/** Decrypts every prefixed string in a result tree; Dates, Decimals and other class instances are left alone. */
-export function decryptDeep<T>(value: T): T {
-  if (typeof value === 'string') return (value.startsWith(PREFIX) ? decryptField(value) : value) as T;
-  if (Array.isArray(value)) return value.map(decryptDeep) as T;
-  if (value !== null && typeof value === 'object') {
-    const proto = Object.getPrototypeOf(value) as unknown;
-    if (proto !== Object.prototype && proto !== null) return value;
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, decryptDeep(v)])) as T;
+/** Relations a result may include that lead to another model with encrypted columns. */
+const RELATIONS: Record<string, Record<string, string>> = {
+  Debt: { payments: 'DebtPayment' },
+  DebtPayment: { debt: 'Debt' },
+};
+
+/**
+ * Decrypts the model's ENCRYPTED_FIELDS in a result (row or array of rows), following the
+ * included relations in RELATIONS. Other columns are never touched, so a user-typed value
+ * that happens to start with the prefix stays as typed. Dates, Decimals and other class
+ * instances are left alone.
+ */
+export function decryptResult<T>(model: string, value: T): T {
+  if (Array.isArray(value)) return value.map((v) => decryptResult(model, v)) as T;
+  if (value === null || typeof value !== 'object') return value;
+  const proto = Object.getPrototypeOf(value) as unknown;
+  if (proto !== Object.prototype && proto !== null) return value;
+  const out: Record<string, unknown> = { ...(value as Record<string, unknown>) };
+  for (const f of ENCRYPTED_FIELDS[model] ?? []) {
+    const v = out[f];
+    if (typeof v === 'string') out[f] = decryptField(v);
   }
-  return value;
+  for (const [rel, target] of Object.entries(RELATIONS[model] ?? {})) {
+    if (out[rel] !== undefined) out[rel] = decryptResult(target, out[rel]);
+  }
+  return out as T;
 }
 
 /** Encrypts the model's free-text columns in a write payload (plain strings or `{ set }`). */

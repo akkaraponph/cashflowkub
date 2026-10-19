@@ -1,6 +1,6 @@
 import { Prisma } from '@/generated/prisma/client';
-import { afterEach, describe, expect, it } from 'vitest';
-import { decryptDeep, decryptField, encryptData, encryptField } from '@/server/crypto/fields';
+import { afterAll, afterEach, describe, expect, it } from 'vitest';
+import { decryptResult, decryptField, encryptData, encryptField } from '@/server/crypto/fields';
 
 const KEY = Buffer.alloc(32, 7).toString('base64');
 const original = process.env.DATA_ENCRYPTION_KEY;
@@ -48,15 +48,28 @@ describe('field encryption', () => {
     expect(() => encryptField('x')).toThrow('DATA_ENCRYPTION_KEY must be 32 bytes');
   });
 
-  it('decryptDeep handles arrays, nested includes, Dates and Prisma Decimals unchanged', () => {
+  it('a tag truncated to 4 bytes throws', () => {
+    const parts = encryptField('secret note').split(':');
+    parts[3] = Buffer.from(parts[3]!, 'base64url').subarray(0, 4).toString('base64url');
+    expect(() => decryptField(parts.join(':'))).toThrow();
+  });
+
+  it('decryptResult handles arrays, nested includes, Dates and Prisma Decimals unchanged', () => {
     const date = new Date('2026-10-19');
     const amount = new Prisma.Decimal('12.50');
     const tree = [{ lender: encryptField('แม่'), paid: amount, payments: [{ note: encryptField('ค่าหมอ'), date }, { note: 'plain', date }] }];
-    const out = decryptDeep(tree);
+    const out = decryptResult('Debt', tree);
     expect(out[0]!.lender).toBe('แม่');
     expect(out[0]!.payments.map((p) => p.note)).toEqual(['ค่าหมอ', 'plain']);
     expect(out[0]!.paid).toBe(amount);
     expect(out[0]!.payments[0]!.date).toBe(date);
+  });
+
+  it('decryptResult touches only the model columns', () => {
+    const typed = 'enc:v1:abc';
+    expect(decryptResult('Account', { name: typed })).toEqual({ name: typed });
+    expect(decryptResult('Debt', { name: typed, lender: encryptField('x') })).toEqual({ name: typed, lender: 'x' });
+    expect(decryptResult('DebtPayment', { note: encryptField('n'), debt: { lender: encryptField('m'), name: typed } })).toEqual({ note: 'n', debt: { lender: 'm', name: typed } });
   });
 
   it('encryptData encrypts only the model columns, plain or { set }', () => {
@@ -68,7 +81,7 @@ describe('field encryption', () => {
   });
 });
 
-process.on('exit', () => {
+afterAll(() => {
   if (original === undefined) delete process.env.DATA_ENCRYPTION_KEY;
   else process.env.DATA_ENCRYPTION_KEY = original;
 });

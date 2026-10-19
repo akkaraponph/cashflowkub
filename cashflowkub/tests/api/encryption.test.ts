@@ -5,10 +5,11 @@ import * as txBatch from '@/app/api/v1/transactions/batch/route';
 import * as debts from '@/app/api/v1/debts/route';
 import * as debtItem from '@/app/api/v1/debts/[id]/route';
 import * as payments from '@/app/api/v1/debts/[id]/payments/route';
-import { basePrisma } from '@/lib/db';
+import { basePrisma, prisma } from '@/lib/db';
 import { runAsSystem, runAsUser } from '@/lib/user-context';
 import { claimLegacyData, LEGACY_OWNER } from '../../scripts/claim-legacy-data';
-import { call, resetDb, signUpCookie } from './helpers';
+import * as resource from '@/app/api/v1/[resource]/route';
+import { asDemo, call, demoUserId, resetDb, signUpCookie } from './helpers';
 
 beforeEach(resetDb);
 
@@ -69,8 +70,10 @@ describe('free text is encrypted at rest', () => {
     expect(p!.note).toMatch(/^enc:v1:/);
     const got = await call(debtItem.GET, { params: { id } });
     expect(got.json.lender).toBe('แม่');
-    expect(got.json.payments?.[0]?.note ?? 'ค่าหมอ').toBe('ค่าหมอ');
-    expect((await call(payments.GET, { params: { id } })).json.data[0].note).toBe('ค่าหมอ');
+    // listPayments reads the debt with its `payments` include, so this covers nested decryption.
+    const listed = (await call(payments.GET, { params: { id } })).json.data;
+    expect(listed).toHaveLength(1);
+    expect(listed[0].note).toBe('ค่าหมอ');
   });
 
   it('a tampered ciphertext fails to read instead of returning garbage', async () => {
@@ -96,6 +99,46 @@ describe('free text is encrypted at rest', () => {
   });
 });
 
+describe('encryption scope and write paths', () => {
+  it('user text that starts with the prefix in unencrypted columns reads back unchanged', async () => {
+    const typed = 'enc:v1:abc';
+    for (const [name, body] of [['accounts', { name: typed }], ['goals', { name: typed, target: 100 }], ['categories', { key: 'zz', label: typed }]] as const) {
+      const made = await call(resource.POST, { method: 'POST', params: { resource: name }, body });
+      expect(made.status).toBe(201);
+    }
+    const debt = await call(debts.POST, { method: 'POST', body: { name: typed, original: 100, monthly: 10, calc: 'flat' } });
+    expect(debt.status).toBe(201);
+    expect((await call(debts.GET)).json.data.map((d: { name: string }) => d.name)).toContain(typed);
+    for (const [name, field] of [['accounts', 'name'], ['goals', 'name'], ['categories', 'label']] as const) {
+      const list = await call(resource.GET, { params: { resource: name } });
+      expect(list.status).toBe(200);
+      expect(list.json.data.map((r: Record<string, string>) => r[field])).toContain(typed);
+    }
+  });
+
+  it('createMany and upsert encrypt through the extension', async () => {
+    const userId = await demoUserId();
+    await asDemo(async () => {
+      await prisma.transaction.createMany({ data: [{ userId, name: 'ก', note: 'หนึ่ง', cat: 'food', acct: 'Cash Wallet', amount: -1, date: new Date('2026-06-01') }] });
+      await prisma.transaction.upsert({
+        where: { id: 99999 }, update: {},
+        create: { userId, id: 99999, name: 'ข', note: 'สอง', cat: 'food', acct: 'Cash Wallet', amount: -2, date: new Date('2026-06-01') },
+      });
+      const back = await prisma.transaction.findUnique({ where: { id: 99999 } });
+      expect(back).toMatchObject({ name: 'ข', note: 'สอง' });
+      await prisma.transaction.upsert({ where: { id: 99999 }, create: { userId, id: 99999, name: 'x', cat: 'food', acct: 'Cash Wallet', amount: -2, date: new Date('2026-06-01') }, update: { note: { set: 'สาม' } } });
+    });
+    const many = await raw<{ name: string }>`SELECT name FROM transactions WHERE amount = -1 AND date = '2026-06-01'`;
+    expect(many.length).toBeGreaterThan(0);
+    expect(many.every((r) => r.name !== 'ก')).toBe(true);
+    expect(many.some((r) => r.name.startsWith('enc:v1:'))).toBe(true);
+    const all = await raw<{ name: string; note: string }>`SELECT name, note FROM transactions WHERE id = 99999`;
+    expect(all[0]!.note).toMatch(/^enc:v1:/);
+    expect(all[0]!.note).not.toContain('สาม');
+    expect(await asDemo(() => prisma.transaction.findUniqueOrThrow({ where: { id: 99999 } }))).toMatchObject({ note: 'สาม' });
+  });
+});
+
 describe('claim-legacy-data', () => {
   it('moves legacy rows to the account, encrypts plaintext and deletes the placeholder', async () => {
     await signUpCookie('owner@test.local');
@@ -108,8 +151,12 @@ describe('claim-legacy-data', () => {
     await runAsSystem(async () => {
       await basePrisma.account.create({ data: { userId: LEGACY_OWNER, name: 'Old Wallet', balance: 100, sort: 1 } });
       await basePrisma.category.create({ data: { userId: LEGACY_OWNER, key: 'food', label: 'Food' } });
+      const debt = await basePrisma.debt.create({ data: { userId: LEGACY_OWNER, name: 'Mom', lender: 'แม่', original: 1000 } });
+      await basePrisma.debtPayment.create({ data: { userId: LEGACY_OWNER, debtId: debt.id, date: new Date('2026-06-02'), amount: 100, principal: 100, interest: 0, fee: 0, note: 'ค่าหมอ' } });
       await basePrisma.transaction.create({ data: { userId: LEGACY_OWNER, name: 'ยืมแม่', note: 'ค่าหมอ', cat: 'food', acct: 'Old Wallet', amount: -50, date: new Date('2026-06-01') } });
     });
+    const ownerDefaults = await basePrisma.category.count({ where: { userId: owner.id } });
+    expect(ownerDefaults).toBeGreaterThan(1);
     const [before] = await raw<{ note: string }>`SELECT note FROM transactions WHERE user_id = ${LEGACY_OWNER}`;
     expect(before!.note).toBe('ค่าหมอ');
 
@@ -122,6 +169,14 @@ describe('claim-legacy-data', () => {
     expect(after!.note).toMatch(/^enc:v1:/);
     expect(after!.name).toMatch(/^enc:v1:/);
     expect(await basePrisma.user.findUnique({ where: { id: LEGACY_OWNER } })).toBeNull();
+    const cats = await basePrisma.category.findMany({ where: { userId: owner.id } });
+    expect(cats).toHaveLength(ownerDefaults); // legacy 'food' replaced the default 'food'; other defaults remain
+    expect(cats.filter((c) => c.key === 'food')).toHaveLength(1);
+    const [lender] = await raw<{ lender: string }>`SELECT lender FROM debts WHERE user_id = ${owner.id}`;
+    const [pnote] = await raw<{ note: string }>`SELECT note FROM debt_payments WHERE user_id = ${owner.id}`;
+    expect(lender!.lender).toMatch(/^enc:v1:/);
+    expect(pnote!.note).toMatch(/^enc:v1:/);
+    expect(counts).toMatchObject({ Debt: 1, DebtPayment: 1 });
     const seen = await runAsUser(owner.id, () => basePrisma.account.findMany({ where: { userId: owner.id } }));
     expect(seen.map((a) => a.name)).toEqual(['Old Wallet']);
   });
