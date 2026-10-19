@@ -9,11 +9,17 @@ as a single full-stack **Next.js** app in [`cashflowkub/`](cashflowkub/README.md
 | UI       | Next.js 16 App Router · shadcn/ui · Tailwind v4    |
 | API      | Next.js Route Handlers (`/api/v1`)                 |
 | Data     | Prisma 7 · PostgreSQL                              |
+| Auth     | Better Auth (email + password) · per-user data     |
 
 Screens: Dashboard · Transactions · Bills (list + calendar) · Debts (+ schedule, avalanche/snowball) ·
 Net Worth · Budgets · Accounts · Reports · Goals · Plan · Setup · Settings, with light/dark theme and EN/TH.
 
-See [`cashflowkub/README.md`](cashflowkub/README.md) to run it.
+Each person signs in and sees only their own data; free-text notes are encrypted at rest, and a user can export or permanently delete
+everything (PDPA). See [`docs/knowledge/auth-and-privacy.md`](docs/knowledge/auth-and-privacy.md). The privacy notice is a draft and password reset
+is not built yet, so do not open sign-up to the public before those are done.
+
+See [`cashflowkub/README.md`](cashflowkub/README.md) to run it (it now needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATA_ENCRYPTION_KEY`,
+`SEED_DEMO_PASSWORD` and the two `PRIVACY_*` variables; existing data is handed to your account with `pnpm db:claim --email <your email>`).
 
 > The earlier Go API (`api/`) and Expo app (`mobile/`) were replaced by this app. They are in git history before this commit.
 
