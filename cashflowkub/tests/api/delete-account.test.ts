@@ -89,3 +89,39 @@ describe('delete my account', () => {
     expect((await authPost('sign-in/email', { email: EMAIL, password: PASSWORD })).status).toBe(401);
   });
 });
+
+describe('delete-user needs the password', () => {
+  const EMAIL2 = 'nopw@delete.test';
+  const post = (path: string, cookie: string, body: unknown): Promise<Response> =>
+    auth.handler(new Request(`http://test/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'http://test', Cookie: cookie }, body: JSON.stringify(body) }));
+
+  it.each([[{}], [{ password: '' }]])('a request with %j is rejected and deletes nothing', async (body) => {
+    await resetDb();
+    const cookie = await signUpCookie(EMAIL2, PASSWORD);
+    const id = (await basePrisma.user.findUniqueOrThrow({ where: { email: EMAIL2 }, select: { id: true } })).id;
+    const before = await basePrisma.category.count({ where: { userId: id } });
+    expect((await post('delete-user', cookie, body)).status).toBe(400);
+    expect(await basePrisma.user.count({ where: { id } })).toBe(1);
+    expect(await basePrisma.category.count({ where: { userId: id } })).toBe(before);
+    expect((await auth.handler(new Request('http://test/api/auth/get-session', { headers: { Cookie: cookie } }))).status).toBe(200);
+    expect((await call((await import('@/app/api/v1/transactions/route')).GET, { cookie })).status).toBe(200);
+  });
+});
+
+describe('privacy fields cannot be changed through update-user', () => {
+  it('rejects privacyVersion and leaves the value; /me/privacy still works', async () => {
+    await resetDb();
+    const cookie = await signUpCookie('upd@delete.test', PASSWORD);
+    const read = () => basePrisma.user.findUniqueOrThrow({ where: { email: 'upd@delete.test' }, select: { privacyVersion: true } });
+    await basePrisma.user.update({ where: { email: 'upd@delete.test' }, data: { privacyVersion: '2020-01-01' } });
+    const res = await post2('update-user', cookie, { privacyVersion: '2026-10-19' });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect((await read()).privacyVersion).toBe('2020-01-01');
+    const ok = await call((await import('@/app/api/v1/me/privacy/route')).POST, { method: 'POST', cookie, body: { privacy_version: '2026-10-19' } });
+    expect(ok.status).toBe(200);
+    expect((await read()).privacyVersion).toBe('2026-10-19');
+  });
+});
+
+const post2 = (path: string, cookie: string, body: unknown): Promise<Response> =>
+  auth.handler(new Request(`http://test/api/auth/${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'http://test', Cookie: cookie }, body: JSON.stringify(body) }));

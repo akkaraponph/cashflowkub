@@ -29,6 +29,9 @@ Sign in as `demo@cashflowkub.local` with `SEED_DEMO_PASSWORD`, or create your ow
 `pnpm db:deploy` assigns every existing row to a placeholder user. Sign up with your real email, then run
 `pnpm db:claim --email <your email>` once: it moves those rows to your account, encrypts the free-text columns and prints the rows moved per table.
 
+A fresh deployment with no legacy data should remove the placeholder user, which the migration creates and which nobody can sign in as:
+`psql "$DATABASE_URL" -c "DELETE FROM users WHERE id = 'legacy-owner'"` (cascades to nothing if it owns no rows).
+
 ## Test
 
 ```bash

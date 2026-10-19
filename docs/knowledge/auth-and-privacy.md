@@ -9,6 +9,7 @@ Everything here was added by the `feat/auth-pdpa` branch. The decisions (D1-D8) 
 - Better Auth owns four tables, mapped to snake_case names: `users`, `sessions`, `auth_accounts`, `verifications`. The credential row's password is a one-way hash.
 - **Field-name exception.** Better Auth's extra user fields are camelCase in its API and in the Prisma model: `privacyVersion` and `privacyAcceptedAt` (columns `privacy_version`, `privacy_accepted_at`). Sign-up is `POST /api/auth/sign-up/email` with `privacyVersion` in the body, not `privacy_version`. Everything else we added (`/api/v1/me/*`) is snake_case as AGENTS.md requires.
 - Sign-up must send `privacyVersion` equal to `PRIVACY_VERSION` (`src/lib/privacy.ts`, currently `2026-10-19`); otherwise 400. The server stamps `privacyAcceptedAt`.
+- `privacyVersion` / `privacyAcceptedAt` cannot be changed through `/api/auth/update-user` (a `databaseHooks.user.update.before` rejects it); only `POST /api/v1/me/privacy` (plain Prisma) changes them.
 - **Sign-up and default data are not atomic.** The user row is committed first and the default categories are created in an after-hook (`defaultDataFor`). If that hook fails, the account exists with no categories. `defaultDataFor` is idempotent (`createMany` with `skipDuplicates`) and the `(app)` layout calls it whenever the signed-in user has zero categories, so the next page load repairs the account.
 - **Privacy version changes.** When `PRIVACY_VERSION` is bumped, the `(app)` layout redirects every user whose `privacyVersion` differs to `/privacy-update`, which posts `{ privacy_version }` to `POST /api/v1/me/privacy` and returns to `/`.
 
@@ -38,7 +39,7 @@ Everything here was added by the `feat/auth-pdpa` branch. The decisions (D1-D8) 
 ## 4. Export and deletion
 
 - **Export** (PDPA s.30-31): `GET /api/v1/me/export` returns one JSON file (`Content-Disposition: attachment`, `cashflowkub-export-YYYY-MM-DD.json`) with `format`, `version`, `exported_at`, `privacy`, `user` and `data` (one array per owned table, snake_case table names, `userId` dropped, encrypted fields decrypted). Contains no password hash or session. The settings page links to it.
-- **Deletion** (PDPA s.33): `POST /api/auth/delete-user` with `{ password }` hard-deletes the user; the cascade removes every owned row and the sessions. The UI asks for the password and the typed word `DELETE` (`ลบบัญชี` in Thai). Other signed-in sessions of that user stop working at once; other users are untouched. No grace period and no soft delete. Backups still hold the data until they expire; state that retention in the privacy notice.
+- **Deletion** (PDPA s.33): `POST /api/auth/delete-user` with `{ password }` hard-deletes the user; the cascade removes every owned row and the sessions. The UI asks for the password and the typed word `DELETE` (`ลบบัญชี` in Thai). The password is **always required**: Better Auth alone would skip the check for a session fresher than a day when no password is sent, so a `hooks.before` in `src/server/auth/auth.ts` returns 400 `password_required` for a missing or empty password (do not set `session.freshAge` to 0, that also skips the check). Other signed-in sessions of that user stop working at once; other users are untouched. No grace period and no soft delete. Backups still hold the data until they expire; state that retention in the privacy notice.
 
 ## 5. The privacy page
 
@@ -75,6 +76,7 @@ Lawful basis is **contract** (PDPA s.24(3)), not consent: the data is needed to 
 - PostgreSQL on a host with **disk encryption on**, connections with `sslmode=require` in `DATABASE_URL`.
 - **Backups encrypted**, and the backup retention period written into the privacy notice. Keep `DATA_ENCRYPTION_KEY` backed up separately from the database.
 - Run `pnpm db:deploy` (never `migrate dev` or `reset` against a real database). Never run `pnpm db:seed` against a real database: it truncates everything, users included.
+- **Rate limiting keys on the client IP header.** Deploy behind a trusted proxy that sets it and does not pass a client-supplied `x-forwarded-for` through; otherwise a client can dodge or poison the limit.
 - Better Auth's rate limit store is in memory: fine for one instance, not for several (section 10).
 
 ## 9. Environment variables

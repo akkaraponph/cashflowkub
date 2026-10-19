@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: CashflowKub API (auth and privacy)
-  version: 2026-10-19
+  version: '2026-10-19'
   description: |
     Covers the sign-in, account deletion and PDPA endpoints. The resource endpoints under `/api/v1/*`
     (accounts, transactions, debts, ...) are documented in `cashflowkub/README.md`; what changed for
