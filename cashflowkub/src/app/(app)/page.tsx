@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/server/auth/current-user';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { AddTransactionDialog } from '@/components/app-shell/add-transaction-dialog';
@@ -11,7 +13,7 @@ import { tintFg } from '@/components/cfk/tint';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { TxRow } from '@/components/cfk/tx-row';
 import { compact, fmt, pct, signed, fmtRate } from '@/lib/format';
-import { localized } from '@/lib/i18n';
+import { fill, localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
 import { getDashboard } from '@/server/analytics/service';
@@ -44,6 +46,8 @@ function Legend({ income, expenses }: { income: string; expenses: string }) {
 
 export default async function DashboardPage() {
   const { ui, lang } = await getI18n();
+  const user = await getCurrentUser();
+  if (!user) redirect('/login'); // layouts and pages render in parallel, so the page guards itself too
   const [d, recent, budgets, categories, dsr] = await Promise.all([getDashboard(), listTransactions({ limit: 5 }), listResource('budgets'), listResource('categories'), getDsr()]);
   const cats = byKey(categories);
 
@@ -51,7 +55,7 @@ export default async function DashboardPage() {
     <>
       <div className="flex items-start gap-3">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{ui.greeting}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{fill(ui.greeting, { name: user.name })}</h1>
           <p className="text-sm text-muted-foreground">{ui.today}</p>
         </div>
         <AddTransactionDialog />

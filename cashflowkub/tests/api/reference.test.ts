@@ -4,7 +4,7 @@ import * as item from '@/app/api/v1/[resource]/[id]/route';
 import { GET as health } from '@/app/api/health/route';
 import * as transactions from '@/app/api/v1/transactions/route';
 import { prisma } from '@/lib/db';
-import { call, resetDb } from './helpers';
+import { asDemo, call, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -102,7 +102,7 @@ describe.each([
 ])('transaction item guards on $resource', ({ resource, id, name, activity, amount, taken, inUse }) => {
   const params = { resource, id };
   const use = () => call(transactions.POST, { method: 'POST', body: { name: 'x', activity, item: name, acct: 'SCB Current', amount } });
-  const rowItem = async () => (await prisma.transaction.findFirstOrThrow({ where: { activity }, orderBy: { id: 'desc' } })).item;
+  const rowItem = async () => (await asDemo(() => prisma.transaction.findFirstOrThrow({ where: { activity }, orderBy: { id: 'desc' } }))).item;
 
   it('refuses a duplicate name ignoring case and spaces', async () => {
     const r = await call(collection.POST, { method: 'POST', params: { resource }, body: { name: ` ${name.toUpperCase()} ` } });

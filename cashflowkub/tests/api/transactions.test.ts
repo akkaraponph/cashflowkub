@@ -3,7 +3,7 @@ import * as collection from '@/app/api/v1/transactions/route';
 import * as item from '@/app/api/v1/transactions/[id]/route';
 import * as batch from '@/app/api/v1/transactions/batch/route';
 import { prisma } from '@/lib/db';
-import { call, resetDb } from './helpers';
+import { asDemo, call, demoUserId, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -137,7 +137,7 @@ describe('DELETE /api/v1/transactions/batch', () => {
 
 describe('activities', () => {
   const post = (body: object) => call(collection.POST, { method: 'POST', body: { name: 'x', acct: 'SCB Current', ...body } });
-  const count = () => prisma.transaction.count();
+  const count = () => asDemo(() => prisma.transaction.count());
 
   it('infers activity when omitted', async () => {
     const { status, json } = await post({ cat: 'food', amount: -50 });
@@ -173,7 +173,8 @@ describe('activities', () => {
     expect([i.status, i.json.code]).toEqual([400, 'unknownItem']);
   });
   it('lets a legacy row be edited without an item', async () => {
-    const row = await prisma.transaction.create({ data: { name: 'old', cat: 'saving', acct: 'Nowhere', amount: -100, date: new Date('2026-06-01T00:00:00Z'), activity: 'save', item: '' } });
+    const userId = await demoUserId();
+    const row = await asDemo(() => prisma.transaction.create({ data: { userId, name: 'old', cat: 'saving', acct: 'Nowhere', amount: -100, date: new Date('2026-06-01T00:00:00Z'), activity: 'save', item: '' } }));
     const params = { id: String(row.id) };
     expect((await call(item.PATCH, { method: 'PATCH', params, body: { note: 'n' } })).status).toBe(200);
     const r = await call(item.PATCH, { method: 'PATCH', params, body: { activity: 'save' } });

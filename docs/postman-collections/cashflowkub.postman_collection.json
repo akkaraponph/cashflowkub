@@ -1,0 +1,205 @@
+{
+  "info": {
+    "name": "CashflowKub (auth and privacy)",
+    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "auth",
+      "item": [
+        {
+          "name": "Sign up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sign-up/email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sign-up",
+                "email"
+              ]
+            },
+            "description": "camelCase privacyVersion is Better Auth's field. 400 unless it is the current notice version. Sets the session cookie (kept by Postman's cookie jar).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ploy\",\n  \"email\": \"ploy@example.com\",\n  \"password\": \"a-long-password\",\n  \"privacyVersion\": \"2026-10-19\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Sign in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sign-in/email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sign-in",
+                "email"
+              ]
+            },
+            "description": "Sets the session cookie.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ploy@example.com\",\n  \"password\": \"a-long-password\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Sign out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/sign-out",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sign-out"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Delete my account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/delete-user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "delete-user"
+              ]
+            },
+            "description": "Permanent. Cascades to every row the user owns and ends all their sessions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"a-long-password\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "me",
+      "item": [
+        {
+          "name": "Export my data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "export"
+              ]
+            },
+            "description": "JSON attachment with every row the user owns, decrypted. 401 {error, code:'unauthorized'} without a session."
+          }
+        },
+        {
+          "name": "Accept the privacy notice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{baseUrl}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/privacy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "privacy"
+              ]
+            },
+            "description": "200 {privacy_version, privacy_accepted_at}; 400 when the version is not current.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"privacy_version\": \"2026-10-19\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}

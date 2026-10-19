@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { prisma, type DbTx } from '@/lib/db';
+import { requireUserId } from '@/lib/user-context';
 import { today } from '@/lib/clock';
-import type { DebtPayment, Prisma } from '@/generated/prisma/client';
+import type { DebtPayment } from '@/generated/prisma/client';
 import { badRequest, HttpError, notFound } from '@/server/errors';
 import { parseFlexDate } from '@/server/transaction/logic';
 import { parseBody } from '@/server/validate';
@@ -61,20 +62,22 @@ export interface DebtDetail extends ScheduleView {
 const withPayments = { payments: { orderBy: [{ date: 'asc' as const }, { id: 'asc' as const }] } };
 const toPaymentView = (p: DebtPayment): PaymentView => ({ ...p, date: isoDate(p.date) });
 
-async function findDebt(id: number, db: Prisma.TransactionClient = prisma) {
+async function findDebt(id: number, db: DbTx = prisma) {
   const row = await db.debt.findUnique({ where: { id }, include: withPayments });
   if (!row) throw notFound();
   return row;
 }
 
 /** Serialises writers of one debt: row lock held until the surrounding transaction ends. */
-async function lockDebt(db: Prisma.TransactionClient, id: number): Promise<void> {
-  const rows = await db.$queryRaw<{ id: number }[]>`SELECT id FROM debts WHERE id = ${id} FOR UPDATE`;
+async function lockDebt(db: DbTx, id: number): Promise<void> {
+  // Raw SQL bypasses the tenancy extension, so it names the owner itself.
+  const userId = await requireUserId();
+  const rows = await db.$queryRaw<{ id: number }[]>`SELECT id FROM debts WHERE id = ${id} AND user_id = ${userId} FOR UPDATE`;
   if (rows.length === 0) throw notFound();
 }
 
 /** Recomputes paid/done from the opening balance plus the ledger. */
-async function syncPaid(db: Prisma.TransactionClient, id: number) {
+async function syncPaid(db: DbTx, id: number) {
   const debt = await findDebt(id, db);
   const principal = debt.payments.reduce((s, p) => s + p.principal, 0);
   const paid = Math.min(debt.original, debt.openingPaid + principal);
@@ -123,7 +126,7 @@ export async function recordPayment(debtId: number, body: unknown): Promise<{ pa
     if (debt.done) throw new HttpError(409, 'this debt is already paid off');
     const { excess, ...split } = splitPayment(debt, debt.payments, input.amount, date);
     const applied = split.fee + split.interest + split.principal;
-    const created = await tx.debtPayment.create({ data: { debtId, date, amount: applied, ...split, note: input.note ?? '' } });
+    const created = await tx.debtPayment.create({ data: { debtId, date, amount: applied, ...split, note: input.note ?? '', userId: await requireUserId() } });
     const saved = await syncPaid(tx, debtId);
     return { payment: toPaymentView(created), debt: toDebtView(saved, today()), excess };
   });
@@ -158,7 +161,7 @@ export async function createDebt(body: unknown): Promise<DebtView> {
   const fixed = withFixedApr({ original: input.original, calc: input.calc ?? 'reducing', fixedPayment: input.fixedPayment ?? 0, termMonths: input.termMonths ?? 0 });
   const row = await prisma.$transaction(async (tx) => {
     await assertDebtNameFree(tx, input.name);
-    return tx.debt.create({ data: { ...input, ...fixed, paid: openingPaid, done: openingPaid >= input.original }, include: withPayments });
+    return tx.debt.create({ data: { ...input, ...fixed, paid: openingPaid, done: openingPaid >= input.original, userId: await requireUserId() }, include: withPayments });
   });
   return toDebtView(row, today());
 }

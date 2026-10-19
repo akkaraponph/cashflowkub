@@ -3,7 +3,7 @@ import * as collection from '@/app/api/v1/[resource]/route';
 import * as item from '@/app/api/v1/[resource]/[id]/route';
 import * as transactions from '@/app/api/v1/transactions/route';
 import { prisma } from '@/lib/db';
-import { call, resetDb } from './helpers';
+import { asDemo, call, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -79,7 +79,7 @@ describe('transfers', () => {
   });
   it('refuses to delete a source account even when no row names it as acct', async () => {
     await call(transactions.POST, { method: 'POST', body: { name: 'x', activity: 'transfer', item: 'Cash Wallet', acct: 'TrueMoney', amount: 5 } });
-    await prisma.transaction.deleteMany({ where: { acct: 'Cash Wallet' } });
+    await asDemo(() => prisma.transaction.deleteMany({ where: { acct: 'Cash Wallet' } }));
     expect((await del('3')).json.code).toBe('accountInUse');
   });
 });

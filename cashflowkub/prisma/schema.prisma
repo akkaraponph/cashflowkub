@@ -19,23 +19,30 @@ model Account {
   startDate String @default("") @map("start_date")
   startTh   String @default("") @map("start_th")
   sort      Int    @default(0)
+  userId    String @map("user_id")
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("accounts")
 }
 
 /// Spending/earning bucket; `key` is the slug used by transactions, budgets and the plan.
 model Category {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  label String
-  th    String @default("")
-  short String @default("")
-  icon  String @default("circle")
-  tint  String @default("doc")
-  type  String @default("expense") /// income | expense
-  sub   String @default("") /// need | want | saving | debt
-  sort  Int    @default(0)
+  id     Int    @id @default(autoincrement())
+  key    String
+  label  String
+  th     String @default("")
+  short  String @default("")
+  icon   String @default("circle")
+  tint   String @default("doc")
+  type   String @default("expense") /// income | expense
+  sub    String @default("") /// need | want | saving | debt
+  sort   Int    @default(0)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, key])
+  @@index([userId])
   @@map("categories")
 }
 
@@ -58,19 +65,25 @@ model Transaction {
   activity String   @default("pay")
   /// income item / channel / debt / source account name, by activity
   item     String   @default("")
+  userId   String   @map("user_id")
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([date])
   @@index([activity, item])
+  @@index([userId])
   @@map("transactions")
 }
 
 model Budget {
-  id    Int    @id @default(autoincrement())
-  cat   String @map("cat_key")
-  spent Int    @default(0)
-  limit Int    @map("limit_amt")
-  sort  Int    @default(0)
+  id     Int    @id @default(autoincrement())
+  cat    String @map("cat_key")
+  spent  Int    @default(0)
+  limit  Int    @map("limit_amt")
+  sort   Int    @default(0)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("budgets")
 }
 
@@ -84,7 +97,10 @@ model Goal {
   monthly Int    @default(0)
   by      String @default("")
   sort    Int    @default(0)
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("goals")
 }
 
@@ -113,7 +129,10 @@ model Debt {
   revolving    Boolean       @default(false)
   sort         Int           @default(0)
   payments     DebtPayment[]
+  userId       String        @map("user_id")
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("debts")
 }
 
@@ -128,28 +147,38 @@ model DebtPayment {
   interest  Int
   fee       Int
   note      String   @default("")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([debtId, date])
+  @@index([userId])
   @@map("debt_payments")
 }
 
 /// Key/value app settings (e.g. monthlyIncome for DSR).
 model Setting {
-  key   String @id
-  value String
+  key    String
+  value  String
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@id([userId, key])
+  @@index([userId])
   @@map("settings")
 }
 
 model Asset {
-  id    Int    @id @default(autoincrement())
-  name  String
-  th    String @default("")
-  icon  String @default("wallet")
-  tint  String @default("doc")
-  value Int    @default(0)
-  sort  Int    @default(0)
+  id     Int    @id @default(autoincrement())
+  name   String
+  th     String @default("")
+  icon   String @default("wallet")
+  tint   String @default("doc")
+  value  Int    @default(0)
+  sort   Int    @default(0)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("assets")
 }
 
@@ -173,7 +202,10 @@ model Bill {
   everyMonths Int           @default(1) @map("every_months") /// 1-12
   sort        Int           @default(0)
   payments    BillPayment[]
+  userId      String        @map("user_id")
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("bills")
 }
 
@@ -183,8 +215,11 @@ model BillPayment {
   billId Int    @map("bill_id")
   month  String
   bill   Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([billId, month])
+  @@index([userId])
   @@map("bill_payments")
 }
 
@@ -199,19 +234,25 @@ model Channel {
   startDate String @default("") @map("start_date")
   startTh   String @default("") @map("start_th")
   sort      Int    @default(0)
+  userId    String @map("user_id")
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("channels")
 }
 
 model IncomeCategory {
-  id   Int    @id @default(autoincrement())
-  name String
-  th   String @default("")
-  sub  String @default("main") /// main | side | passive
-  icon String @default("briefcase")
-  tint String @default("xls")
-  sort Int    @default(0)
+  id     Int    @id @default(autoincrement())
+  name   String
+  th     String @default("")
+  sub    String @default("main") /// main | side | passive
+  icon   String @default("briefcase")
+  tint   String @default("xls")
+  sort   Int    @default(0)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("income_categories")
 }
 
@@ -229,23 +270,29 @@ model PlanItem {
   actual  Int    @default(0)
   month   String /// YYYY-MM
   sort    Int    @default(0)
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([month])
+  @@index([userId])
   @@map("plan_items")
 }
 
 model AssetSnapshot {
-  id    Int    @id @default(autoincrement())
-  name  String
-  th    String @default("")
-  group String @map("grp") /// bank | savings | invest | other
-  icon  String @default("")
-  tint  String @default("")
-  prev  Int    @default(0)
-  curr  Int    @default(0)
-  month String
-  sort  Int    @default(0)
+  id     Int    @id @default(autoincrement())
+  name   String
+  th     String @default("")
+  group  String @map("grp") /// bank | savings | invest | other
+  icon   String @default("")
+  tint   String @default("")
+  prev   Int    @default(0)
+  curr   Int    @default(0)
+  month  String
+  sort   Int    @default(0)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("asset_snapshots")
 }
 
@@ -255,7 +302,10 @@ model NetWorthHistory {
   monthTh String @map("month_th")
   value   Int
   sort    Int    @default(0)
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("net_worth_histories")
 }
 
@@ -265,7 +315,10 @@ model MonthlyCashflow {
   income  Int
   expense Int
   sort    Int    @default(0)
+  userId  String @map("user_id")
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("monthly_cashflows")
 }
 
@@ -274,7 +327,10 @@ model DaySpend {
   day    Int
   amount Int
   month  String
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("day_spends")
 }
 
@@ -298,7 +354,10 @@ model SetupGoal {
   monthlyNeed Int?               @map("monthly_need")
   sort        Int                @default(0)
   channels    SetupGoalChannel[]
+  userId      String             @map("user_id")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("setup_goals")
 }
 
@@ -309,6 +368,96 @@ model SetupGoalChannel {
   name        String
   th          String    @default("")
   pct         Int
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("setup_goal_channels")
+}
+
+/// Better Auth: a person who can log in. privacyVersion/privacyAcceptedAt record the acknowledged privacy notice.
+model User {
+  id                String             @id
+  name              String
+  email             String             @unique
+  emailVerified     Boolean            @default(false) @map("email_verified")
+  image             String?
+  privacyVersion    String             @map("privacy_version")
+  privacyAcceptedAt DateTime           @map("privacy_accepted_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at")
+  sessions          Session[]
+  authAccounts      AuthAccount[]
+  moneyAccounts     Account[]
+  categories        Category[]
+  transactions      Transaction[]
+  budgets           Budget[]
+  goals             Goal[]
+  debts             Debt[]
+  debtPayments      DebtPayment[]
+  settings          Setting[]
+  assets            Asset[]
+  bills             Bill[]
+  billPayments      BillPayment[]
+  channels          Channel[]
+  incomeCategories  IncomeCategory[]
+  planItems         PlanItem[]
+  assetSnapshots    AssetSnapshot[]
+  netWorthHistories NetWorthHistory[]
+  monthlyCashflows  MonthlyCashflow[]
+  daySpends         DaySpend[]
+  setupGoals        SetupGoal[]
+  setupGoalChannels SetupGoalChannel[]
+
+  @@map("users")
+}
+
+/// Better Auth: a login session.
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Better Auth: a credential for a user (named AuthAccount because Account is a money account).
+model AuthAccount {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+/// Better Auth: one-time tokens (unused until email flows exist).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
 }

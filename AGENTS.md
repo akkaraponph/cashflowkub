@@ -6,7 +6,7 @@ Use this file as the canonical repository guidance. `CLAUDE.md` points here so t
 
 When working in or changing domain behavior or architecture:
 
-- **Always read `docs/knowledgebase/`** first to understand existing domain behavior, database schemas, messaging architecture, and API contracts.
+- **Always read `docs/knowledge/`** first to understand existing domain behavior, database schemas, messaging architecture, and API contracts.
 - Read `CONTEXT.md` when it exists.
 - Read the relevant decisions in `docs/adr/` when that directory contains ADRs.
 - Follow the detailed guidance in `docs/agents/domain.md`.
@@ -25,7 +25,7 @@ Issues and feature specifications are local Markdown files under `.scratch/`. Wh
 ## Rules
 
 - **Knowledge Base**:
-  - Always read `docs/knowledgebase/` before designing or implementing changes.
-  - If any changes are made to domain behavior, database models, architecture, APIs, messaging, or platform configurations, **always update `docs/knowledgebase/`** to reflect those changes.
+  - Always read `docs/knowledge/` before designing or implementing changes.
+  - If any changes are made to domain behavior, database models, architecture, APIs, messaging, or platform configurations, **always update `docs/knowledge/`** to reflect those changes.
 - **API & Postman Collections**:
   - Whenever any new API endpoints are created or existing APIs are modified, **always add and update** the corresponding requests, parameters, and schemas in the Postman collections and OpenAPI specifications in `docs/postman-collections/`.

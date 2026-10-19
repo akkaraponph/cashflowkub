@@ -1,3 +1,3 @@
-import { ok, route } from '@/server/http';
+import { ok, publicRoute } from '@/server/http';
 
-export const GET = route(async () => ok({ status: 'ok', service: 'cashflowkub' }));
+export const GET = publicRoute(async () => ok({ status: 'ok', service: 'cashflowkub' }));

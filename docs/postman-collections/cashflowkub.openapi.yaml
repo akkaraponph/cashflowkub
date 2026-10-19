@@ -1,0 +1,242 @@
+openapi: 3.0.3
+info:
+  title: CashflowKub API (auth and privacy)
+  version: '2026-10-19'
+  description: |
+    Covers the sign-in, account deletion and PDPA endpoints. The resource endpoints under `/api/v1/*`
+    (accounts, transactions, debts, ...) are documented in `cashflowkub/README.md`; what changed for
+    all of them is that they now need a session cookie, and return the 401 below without one.
+
+    Naming exception: Better Auth's own endpoints (`/api/auth/*`) use camelCase fields, such as
+    `privacyVersion`. Our endpoints (`/api/v1/me/*`) use snake_case.
+servers:
+  - url: http://localhost:3000
+security:
+  - sessionCookie: []
+tags:
+  - name: auth
+    description: Better Auth endpoints. Public except delete-user.
+  - name: me
+    description: The signed-in user's own account data.
+paths:
+  /api/auth/sign-up/email:
+    post:
+      tags: [auth]
+      summary: Create an account and sign in
+      description: Fails with 400 unless `privacyVersion` is the current privacy notice version. Sets the session cookie.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, privacyVersion]
+              properties:
+                name: { type: string, example: Ploy }
+                email: { type: string, format: email, example: ploy@example.com }
+                password: { type: string, minLength: 10, example: a-long-password }
+                privacyVersion: { type: string, example: '2026-10-19', description: Must equal the current notice version. }
+      responses:
+        '200':
+          description: Account created; `Set-Cookie` carries the session.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResult' }
+        '400':
+          description: Password shorter than 10, invalid email, or wrong `privacyVersion`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthError' }
+        '422':
+          description: The email is already registered.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthError' }
+        '429':
+          description: Rate limited.
+  /api/auth/sign-in/email:
+    post:
+      tags: [auth]
+      summary: Sign in
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: Signed in; `Set-Cookie` carries the session.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResult' }
+        '401':
+          description: Wrong email or password (`INVALID_EMAIL_OR_PASSWORD`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthError' }
+        '429':
+          description: Rate limited.
+  /api/auth/sign-out:
+    post:
+      tags: [auth]
+      summary: Sign out
+      description: Ends the current session and clears the cookie.
+      responses:
+        '200':
+          description: Signed out.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+  /api/auth/delete-user:
+    post:
+      tags: [auth]
+      summary: Permanently delete my account and all of my data
+      description: |
+        Hard delete (PDPA s.33). Cascades to every row the user owns and to all of their sessions, so other
+        signed-in devices stop working at once. Cannot be undone. Offer `/api/v1/me/export` first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string }
+      responses:
+        '200':
+          description: Deleted; the session cookie is cleared.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+        '400':
+          description: Wrong password (`INVALID_PASSWORD`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthError' }
+        '401':
+          description: Not signed in.
+  /api/v1/me/export:
+    get:
+      tags: [me]
+      summary: Download all of my data as JSON
+      description: PDPA access and portability (s.30-31). Encrypted fields are decrypted; no password hash or session is included.
+      responses:
+        '200':
+          description: A JSON attachment named `cashflowkub-export-YYYY-MM-DD.json`.
+          headers:
+            Content-Disposition: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserExport' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/me/privacy:
+    post:
+      tags: [me]
+      summary: Acknowledge the current privacy notice
+      description: Used by `/privacy-update` after the notice version changes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [privacy_version]
+              properties:
+                privacy_version: { type: string, example: '2026-10-19', description: Must equal the current notice version. }
+      responses:
+        '200':
+          description: Recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [privacy_version, privacy_accepted_at]
+                properties:
+                  privacy_version: { type: string }
+                  privacy_accepted_at: { type: string, format: date-time }
+        '400':
+          description: The version is not the current one (code `privacyVersionOutdated`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: |
+        Session cookie set by sign-in or sign-up. Required on every `/api/v1/*` endpoint. Over HTTPS the
+        cookie name carries a `__Secure-` prefix; browsers send it automatically.
+  responses:
+    Unauthorized:
+      description: No valid session.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: not signed in, code: unauthorized }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code: { type: string, example: unauthorized }
+    AuthError:
+      type: object
+      properties:
+        code: { type: string, example: INVALID_EMAIL_OR_PASSWORD }
+        message: { type: string }
+    AuthResult:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            email: { type: string }
+            name: { type: string }
+    UserExport:
+      type: object
+      required: [format, version, exported_at, privacy, user, data]
+      properties:
+        format: { type: string, enum: [cashflowkub-export] }
+        version: { type: integer, enum: [1] }
+        exported_at: { type: string, format: date-time }
+        privacy:
+          type: object
+          properties:
+            version: { type: string }
+            accepted_at: { type: string, format: date-time }
+        user:
+          type: object
+          properties:
+            email: { type: string }
+            name: { type: string }
+            created_at: { type: string, format: date-time }
+        data:
+          type: object
+          description: One array of rows per owned table (accounts, categories, transactions, budgets, goals, debts, debt_payments, settings, assets, bills, bill_payments, channels, income_categories, plan_items, asset_snapshots, net_worth_histories, monthly_cashflows, day_spends, setup_goals, setup_goal_channels).
+          additionalProperties:
+            type: array
+            items: { type: object, additionalProperties: true }

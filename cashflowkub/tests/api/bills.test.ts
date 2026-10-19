@@ -5,7 +5,7 @@ import { PATCH as pay } from '@/app/api/v1/bills/[id]/pay/route';
 import * as item from '@/app/api/v1/bills/[id]/route';
 import { GET as dashboard } from '@/app/api/v1/dashboard/route';
 import { prisma } from '@/lib/db';
-import { call, resetDb } from './helpers';
+import { asDemo, call, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -126,9 +126,9 @@ describe('recurring bills by month', () => {
   });
   it('deleting a bill removes its payments', async () => {
     await call(pay, { method: 'PATCH', params: { id: '6' }, body: { paid: true } });
-    expect(await prisma.billPayment.count({ where: { billId: 6 } })).toBe(1);
+    expect(await asDemo(() => prisma.billPayment.count({ where: { billId: 6 } }))).toBe(1);
     await call(item.DELETE, { method: 'DELETE', params: { id: '6' } });
-    expect(await prisma.billPayment.count({ where: { billId: 6 } })).toBe(0);
+    expect(await asDemo(() => prisma.billPayment.count({ where: { billId: 6 } }))).toBe(0);
   });
   it('dashboard next bill ignores bills not due this month', async () => {
     await mk({ name: 'Early', amount: 10, dueDay: 1, startMonth: '2026-07' });

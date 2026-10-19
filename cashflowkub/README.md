@@ -5,12 +5,32 @@ Bilingual (EN / ไทย) personal-finance manager: Next.js 16 + shadcn/ui fron
 ## Run
 
 ```bash
-cp .env.example .env              # set the Postgres password
+cp .env.example .env              # set the Postgres password and the secrets below
 createdb cashflowkub && createdb cashflowkub_test
 pnpm install                      # also runs prisma generate
-pnpm db:deploy && pnpm db:seed    # schema + demo data
+pnpm db:deploy && pnpm db:seed    # schema + demo user and data
 pnpm dev                          # http://localhost:3000
 ```
+
+Required environment variables (no defaults; see `.env.example`):
+
+| Name | Value |
+| --- | --- |
+| `BETTER_AUTH_SECRET` | `openssl rand -base64 32` |
+| `BETTER_AUTH_URL` | Public origin, e.g. `http://localhost:3000` |
+| `DATA_ENCRYPTION_KEY` | `openssl rand -base64 32` (base64 of 32 bytes); back it up, losing it makes encrypted notes unreadable |
+| `SEED_DEMO_PASSWORD` | Password of the seeded demo user `demo@cashflowkub.local` |
+| `PRIVACY_CONTROLLER_NAME`, `PRIVACY_CONTACT_EMAIL` | Shown on `/privacy`; the page throws if unset |
+
+Sign in as `demo@cashflowkub.local` with `SEED_DEMO_PASSWORD`, or create your own account at `/signup`.
+
+### Existing data from before login existed
+
+`pnpm db:deploy` assigns every existing row to a placeholder user. Sign up with your real email, then run
+`pnpm db:claim --email <your email>` once: it moves those rows to your account, encrypts the free-text columns and prints the rows moved per table.
+
+A fresh deployment with no legacy data should remove the placeholder user, which the migration creates and which nobody can sign in as:
+`psql "$DATABASE_URL" -c "DELETE FROM users WHERE id = 'legacy-owner'"` (cascades to nothing if it owns no rows).
 
 ## Test
 
@@ -29,7 +49,11 @@ system temp folder (`cashflowkub-playwright/`), and `pnpm exec playwright show-r
 
 ## API
 
-Base path `/api/v1`. Lists return `{ "data": [...] }`; errors return `{ "error": "..." }`.
+Base path `/api/v1`. Every endpoint except `/api/health` needs the session cookie from sign-in; without it the response is `401 { "error": "not signed in", "code": "unauthorized" }`. Each user only ever sees their own rows (another user's id is a 404). Lists return `{ "data": [...] }`; errors return `{ "error": "..." }`.
+
+- Auth (Better Auth, camelCase fields): `POST /api/auth/sign-up/email` (`name`, `email`, `password` of 10+ chars, `privacyVersion`), `/api/auth/sign-in/email`, `/api/auth/sign-out`, `/api/auth/delete-user` (`password`; permanent).
+- `GET /me/export`: all of your data as a JSON download. `POST /me/privacy` (`{ "privacy_version" }`): acknowledge the current privacy notice.
+- OpenAPI and Postman files for these: `../docs/postman-collections/`.
 
 - CRUD: `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (`GET/POST /<r>`, `GET/PUT/PATCH/DELETE /<r>/:id`)
 - `transactions` (`?type=income|expense&category=&account=&from=&to=&limit=&offset=`), `debts` (`?status=active|paid`), `bills` (`?status=paid|unpaid`)
@@ -58,8 +82,12 @@ After `pnpm db:deploy`, existing debts get due day 1 and an empty payment ledger
 - `src/components/cfk`: app motifs and charts.
 - `src/components/ui`: shadcn.
 
-## Security
+## Security and privacy
 
-There is **no authentication or authorization**: every `/api/v1` write endpoint is open. This is a
-single-user, localhost app. Do not expose it to a network or host it publicly without adding auth first.
-The seed (`pnpm db:seed`) truncates whatever `DATABASE_URL` points at; only run it against a local demo DB.
+Email + password login (Better Auth), per-user data, AES-256-GCM encryption of free-text notes, JSON export and permanent account deletion. How it works, the PDPA record of
+processing, the breach runbook and the deployment requirements (TLS, disk encryption, `sslmode=require`, encrypted backups) are in
+[`../docs/knowledge/auth-and-privacy.md`](../docs/knowledge/auth-and-privacy.md).
+
+- `/privacy` is a **draft** that needs a legal review before real users sign up.
+- Password reset and email verification are not built (no email provider yet), so a forgotten password means a lost account. Do not open public sign-up before that.
+- The seed (`pnpm db:seed`) truncates whatever `DATABASE_URL` points at, users included; only run it against a local demo DB.

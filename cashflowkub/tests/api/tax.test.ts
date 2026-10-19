@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as tax from '@/app/api/v1/tax/route';
 import { prisma } from '@/lib/db';
 import { EMPTY_TAX_INPUT } from '@/server/tax/logic';
-import { call, resetDb } from './helpers';
+import { asDemo, call, demoUserId, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -32,9 +32,10 @@ describe('/api/v1/tax', () => {
     for (const y of ['abc', '1999.5', '1999', '2101']) expect((await call(tax.GET, { url: `/api/v1/tax?year=${y}` })).status).toBe(400);
   });
   it('treats a corrupt stored plan as unsaved', async () => {
-    await prisma.setting.create({ data: { key: 'tax:2025', value: '{not json' } });
+    const userId = await demoUserId();
+    await asDemo(() => prisma.setting.create({ data: { userId, key: 'tax:2025', value: '{not json' } }));
     expect((await call(tax.GET, { url: '/api/v1/tax?year=2025' })).json).toMatchObject({ saved: false });
-    await prisma.setting.update({ where: { key: 'tax:2025' }, data: { value: '{"salary":"old"}' } });
+    await asDemo(() => prisma.setting.update({ where: { userId_key: { userId, key: 'tax:2025' } }, data: { value: '{"salary":"old"}' } }));
     expect((await call(tax.GET, { url: '/api/v1/tax?year=2025' })).json).toMatchObject({ saved: false });
   });
 });

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { requireUserId } from '@/lib/user-context';
 import { CURRENT_YEAR } from '@/lib/prefs';
 import { badRequest } from '@/server/errors';
 import { getMonthlyIncome } from '@/server/settings/service';
@@ -54,7 +55,7 @@ function readStored(value: string): TaxInput | null {
 }
 
 export async function getTaxPlan(year: number): Promise<TaxPlan> {
-  const row = await prisma.setting.findUnique({ where: { key: keyOf(year) } });
+  const row = await prisma.setting.findFirst({ where: { key: keyOf(year) } });
   const stored = row ? readStored(row.value) : null;
   if (stored) return build(year, stored, true);
   return build(year, { ...EMPTY_TAX_INPUT, salary: (await getMonthlyIncome()) * 12 }, false);
@@ -63,6 +64,7 @@ export async function getTaxPlan(year: number): Promise<TaxPlan> {
 export async function saveTaxPlan(year: number, body: unknown): Promise<TaxPlan> {
   const input = parseBody(taxInputSchema, body);
   const value = JSON.stringify(input);
-  await prisma.setting.upsert({ where: { key: keyOf(year) }, create: { key: keyOf(year), value }, update: { value } });
+  const userId = await requireUserId();
+  await prisma.setting.upsert({ where: { userId_key: { userId, key: keyOf(year) } }, create: { userId, key: keyOf(year), value }, update: { value } });
   return build(year, input, true);
 }

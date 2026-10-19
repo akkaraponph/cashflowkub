@@ -402,8 +402,11 @@ Observations:
 
 Current models are in `cashflowkub/prisma/schema.prisma`.
 
+The spreadsheet planner is one person's workbook, so the app is multi-user: a `User` (Better Auth) owns every row, and each table below carries a `user_id` foreign key (ON DELETE CASCADE) that the scoped Prisma client adds to every query. Setting and Category keys, and account / goal / channel names, are unique per user. See `auth-and-privacy.md`. Free-text transaction and debt notes are encrypted at rest.
+
 | Planner | CashflowKub |
 | --- | --- |
+| (the person who owns the workbook) | User, `user_id` on every row below |
 | Start date, currency | Setting |
 | Income items | IncomeCategory |
 | Expense items + class (จำเป็น / อื่นๆ) | Category |

@@ -1,9 +1,9 @@
 // Checks that a transaction row's account and item point at things that exist.
 import { itemListFor, type Activity } from '@/lib/activity';
-import type { Prisma } from '@/generated/prisma/client';
+import type { DbTx } from '@/lib/db';
 import { badRequest } from '@/server/errors';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 const named = (name: string) => ({ name: { equals: name.trim(), mode: 'insensitive' as const } });
 

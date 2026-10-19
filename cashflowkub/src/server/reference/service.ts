@@ -1,8 +1,7 @@
 // Generic CRUD over the reference resources.
 import type { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { prisma, type DbTx } from '@/lib/db';
 import { notFound } from '@/server/errors';
-import type { Prisma } from '@/generated/prisma/client';
 import { assertAccountNameFree, assertAccountUnused, renameAccountInTransactions } from './accounts';
 import { assertChannelNameFree, assertChannelUnused, renameChannelInTransactions } from './channels';
 import { assertGoalNameFree, assertGoalUnused, renameGoalInTransactions } from './goals';
@@ -48,7 +47,7 @@ export async function getResource<K extends ResourceName>(name: K, id: number): 
   return row;
 }
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 /** Resources whose NAME is stored on transactions: unique, renamed in place, and undeletable while in use. */
 interface NameRef {

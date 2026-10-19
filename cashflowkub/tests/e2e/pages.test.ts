@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
@@ -43,12 +43,38 @@ const PAGES: [string, string, string][] = [
   ['/settings', 'Preferences', 'การตั้งค่า'],
 ];
 
-async function fetchPage(path: string, cookie = ''): Promise<{ status: number; html: string }> {
-  const res = await fetch(BASE + path, { headers: cookie ? { cookie } : {} });
-  return { status: res.status, html: await res.text() };
+// Every page needs a session: sign in once as the demo user (SEED_DEMO_PASSWORD, same value the server was seeded with).
+let session = '';
+beforeAll(async () => {
+  const password = process.env.SEED_DEMO_PASSWORD;
+  if (!password) throw new Error('SEED_DEMO_PASSWORD is not set (see .env.example)');
+  const res = await fetch(`${BASE}/api/auth/sign-in/email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: new URL(BASE).origin },
+    body: JSON.stringify({ email: 'demo@cashflowkub.local', password }),
+  });
+  if (!res.ok) throw new Error(`demo sign-in failed: ${res.status}`);
+  session = res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
+});
+
+async function fetchPage(path: string, cookie = '', signedIn = true): Promise<{ status: number; html: string; location: string | null }> {
+  const cookies = [signedIn ? session : '', cookie].filter(Boolean).join('; ');
+  const res = await fetch(BASE + path, { headers: cookies ? { cookie: cookies } : {}, redirect: 'manual' });
+  return { status: res.status, html: await res.text(), location: res.headers.get('location') };
 }
 
 describe('pages', () => {
+  it('redirects a signed-out visit to /login, and /login and /privacy are public', async () => {
+    const home = await fetchPage('/', '', false);
+    expect(home.status).toBeGreaterThanOrEqual(300);
+    expect(home.status).toBeLessThan(400);
+    expect(home.location).toContain('/login');
+    expect((await fetchPage('/login', '', false)).status).toBe(200);
+    const privacy = await fetchPage('/privacy', '', false);
+    expect(privacy.status).toBe(200);
+    expect(privacy.html).toContain('Privacy notice');
+  });
+
   it.each(PAGES)('%s renders in English and Thai', async (path, en, th) => {
     const enPage = await fetchPage(path);
     expect(enPage.status).toBe(200);
