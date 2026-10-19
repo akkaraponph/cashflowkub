@@ -5,12 +5,14 @@ export type Scope = { kind: 'user'; userId: string } | { kind: 'system' };
 
 const store = new AsyncLocalStorage<Scope>();
 
+// `await` inside the store: Prisma queries are lazy thenables that run when awaited, so
+// returning one unawaited would run it outside the scope (and fail closed).
 export function runAsUser<T>(userId: string, fn: () => Promise<T>): Promise<T> {
-  return store.run({ kind: 'user', userId }, fn);
+  return store.run({ kind: 'user', userId }, async () => await fn());
 }
 
 export function runAsSystem<T>(fn: () => Promise<T>): Promise<T> {
-  return store.run({ kind: 'system' }, fn);
+  return store.run({ kind: 'system' }, async () => await fn());
 }
 
 export function currentScope(): Scope | null {

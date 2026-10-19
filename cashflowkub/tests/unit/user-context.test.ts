@@ -20,4 +20,9 @@ describe('user context', () => {
       }),
     );
   });
+  it('runs a lazy thenable (like a PrismaPromise) inside the scope', async () => {
+    const lazy = { then: (resolve: (v: unknown) => void) => resolve(currentScope()) };
+    expect(await runAsUser('u1', () => lazy as unknown as Promise<unknown>)).toEqual({ kind: 'user', userId: 'u1' });
+    expect(await runAsSystem(() => lazy as unknown as Promise<unknown>)).toEqual({ kind: 'system' });
+  });
 });

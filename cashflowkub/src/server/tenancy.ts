@@ -21,22 +21,38 @@ function scopeWhere(where: unknown, userId: string): Args {
 
 function scopeUniqueWhere(model: string, where: unknown, userId: string): Args {
   const keyField = COMPOSITE_KEYS[model];
-  const w = (where ?? {}) as Args;
-  if (keyField && w[keyField] !== undefined && w.userId === undefined) {
-    const { [keyField]: keyValue, ...rest } = w;
-    return { ...rest, [`userId_${keyField}`]: { userId, [keyField]: keyValue } };
+  const w = ownRow(where, userId);
+  if (!keyField) return w;
+  const compound = `userId_${keyField}`;
+  const given = w[compound] as Args | undefined;
+  if (given !== undefined) {
+    if (given.userId !== userId) throw new Error('userId mismatch');
+    return w;
   }
-  return ownRow(w, userId);
+  // `key` alone is no longer unique: rewrite it (with or without a matching userId) to the compound key.
+  if (w[keyField] === undefined) return w;
+  const { [keyField]: keyValue, ...rest } = w;
+  delete rest.userId;
+  return { ...rest, [compound]: { userId, [keyField]: keyValue } };
+}
+
+/** Write data may not move a row to another user, by scalar or by relation. */
+function guardData<T>(data: T, userId: string): T {
+  const d = (data ?? {}) as Args;
+  if (d.userId !== undefined && d.userId !== userId) throw new Error('userId mismatch');
+  if (d.user !== undefined) throw new Error('user relation writes are not allowed');
+  return data;
 }
 
 export function scopeArgs(model: string, operation: string, args: Args, userId: string): Args {
   if (!OWNED_MODELS.has(model)) return args;
   switch (operation) {
+    case 'updateMany':
+    case 'updateManyAndReturn':
+      return { ...args, where: scopeWhere(args.where, userId), data: guardData(args.data, userId) };
     case 'findMany':
     case 'findFirst':
     case 'findFirstOrThrow':
-    case 'updateMany':
-    case 'updateManyAndReturn':
     case 'deleteMany':
     case 'count':
     case 'aggregate':
@@ -44,21 +60,23 @@ export function scopeArgs(model: string, operation: string, args: Args, userId: 
       return { ...args, where: scopeWhere(args.where, userId) };
     case 'findUnique':
     case 'findUniqueOrThrow':
-    case 'update':
     case 'delete':
       return { ...args, where: scopeUniqueWhere(model, args.where, userId) };
+    case 'update':
+      return { ...args, where: scopeUniqueWhere(model, args.where, userId), data: guardData(args.data, userId) };
     case 'upsert':
       return {
         ...args,
         where: scopeUniqueWhere(model, args.where, userId),
-        create: ownRow(args.create, userId),
+        create: ownRow(guardData(args.create, userId), userId),
+        update: guardData(args.update, userId),
       };
     case 'create':
-      return { ...args, data: ownRow(args.data, userId) };
+      return { ...args, data: ownRow(guardData(args.data, userId), userId) };
     case 'createMany':
     case 'createManyAndReturn': {
       const rows = Array.isArray(args.data) ? args.data : [args.data];
-      return { ...args, data: rows.map((row) => ownRow(row, userId)) };
+      return { ...args, data: rows.map((row) => ownRow(guardData(row, userId), userId)) };
     }
     default:
       throw new Error(`unsupported operation ${operation} on ${model}`);
