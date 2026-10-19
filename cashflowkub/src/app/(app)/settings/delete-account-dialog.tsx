@@ -29,8 +29,9 @@ export function DeleteAccountDialog() {
     setError('');
   };
 
-  const confirm = async () => {
-    if (!ready) return;
+  const confirm = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!ready || busy) return;
     setBusy(true);
     setError('');
     const { error: failure } = await authClient.deleteUser({ password });
@@ -42,6 +43,7 @@ export function DeleteAccountDialog() {
     toast.success(t.deleted);
     // A soft navigation, so the root layout's toaster survives to show the message; the server already cleared the session cookie.
     router.replace('/login');
+    router.refresh();
   };
 
   return (
@@ -57,19 +59,21 @@ export function DeleteAccountDialog() {
             {t.exportHint}{' '}
             <a href="/api/v1/me/export" download className="font-semibold underline">{t.exportFirst}</a>
           </p>
-          <div className="grid gap-1.5">
-            <Label htmlFor="delete-account-password">{t.password}</Label>
-            <Input id="delete-account-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div className="grid gap-1.5">
-            <Label htmlFor="delete-account-word">{t.typePrompt}</Label>
-            <Input id="delete-account-word" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
-          </div>
-          {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-          <DialogFooter className="sm:flex-col">
-            <Button className="w-full" variant="destructive" disabled={!ready || busy} onClick={confirm}>{t.confirmButton}</Button>
-            <Button className="w-full" variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>{t.cancel}</Button>
-          </DialogFooter>
+          <form onSubmit={confirm} className="grid gap-4">
+            <div className="grid gap-1.5">
+              <Label htmlFor="delete-account-password">{t.password}</Label>
+              <Input id="delete-account-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="delete-account-word">{t.typePrompt}</Label>
+              <Input id="delete-account-word" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
+            </div>
+            {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
+            <DialogFooter className="sm:flex-col">
+              <Button className="w-full" variant="destructive" disabled={!ready || busy} type="submit">{t.confirmButton}</Button>
+              <Button type="button" className="w-full" variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>{t.cancel}</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </>

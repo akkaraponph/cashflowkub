@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { LogoMark } from '@/components/cfk/logo';
+import { fill } from '@/lib/i18n';
 import { PRIVACY_VERSION } from '@/lib/privacy';
 import { getI18n } from '@/lib/prefs-server';
 
@@ -13,21 +14,24 @@ function requireEnv(name: string): string {
   return value;
 }
 
-export const metadata = { title: 'Privacy · CashflowKub' };
+export async function generateMetadata() {
+  const { ui } = await getI18n();
+  return { title: `${ui.privacy.title} · CashflowKub` };
+}
 
 export default async function PrivacyPage() {
   const { ui } = await getI18n();
   const name = requireEnv('PRIVACY_CONTROLLER_NAME');
   const email = requireEnv('PRIVACY_CONTACT_EMAIL');
   const p = ui.privacy;
-  const fill = (text: string) => text.replace('{name}', name).replace('{email}', email);
+  const vars = { name, email };
   const sections: [string, string][] = [
-    [p.controllerTitle, fill(p.controllerBody)],
+    [p.controllerTitle, fill(p.controllerBody, vars)],
     [p.collectTitle, p.collectBody],
     [p.whyTitle, p.whyBody],
     [p.retentionTitle, p.retentionBody],
     [p.securityTitle, p.securityBody],
-    [p.rightsTitle, fill(p.rightsBody)],
+    [p.rightsTitle, fill(p.rightsBody, vars)],
     [p.cookiesTitle, p.cookiesBody],
   ];
   return (
@@ -39,7 +43,7 @@ export default async function PrivacyPage() {
       </div>
       <div className="space-y-1">
         <h1 className="text-3xl font-bold tracking-tight">{p.title}</h1>
-        <p className="text-sm text-muted-foreground">{p.draftNote.replace('{version}', PRIVACY_VERSION)}</p>
+        <p className="text-sm text-muted-foreground">{fill(p.draftNote, { version: PRIVACY_VERSION })}</p>
       </div>
       {sections.map(([title, body]) => (
         <section key={title} className="space-y-1.5">

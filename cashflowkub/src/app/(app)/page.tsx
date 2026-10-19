@@ -13,7 +13,7 @@ import { tintFg } from '@/components/cfk/tint';
 import { ToneBadge } from '@/components/cfk/tone-badge';
 import { TxRow } from '@/components/cfk/tx-row';
 import { compact, fmt, pct, signed, fmtRate } from '@/lib/format';
-import { localized } from '@/lib/i18n';
+import { fill, localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
 import { getDashboard } from '@/server/analytics/service';
@@ -55,7 +55,7 @@ export default async function DashboardPage() {
     <>
       <div className="flex items-start gap-3">
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight">{ui.greeting.replace('{name}', user.name)}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{fill(ui.greeting, { name: user.name })}</h1>
           <p className="text-sm text-muted-foreground">{ui.today}</p>
         </div>
         <AddTransactionDialog />

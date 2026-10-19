@@ -1,4 +1,7 @@
+import { execFileSync } from 'node:child_process';
 import { expect, test } from './fixtures';
+
+const sql = (statement: string) => execFileSync('psql', [process.env.TEST_DATABASE_URL!, '-c', statement], { stdio: 'pipe' });
 
 const PASSWORD = 'a-long-test-password';
 
@@ -95,4 +98,22 @@ test('sign out from settings returns to /login, and back-navigation does not sho
   await page.goBack();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByText('Net worth')).toHaveCount(0);
+});
+
+test('a user with an old privacy version is redirected, accepts, and lands on /', async ({ page }) => {
+  sql("UPDATE users SET privacy_version = '2020-01-01'");
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/privacy-update$/);
+  await expect(page.getByRole('heading', { name: 'The privacy notice changed' })).toBeVisible();
+  await page.getByRole('button', { name: 'I have read it, continue' }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole('heading', { name: 'Good morning, Ploy' })).toBeVisible();
+});
+
+test('an account with no categories gets the defaults back on the next visit', async ({ page }) => {
+  sql('DELETE FROM categories');
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Good morning, Ploy' })).toBeVisible();
+  const res = await page.request.get('/api/v1/categories');
+  expect((await res.json()).data.length).toBeGreaterThan(0);
 });

@@ -3,9 +3,12 @@ import { prisma } from '@/lib/db';
 import { requireUserId } from '@/lib/user-context';
 import { DEFAULT_CATEGORIES } from '../../../prisma/seed-data';
 
-/** Gives a new user the default categories. Runs inside runAsUser(userId), so the scoped client checks the owner. */
+/**
+ * Gives a user the default categories. Runs inside runAsUser(userId), so the scoped client checks the owner.
+ * Idempotent (skipDuplicates), so it can also repair a sign-up whose after-hook failed.
+ */
 export async function defaultDataFor(userId: string): Promise<void> {
-  await prisma.category.createMany({ data: DEFAULT_CATEGORIES.map((c) => ({ ...c, userId })) });
+  await prisma.category.createMany({ data: DEFAULT_CATEGORIES.map((c) => ({ ...c, userId })), skipDuplicates: true });
 }
 
 export type UserExport = {

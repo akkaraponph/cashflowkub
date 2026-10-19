@@ -57,3 +57,11 @@ test.describe('in Thai', () => {
     await expect(page.getByText('ลบบัญชีและข้อมูลของคุณแล้ว')).toBeVisible();
   });
 });
+
+test('pressing Enter in the typed-word field submits once both fields are valid', async ({ page }) => {
+  const dialog = await open(page, 'Delete account', 'Delete account');
+  await dialog.getByLabel('Password').fill(process.env.SEED_DEMO_PASSWORD!);
+  await dialog.getByLabel(/Type DELETE/).fill('DELETE');
+  await dialog.getByLabel(/Type DELETE/).press('Enter');
+  await expect(page).toHaveURL(/\/login$/);
+});

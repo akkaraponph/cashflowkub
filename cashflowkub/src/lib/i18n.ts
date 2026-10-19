@@ -235,6 +235,10 @@ const en = {
     cookiesTitle: 'Cookies',
     cookiesBody: 'Only strictly necessary cookies: your sign-in session, and your language, theme and year preferences. No advertising, analytics or third-party cookies, so there is no cookie banner.',
   },
+  privacyUpdate: {
+    title: 'The privacy notice changed', body: 'We updated our privacy notice. Please read it and confirm to keep using CashflowKub.',
+    read: 'Read the privacy notice', accept: 'I have read it, continue', signOut: 'Sign out', failed: 'Could not save your confirmation. Please try again.',
+  },
   menu: 'Menu', currencyValue: 'THB ฿',
 };
 export type Dict = typeof en;
@@ -466,6 +470,10 @@ const th: Dict = {
     rightsBody: 'คุณขอเข้าถึง ขอสำเนา แก้ไข ลบ หรือคัดค้านการใช้ข้อมูลของคุณได้ และถอนความยินยอมที่เคยให้ได้ ติดต่อ {email} นอกจากนี้คุณมีสิทธิร้องเรียนต่อคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPC)',
     cookiesTitle: 'คุกกี้',
     cookiesBody: 'ใช้เฉพาะคุกกี้ที่จำเป็นอย่างยิ่ง คือเซสชันการเข้าสู่ระบบ และค่ากำหนดภาษา ธีม และปี ไม่มีคุกกี้โฆษณา วิเคราะห์ หรือของบุคคลที่สาม จึงไม่มีแบนเนอร์คุกกี้',
+  },
+  privacyUpdate: {
+    title: 'ประกาศความเป็นส่วนตัวมีการเปลี่ยนแปลง', body: 'เราปรับปรุงประกาศความเป็นส่วนตัว กรุณาอ่านและยืนยันเพื่อใช้ CashflowKub ต่อ',
+    read: 'อ่านประกาศความเป็นส่วนตัว', accept: 'ฉันอ่านแล้ว ดำเนินการต่อ', signOut: 'ออกจากระบบ', failed: 'บันทึกการยืนยันไม่สำเร็จ กรุณาลองใหม่',
   },
   menu: 'เมนู', currencyValue: 'THB ฿',
 };

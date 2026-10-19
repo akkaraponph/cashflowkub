@@ -70,6 +70,9 @@ describe('pages', () => {
     expect(home.status).toBeLessThan(400);
     expect(home.location).toContain('/login');
     expect((await fetchPage('/login', '', false)).status).toBe(200);
+    const privacy = await fetchPage('/privacy', '', false);
+    expect(privacy.status).toBe(200);
+    expect(privacy.html).toContain('Privacy notice');
   });
 
   it.each(PAGES)('%s renders in English and Thai', async (path, en, th) => {
