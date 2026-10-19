@@ -1,8 +1,8 @@
 // Channels are referenced by NAME from transactions (the row's `item`), so renaming and deleting need extra rules.
-import type { Prisma } from '@/generated/prisma/client';
+import type { DbTx } from '@/lib/db';
 import { conflict } from '@/server/errors';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 /** Channel names must be unique ignoring case and surrounding spaces, because transactions point at the name. */
 export async function assertChannelNameFree(tx: Tx, name: string, exceptId?: number): Promise<void> {

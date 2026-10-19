@@ -3,7 +3,7 @@ import * as collection from '@/app/api/v1/debts/route';
 import * as payments from '@/app/api/v1/debts/[id]/payments/route';
 import { DELETE as removePayment } from '@/app/api/v1/debts/[id]/payments/[paymentId]/route';
 import { GET as getDebt } from '@/app/api/v1/debts/[id]/route';
-import { call, resetDb } from './helpers';
+import { asDemo, call, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -65,7 +65,7 @@ describe('payment history', () => {
 describe('concurrency', () => {
   const ledgerOk = async (id: number) => {
     const { prisma } = await import('@/lib/db');
-    const d = await prisma.debt.findUniqueOrThrow({ where: { id }, include: { payments: true } });
+    const d = await asDemo(() => prisma.debt.findUniqueOrThrow({ where: { id }, include: { payments: true } }));
     const principal = d.payments.reduce((s, p) => s + p.principal, 0);
     expect(d.paid).toBe(d.openingPaid + principal);
     expect(d.paid).toBeLessThanOrEqual(d.original);
@@ -113,10 +113,10 @@ describe('DELETE /api/v1/debts/:id', () => {
   it('deletes a debt together with its payments', async () => {
     const { prisma } = await import('@/lib/db');
     const item = await import('@/app/api/v1/debts/[id]/route');
-    expect(await prisma.debtPayment.count({ where: { debtId: 16 } })).toBeGreaterThan(0);
+    expect(await asDemo(() => prisma.debtPayment.count({ where: { debtId: 16 } }))).toBeGreaterThan(0);
     expect((await call(item.DELETE, { method: 'DELETE', params: { id: '16' } })).status).toBeLessThan(300);
-    expect(await prisma.debtPayment.count({ where: { debtId: 16 } })).toBe(0);
-    expect(await prisma.debt.count({ where: { id: 16 } })).toBe(0);
+    expect(await asDemo(() => prisma.debtPayment.count({ where: { debtId: 16 } }))).toBe(0);
+    expect(await asDemo(() => prisma.debt.count({ where: { id: 16 } }))).toBe(0);
   });
 });
 

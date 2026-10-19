@@ -5,7 +5,7 @@ import { GET as schedule } from '@/app/api/v1/debts/[id]/schedule/route';
 import * as payments from '@/app/api/v1/debts/[id]/payments/route';
 import * as transactions from '@/app/api/v1/transactions/route';
 import { prisma } from '@/lib/db';
-import { call, resetDb } from './helpers';
+import { asDemo, call, resetDb } from './helpers';
 
 beforeEach(resetDb);
 
@@ -131,13 +131,13 @@ describe('debt names as transaction items', () => {
   });
   it('renames the item on pay_debt transactions', async () => {
     expect((await pay()).status).toBe(201);
-    const found = await prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } });
+    const found = await asDemo(() => prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } }));
     expect((await call(item.PATCH, { method: 'PATCH', params: { id: String(found.id) }, body: { name: 'Nano Three' } })).status).toBe(200);
-    expect((await prisma.transaction.findFirstOrThrow({ where: { activity: 'pay_debt' } })).item).toBe('Nano Three');
+    expect((await asDemo(() => prisma.transaction.findFirstOrThrow({ where: { activity: 'pay_debt' } }))).item).toBe('Nano Three');
   });
   it('refuses to delete a debt that transactions use', async () => {
     await pay();
-    const found = await prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } });
+    const found = await asDemo(() => prisma.debt.findFirstOrThrow({ where: { name: 'Kbank Nano 3' } }));
     const r = await call(item.DELETE, { method: 'DELETE', params: { id: String(found.id) } });
     expect([r.status, r.json.code]).toEqual([409, 'debtInUse']);
   });

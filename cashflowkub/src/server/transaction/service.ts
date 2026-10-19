@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { prisma, type DbTx } from '@/lib/db';
+import { requireUserId } from '@/lib/user-context';
 import { today } from '@/lib/clock';
 import { clampPage } from '@/lib/pagination';
 import type { Prisma } from '@/generated/prisma/client';
@@ -86,13 +87,13 @@ interface Resolved {
  * Merges a body over the current row (if any), settles activity and category, and enforces the activity rules.
  * A body without `activity` on create keeps working as before: the activity is inferred and a missing item is allowed.
  */
-async function resolveRow(tx: Prisma.TransactionClient, input: Partial<Input>, current?: TxPlain): Promise<Resolved> {
+async function resolveRow(tx: DbTx, input: Partial<Input>, current?: TxPlain): Promise<Resolved> {
   const cat = input.cat ?? current?.cat ?? '';
   const amount = input.amount ?? current?.amount ?? 0;
   let activity = input.activity ?? (current?.activity as Activity | undefined);
   if (activity === undefined) {
     if (cat === '') throw badRequest('cat or activity required', 'validation');
-    const category = await tx.category.findUnique({ where: { key: cat }, select: { sub: true } });
+    const category = await tx.category.findFirst({ where: { key: cat }, select: { sub: true } });
     activity = legacyActivity(amount, category?.sub ?? '');
   }
   const row = {
@@ -107,7 +108,7 @@ async function resolveRow(tx: Prisma.TransactionClient, input: Partial<Input>, c
     activity,
     item: input.item ?? current?.item ?? '',
   };
-  const catSub = fixedCat(activity) === null ? (await tx.category.findUnique({ where: { key: row.cat }, select: { sub: true } }))?.sub : '';
+  const catSub = fixedCat(activity) === null ? (await tx.category.findFirst({ where: { key: row.cat }, select: { sub: true } }))?.sub : '';
   const touched = input.activity !== undefined || input.item !== undefined;
   const problem = checkActivity(row, catSub, { requireItem: current ? touched : input.activity !== undefined });
   if (problem) throw badRequest(problem, 'activityMismatch');
@@ -117,7 +118,8 @@ async function resolveRow(tx: Prisma.TransactionClient, input: Partial<Input>, c
 
 export async function createTransaction(body: unknown): Promise<TxView> {
   const { date, ...input } = parseBody(txSchema, body);
-  const row = await prisma.$transaction(async (tx) => tx.transaction.create({ data: { ...(await resolveRow(tx, input)), date: toDate(date) ?? today() } }));
+  const userId = await requireUserId();
+  const row = await prisma.$transaction(async (tx) => tx.transaction.create({ data: { ...(await resolveRow(tx, input)), date: toDate(date) ?? today(), userId } }));
   return toTxView(toPlain(row), today());
 }
 
@@ -128,9 +130,10 @@ export async function createTransactions(body: unknown): Promise<TxView[]> {
   const { items } = parseBody(batchSchema, body);
   const fallback = today();
   const dated = items.map(({ date, ...input }) => ({ input, date: toDate(date) ?? fallback }));
+  const userId = await requireUserId();
   const rows = await prisma.$transaction(async (tx) => {
     const out = [];
-    for (const { input, date } of dated) out.push(await tx.transaction.create({ data: { ...(await resolveRow(tx, input)), date } }));
+    for (const { input, date } of dated) out.push(await tx.transaction.create({ data: { ...(await resolveRow(tx, input)), date, userId } }));
     return out;
     // Up to 500 rows with a few lookups each; Prisma's default 5s interactive-transaction limit is too tight on a remote database.
   }, { maxWait: 10_000, timeout: 60_000 });

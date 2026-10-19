@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
+import { requireUserId } from '@/lib/user-context';
 import type { PlanItem } from '@/generated/prisma/client';
 import { MONTH_RE } from '@/lib/month';
 import { badRequest } from '@/server/errors';
@@ -38,7 +39,7 @@ export async function createPlanItem(body: unknown): Promise<PlanItem> {
     const last = await prisma.planItem.aggregate({ where: { month: data.month, type: data.type }, _max: { sort: true } });
     data.sort = (last._max.sort ?? 0) + 1;
   }
-  return prisma.planItem.create({ data });
+  return prisma.planItem.create({ data: { ...data, userId: await requireUserId() } });
 }
 
 export function updatePlanItem(id: number, body: unknown): Promise<PlanItem> {

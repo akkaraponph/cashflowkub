@@ -2,10 +2,14 @@
 // (itself lifted from the design comp). Row order matters: ids are assigned in order.
 import type { Prisma } from '../src/generated/prisma/client';
 
+/** A seed row: the seed adds the owner's userId when it inserts. */
+type Seed<T> = Omit<T, 'userId'>;
+
 const MONTH = '2026-06';
 const d = (iso: string): Date => new Date(`${iso}T00:00:00.000Z`);
 
-export const categories: Prisma.CategoryCreateManyInput[] = [
+/** Every new user starts with these categories (sign-up and the demo seed). */
+export const DEFAULT_CATEGORIES: Seed<Prisma.CategoryCreateManyInput>[] = [
   { key: 'food', label: 'Food & Dining', th: 'อาหาร', short: 'Food', icon: 'utensils', tint: 'folder', type: 'expense', sub: 'need', sort: 1 },
   { key: 'transport', label: 'Transport', th: 'เดินทาง', short: 'Transit', icon: 'car', tint: 'doc', type: 'expense', sub: 'need', sort: 2 },
   { key: 'shopping', label: 'Shopping', th: 'ช้อปปิ้ง', short: 'Shop', icon: 'shopping-bag', tint: 'image', type: 'expense', sub: 'want', sort: 3 },
@@ -17,7 +21,7 @@ export const categories: Prisma.CategoryCreateManyInput[] = [
   { key: 'debt', label: 'Debt payment', th: 'ชำระหนี้สิน', short: 'Debt', icon: 'hand-coins', tint: 'pdf', type: 'expense', sub: 'debt', sort: 9 },
 ];
 
-export const accounts: Prisma.AccountCreateManyInput[] = [
+export const accounts: Seed<Prisma.AccountCreateManyInput>[] = [
   { name: 'Kasikorn Savings', sub: 'KBank ••4821', balance: 128400, icon: 'landmark', tint: 'doc', kind: 'bank', startDate: 'Mar 1, 2019', startTh: '1 มี.ค. 2019', sort: 1 },
   { name: 'SCB Current', sub: 'SCB ••0192', balance: 42580, icon: 'landmark', tint: 'xls', kind: 'bank', startDate: 'Jul 12, 2020', startTh: '12 ก.ค. 2020', sort: 2 },
   { name: 'Cash Wallet', sub: 'เงินสด', balance: 3200, icon: 'banknote', tint: 'folder', kind: 'cash', startDate: 'Always', startTh: 'ตลอด', sort: 3 },
@@ -25,7 +29,7 @@ export const accounts: Prisma.AccountCreateManyInput[] = [
   { name: 'KTC Credit', sub: '••7733', balance: -18200, icon: 'credit-card', tint: 'pdf', kind: 'credit', startDate: 'May 22, 2022', startTh: '22 พ.ค. 2022', sort: 5 },
 ];
 
-export const transactions: Prisma.TransactionCreateManyInput[] = [
+export const transactions: Seed<Prisma.TransactionCreateManyInput>[] = [
   { name: 'Monthly Salary', cat: 'income', activity: 'receive', item: 'Monthly salary', acct: 'Kasikorn Savings', amount: 62000, date: d('2026-06-18'), note: 'Acme Co. payroll' },
   { name: 'Starbucks', cat: 'food', acct: 'SCB Current', amount: -185, date: d('2026-06-18'), note: 'Latte + croissant' },
   { name: 'Grab', cat: 'transport', acct: 'TrueMoney', amount: -120, date: d('2026-06-18'), note: 'Ride to office' },
@@ -40,7 +44,7 @@ export const transactions: Prisma.TransactionCreateManyInput[] = [
   { name: 'Fitness First', cat: 'health', acct: 'SCB Current', amount: -1500, date: d('2026-06-13'), note: 'Membership' },
 ];
 
-export const budgets: Prisma.BudgetCreateManyInput[] = [
+export const budgets: Seed<Prisma.BudgetCreateManyInput>[] = [
   { cat: 'shopping', spent: 6500, limit: 5000, sort: 1 },
   { cat: 'food', spent: 4200, limit: 5000, sort: 2 },
   { cat: 'bills', spent: 3200, limit: 3500, sort: 3 },
@@ -49,7 +53,7 @@ export const budgets: Prisma.BudgetCreateManyInput[] = [
   { cat: 'fun', spent: 900, limit: 1500, sort: 6 },
 ];
 
-export const goals: Prisma.GoalCreateManyInput[] = [
+export const goals: Seed<Prisma.GoalCreateManyInput>[] = [
   { name: 'Emergency Fund', th: 'เงินสำรองฉุกเฉิน', icon: 'shield', saved: 145000, target: 200000, monthly: 8000, by: 'Ongoing', sort: 1 },
   { name: 'Japan Trip', th: 'เที่ยวญี่ปุ่น', icon: 'plane', saved: 64000, target: 120000, monthly: 6000, by: 'Dec 2026', sort: 2 },
   { name: 'New iPhone', th: 'ไอโฟนใหม่', icon: 'smartphone', saved: 28000, target: 45000, monthly: 3000, by: 'Sep 2026', sort: 3 },
@@ -57,7 +61,7 @@ export const goals: Prisma.GoalCreateManyInput[] = [
 
 // paid = openingPaid + Σ principal of that debt's seeded payments (asserted in tests/api/seed.test.ts).
 // Shopee rows are illustrative demo terms, not Shopee's published rates/fees.
-export const debts: Prisma.DebtCreateManyInput[] = [
+export const debts: Seed<Prisma.DebtCreateManyInput>[] = [
   { name: 'Student Loan (กยศ)', th: 'กยศ', icon: 'graduation-cap', tint: 'doc', kind: 'personal', lender: 'กยศ', original: 186650, openingPaid: 8275, paid: 8275, apr: 0, monthly: 3889, calc: 'flat', dueDay: 28, sort: 1 },
   { name: 'KrungThai Personal', th: 'กรุงไทยใจป้ำ', icon: 'landmark', tint: 'pdf', kind: 'bankloan', lender: 'Krungthai Bank', original: 70000, openingPaid: 24300, paid: 24300, apr: 25, monthly: 2783, calc: 'reducing', dueDay: 25, sort: 2 },
   { name: 'Kbank Nano 3', th: 'Kbank Nano 3', icon: 'credit-card', tint: 'pdf', kind: 'cashloan', lender: 'KBank', original: 12000, openingPaid: 4570, paid: 4570, apr: 33, monthly: 1523, calc: 'reducing', dueDay: 25, revolving: true, sort: 3 },
@@ -78,7 +82,7 @@ export const debts: Prisma.DebtCreateManyInput[] = [
   { name: 'Shopee EasyCash', th: 'ช้อปปี้ อีซี่แคช', icon: 'hand-coins', tint: 'folder', kind: 'cashloan', lender: 'Shopee', original: 20000, openingPaid: 0, paid: 5001, apr: 18, calc: 'flat', termMonths: 12, dueDay: 5, lateFee: 100, sort: 16 },
 ];
 
-export const debtPayments: Prisma.DebtPaymentCreateManyInput[] = [
+export const debtPayments: Seed<Prisma.DebtPaymentCreateManyInput>[] = [
   { debtId: 15, date: d('2026-04-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement Apr' },
   { debtId: 15, date: d('2026-05-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement May' },
   { debtId: 15, date: d('2026-06-01'), amount: 1250, principal: 1250, interest: 0, fee: 0, note: 'Statement Jun' },
@@ -87,9 +91,9 @@ export const debtPayments: Prisma.DebtPaymentCreateManyInput[] = [
   { debtId: 16, date: d('2026-05-05'), amount: 1967, principal: 1667, interest: 300, fee: 0, note: '' },
 ];
 
-export const settings: Prisma.SettingCreateManyInput[] = [{ key: 'monthlyIncome', value: '62000' }];
+export const settings: Seed<Prisma.SettingCreateManyInput>[] = [{ key: 'monthlyIncome', value: '62000' }];
 
-export const assets: Prisma.AssetCreateManyInput[] = [
+export const assets: Seed<Prisma.AssetCreateManyInput>[] = [
   { name: 'Kasikorn Savings', th: 'ออมทรัพย์ กสิกร', icon: 'landmark', tint: 'doc', value: 128400, sort: 1 },
   { name: 'SCB Current', th: 'กระแสรายวัน SCB', icon: 'landmark', tint: 'xls', value: 42580, sort: 2 },
   { name: 'Cash Wallet', th: 'เงินสด', icon: 'banknote', tint: 'folder', value: 3200, sort: 3 },
@@ -100,7 +104,7 @@ export const assets: Prisma.AssetCreateManyInput[] = [
   { name: 'Electronics & Gear', th: 'อุปกรณ์อิเล็กทรอนิกส์', icon: 'monitor', tint: 'image', value: 35000, sort: 8 },
 ];
 
-export const bills: Prisma.BillCreateManyInput[] = [
+export const bills: Seed<Prisma.BillCreateManyInput>[] = [
   { name: 'Spotify Family', th: 'Spotify Family', icon: 'music', tint: 'image', amount: 149, dueDay: 1, paid: true, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 1 },
   { name: 'Netflix Premium', th: 'Netflix Premium', icon: 'clapperboard', tint: 'video', amount: 419, dueDay: 3, paid: true, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 2 },
   { name: 'Apartment Rent', th: 'ค่าเช่าบ้าน', icon: 'house', tint: 'folder', amount: 12000, dueDay: 5, paid: true, freq: 'monthly', cat: 'bills', sort: 3 },
@@ -116,7 +120,7 @@ export const bills: Prisma.BillCreateManyInput[] = [
   { name: 'iCloud+ 200GB', th: 'iCloud+ 200GB', icon: 'cloud', tint: 'image', amount: 99, dueDay: 30, paid: false, freq: 'monthly', cat: 'fun', kind: 'subscription', sort: 13 },
 ];
 
-export const channels: Prisma.ChannelCreateManyInput[] = [
+export const channels: Seed<Prisma.ChannelCreateManyInput>[] = [
   { name: 'SCB Easy Savings', th: 'SCB Easy ออมทรัพย์', kind: 'saving', icon: 'piggy-bank', tint: 'doc', opening: 35000, startDate: 'Jan 1, 2025', startTh: '1 ม.ค. 2025', sort: 1 },
   { name: 'TMRW High-yield', th: 'TMRW ดอกเบี้ยสูง', kind: 'saving', icon: 'piggy-bank', tint: 'xls', opening: 50000, startDate: 'Mar 12, 2025', startTh: '12 มี.ค. 2025', sort: 2 },
   { name: 'SSF Mutual Fund', th: 'กองทุน SSF', kind: 'mf', icon: 'trending-up', tint: 'xls', opening: 82400, startDate: 'Apr 1, 2024', startTh: '1 เม.ย. 2024', sort: 3 },
@@ -128,7 +132,7 @@ export const channels: Prisma.ChannelCreateManyInput[] = [
   { name: 'Government bond', th: 'พันธบัตรรัฐบาล', kind: 'bond', icon: 'landmark', tint: 'doc', opening: 100000, startDate: 'Feb 1, 2023', startTh: '1 ก.พ. 2023', sort: 9 },
 ];
 
-export const incomeCategories: Prisma.IncomeCategoryCreateManyInput[] = [
+export const incomeCategories: Seed<Prisma.IncomeCategoryCreateManyInput>[] = [
   { name: 'Monthly salary', th: 'เงินเดือน', sub: 'main', icon: 'briefcase', tint: 'xls', sort: 1 },
   { name: 'Year-end bonus', th: 'โบนัสประจำปี', sub: 'main', icon: 'gift', tint: 'xls', sort: 2 },
   { name: 'Overtime pay', th: 'ค่าล่วงเวลา', sub: 'main', icon: 'clock-3', tint: 'xls', sort: 3 },
@@ -140,7 +144,7 @@ export const incomeCategories: Prisma.IncomeCategoryCreateManyInput[] = [
   { name: 'Rental income', th: 'ค่าเช่า', sub: 'passive', icon: 'house', tint: 'folder', sort: 9 },
 ];
 
-export const planItems: Prisma.PlanItemCreateManyInput[] = [
+export const planItems: Seed<Prisma.PlanItemCreateManyInput>[] = [
   { type: 'income', name: 'Monthly salary', th: 'เงินเดือน', icon: 'briefcase', tint: 'xls', planned: 60000, actual: 62000, month: MONTH, sort: 1 },
   { type: 'income', name: 'Year-end bonus', th: 'โบนัสประจำปี', icon: 'gift', tint: 'xls', planned: 0, actual: 0, month: MONTH, sort: 2 },
   { type: 'income', name: 'Freelance work', th: 'รับงานฟรีแลนซ์', icon: 'pen-tool', tint: 'doc', planned: 5000, actual: 3200, month: MONTH, sort: 3 },
@@ -159,7 +163,7 @@ export const planItems: Prisma.PlanItemCreateManyInput[] = [
   { type: 'savings', name: 'New iPhone', th: 'ไอโฟนใหม่', icon: 'smartphone', tint: 'pdf', planned: 3000, actual: 3000, month: MONTH, sort: 5 },
 ];
 
-export const assetSnapshots: Prisma.AssetSnapshotCreateManyInput[] = [
+export const assetSnapshots: Seed<Prisma.AssetSnapshotCreateManyInput>[] = [
   { name: 'Kasikorn Savings', th: 'ออมทรัพย์ กสิกร', group: 'bank', icon: 'landmark', tint: 'doc', prev: 122100, curr: 128400, month: MONTH, sort: 1 },
   { name: 'SCB Current', th: 'กระแสรายวัน SCB', group: 'bank', icon: 'landmark', tint: 'xls', prev: 41200, curr: 42580, month: MONTH, sort: 2 },
   { name: 'Cash Wallet', th: 'เงินสด', group: 'bank', icon: 'banknote', tint: 'folder', prev: 3500, curr: 3200, month: MONTH, sort: 3 },
@@ -176,7 +180,7 @@ export const assetSnapshots: Prisma.AssetSnapshotCreateManyInput[] = [
   { name: 'Electronics', th: 'อุปกรณ์อิเล็กทรอนิกส์', group: 'other', icon: 'monitor', tint: 'image', prev: 35800, curr: 35000, month: MONTH, sort: 14 },
 ];
 
-export const netWorthHistory: Prisma.NetWorthHistoryCreateManyInput[] = [
+export const netWorthHistory: Seed<Prisma.NetWorthHistoryCreateManyInput>[] = [
   { month: 'Jan', monthTh: 'ม.ค.', value: 295000, sort: 1 },
   { month: 'Feb', monthTh: 'ก.พ.', value: 312000, sort: 2 },
   { month: 'Mar', monthTh: 'มี.ค.', value: 328000, sort: 3 },
@@ -185,7 +189,7 @@ export const netWorthHistory: Prisma.NetWorthHistoryCreateManyInput[] = [
   { month: 'Jun', monthTh: 'มิ.ย.', value: 540850, sort: 6 },
 ];
 
-export const monthlyCashflow: Prisma.MonthlyCashflowCreateManyInput[] = [
+export const monthlyCashflow: Seed<Prisma.MonthlyCashflowCreateManyInput>[] = [
   { month: 'Jan', income: 60000, expense: 38000, sort: 1 },
   { month: 'Feb', income: 60000, expense: 42000, sort: 2 },
   { month: 'Mar', income: 62000, expense: 35000, sort: 3 },
@@ -195,9 +199,9 @@ export const monthlyCashflow: Prisma.MonthlyCashflowCreateManyInput[] = [
 ];
 
 const DAY_SPEND: Record<number, number> = { 1: 149, 3: 419, 5: 12000, 7: 540, 10: 1240, 12: 280, 13: 1500, 14: 1470, 15: 1180, 17: 2219, 18: 553 };
-export const daySpend: Prisma.DaySpendCreateManyInput[] = Object.entries(DAY_SPEND).map(([day, amount]) => ({ day: Number(day), amount, month: MONTH }));
+export const daySpend: Seed<Prisma.DaySpendCreateManyInput>[] = Object.entries(DAY_SPEND).map(([day, amount]) => ({ day: Number(day), amount, month: MONTH }));
 
-type SetupGoalSeed = Omit<Prisma.SetupGoalCreateInput, 'channels'> & { channels: { name: string; th: string; pct: number }[] };
+type SetupGoalSeed = Omit<Prisma.SetupGoalCreateInput, 'channels' | 'user'> & { channels: { name: string; th: string; pct: number }[] };
 export const setupGoals: SetupGoalSeed[] = [
   {
     kind: 'emergency', name: 'Emergency fund', th: 'เงินสำรองเผื่อฉุกเฉิน 6 เดือน', icon: 'shield-check', tint: 'doc',

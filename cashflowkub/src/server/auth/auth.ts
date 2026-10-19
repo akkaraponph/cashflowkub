@@ -1,7 +1,9 @@
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { prisma } from '@/lib/db';
+import { basePrisma } from '@/lib/db';
+import { runAsUser } from '@/lib/user-context';
+import { defaultDataFor } from '@/server/me/service';
 
 export const PRIVACY_VERSION = '2026-10-19';
 
@@ -14,7 +16,7 @@ function requireEnv(name: string): string {
 export const auth = betterAuth({
   secret: requireEnv('BETTER_AUTH_SECRET'),
   baseURL: requireEnv('BETTER_AUTH_URL'),
-  database: prismaAdapter(prisma, { provider: 'postgresql' }),
+  database: prismaAdapter(basePrisma, { provider: 'postgresql' }),
   emailAndPassword: { enabled: true, minPasswordLength: 10 },
   account: { modelName: 'authAccount' },
   user: {
@@ -33,6 +35,10 @@ export const auth = betterAuth({
             throw new APIError('BAD_REQUEST', { message: 'privacy_version_required' });
           }
           return { data: { ...user, privacyAcceptedAt: new Date() } };
+        },
+        // Runs after the user row is committed.
+        after: async (user) => {
+          await runAsUser(user.id, () => defaultDataFor(user.id));
         },
       },
     },

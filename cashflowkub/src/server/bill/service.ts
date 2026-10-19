@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Bill } from '@/generated/prisma/client';
 import { prisma } from '@/lib/db';
+import { requireUserId } from '@/lib/user-context';
 import { isMonth, occursIn } from '@/lib/bill-schedule';
 import { CURRENT_MONTH, today, todayDay } from '@/lib/clock';
 import { badRequest, notFound } from '@/server/errors';
@@ -78,7 +79,7 @@ export async function toggleBillPaid(id: number, body: unknown): Promise<BillVie
   if (!occursIn(bill, m)) throw badRequest('bill does not occur in that month', 'billNotInMonth');
   const existing = await prisma.billPayment.findUnique({ where: { billId_month: { billId: id, month: m } } });
   const paid = parsed.paid ?? !existing;
-  if (paid && !existing) await prisma.billPayment.create({ data: { billId: id, month: m } });
+  if (paid && !existing) await prisma.billPayment.create({ data: { billId: id, month: m, userId: await requireUserId() } });
   if (!paid && existing) await prisma.billPayment.delete({ where: { id: existing.id } });
   return toBillView(bill, { month: m, paid, today: today() });
 }
@@ -87,7 +88,7 @@ const currentView = (b: Bill, paid: boolean): BillView => toBillView(b, { month:
 
 export async function createBill(body: unknown): Promise<BillView> {
   const data = parseBody(createSchema, body);
-  return currentView(await prisma.bill.create({ data: { ...data, startMonth: data.startMonth ?? CURRENT_MONTH } }), false);
+  return currentView(await prisma.bill.create({ data: { ...data, startMonth: data.startMonth ?? CURRENT_MONTH, userId: await requireUserId() } }), false);
 }
 
 export async function updateBill(id: number, body: unknown): Promise<BillView> {
