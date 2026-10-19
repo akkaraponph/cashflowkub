@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { test as base, expect, type APIRequestContext } from '@playwright/test';
+import { test as base, expect, type APIRequestContext, type BrowserContext } from '@playwright/test';
 
 const ORIGIN = 'http://localhost:3210';
 
@@ -9,11 +9,30 @@ export function reseed(): void {
 }
 
 /** Every test starts from the canonical seed, in English (the app's default), with "today" fixed at 2026-06-18 by the app. */
-export const test = base.extend<{ lang: 'en' | 'th'; reseedFirst: boolean }>({
+export const DEMO_EMAIL = 'demo@cashflowkub.local';
+
+/** Signs the context in as the demo user; the session cookie lands in the context's cookie jar. Reseeding truncates sessions, so call it after every reseed. */
+export async function signInAsDemo(context: BrowserContext): Promise<void> {
+  const res = await context.request.post(`${ORIGIN}/api/auth/sign-in/email`, {
+    data: { email: DEMO_EMAIL, password: process.env.SEED_DEMO_PASSWORD },
+    headers: { Origin: ORIGIN },
+  });
+  expect(res.ok(), `demo sign-in → ${res.status()}`).toBe(true);
+}
+
+/** Every test starts signed in as the demo user (`signedIn: false` opts out). `request` shares the browser context's cookies. */
+export const test = base.extend<{ lang: 'en' | 'th'; reseedFirst: boolean; signedIn: boolean }>({
   lang: ['en', { option: true }],
   reseedFirst: [true, { option: true }],
-  page: async ({ page, context, lang, reseedFirst }, use) => {
+  signedIn: [true, { option: true }],
+  // Depends on `page` so a request-only test is still reseeded and signed in.
+  request: async ({ page, context }, use) => {
+    void page;
+    await use(context.request);
+  },
+  page: async ({ page, context, lang, reseedFirst, signedIn }, use) => {
     if (reseedFirst) reseed();
+    if (signedIn) await signInAsDemo(context);
     await context.addCookies([{ name: 'cfk-lang', value: lang, url: ORIGIN }]);
     await use(page);
   },

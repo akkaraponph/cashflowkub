@@ -16,6 +16,20 @@ if (!process.env.PW_E2E_READY) {
 }
 
 const PORT = 3210;
+// Fixed TEST values, set before anything is spawned so the app server and the reseed script inherit them. Test config only: the app has no fallbacks.
+const TEST_ENV = {
+  BETTER_AUTH_SECRET: 'test-secret-test-secret-test-secret-0123456789',
+  BETTER_AUTH_URL: `http://localhost:${PORT}`,
+  DATA_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
+  SEED_DEMO_PASSWORD: 'demo-password-for-tests',
+  BETTER_AUTH_RATE_LIMIT: 'off',
+  PRIVACY_CONTROLLER_NAME: 'Test Controller Co., Ltd.',
+  PRIVACY_CONTACT_EMAIL: 'privacy@cashflowkub.test',
+};
+for (const [key, value] of Object.entries(TEST_ENV)) process.env[key] ??= value;
+// These two are bound to this config, whatever the dev .env says: the server listens on PORT, and rate limiting would block the repeated sign-ins.
+process.env.BETTER_AUTH_URL = TEST_ENV.BETTER_AUTH_URL;
+process.env.BETTER_AUTH_RATE_LIMIT = 'off';
 // Artifacts live outside the project so nothing under test is touched by the report writers.
 const OUT = join(tmpdir(), 'cashflowkub-playwright');
 
@@ -40,6 +54,6 @@ export default defineConfig({
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 300_000,
-    env: { NEXT_DIST_DIR: '.next-e2e', DATABASE_URL: testDb },
+    env: { ...TEST_ENV, ...process.env, NEXT_DIST_DIR: '.next-e2e', DATABASE_URL: testDb } as Record<string, string>,
   },
 });

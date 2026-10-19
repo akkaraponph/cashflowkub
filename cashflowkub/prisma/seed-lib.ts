@@ -3,7 +3,7 @@ import { hashPassword } from 'better-auth/crypto';
 import type { PrismaClient } from '../src/generated/prisma/client';
 import { CURRENT_MONTH } from '../src/lib/clock';
 import { runAsSystem } from '../src/lib/user-context';
-import { PRIVACY_VERSION } from '../src/server/auth/auth';
+import { PRIVACY_VERSION } from '../src/lib/privacy';
 import * as data from './seed-data';
 
 export const DEMO_EMAIL = 'demo@cashflowkub.local';

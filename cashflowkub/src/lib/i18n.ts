@@ -4,7 +4,7 @@ export type Lang = 'en' | 'th';
 
 
 const en = {
-  appName: 'CashflowKub', tagline: 'Personal cashflow', greeting: 'Good morning, Ploy',
+  appName: 'CashflowKub', tagline: 'Personal cashflow', greeting: 'Good morning, {name}',
   today: "Here's your money today", netWorth: 'Net worth', thisMonth: 'this month',
   income: 'Income', expenses: 'Expenses', net: 'Net', cashflow: 'Cashflow',
   last6: 'Last 6 months', spending: 'Spending by category', budgetsTitle: 'Budgets',
@@ -198,12 +198,41 @@ const en = {
     sumIncome: 'Income', sumSaving: 'Savings / investing', sumNeed: 'Essential spending', sumWant: 'Other spending', sumDebt: 'Debt payments',
     pageRange: 'Showing {from}–{to} of {total}', perPage: 'Per page', prevPage: 'Previous page', nextPage: 'Next page', pageTotals: 'Totals for this page',
   },
-  menu: 'Menu', settingsProfile: 'Ploy Srichan', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
+  auth: {
+    loginTitle: 'Sign in', loginSubtitle: 'Welcome back to CashflowKub.', signupTitle: 'Create your account', signupSubtitle: 'Your data stays private to your account.',
+    name: 'Name', email: 'Email', password: 'Password', passwordHint: 'At least 10 characters.',
+    acknowledge: 'I have read the privacy notice', acknowledgeLink: 'Read the privacy notice',
+    submitLogin: 'Sign in', submitSignup: 'Create account', working: 'Please wait…',
+    noAccount: 'No account yet?', haveAccount: 'Already have an account?', goSignup: 'Create one', goLogin: 'Sign in',
+    privacyLink: 'Privacy notice',
+    errors: {
+      invalidCredentials: 'Wrong email or password.', emailTaken: 'That email is already registered. Try signing in.', passwordTooShort: 'The password must be at least 10 characters.',
+      invalidEmail: 'Enter a valid email address.', nameRequired: 'Enter your name.', rateLimited: 'Too many attempts. Wait a moment and try again.', generic: 'Something went wrong. Please try again.',
+    },
+  },
+  privacy: {
+    title: 'Privacy notice', draftNote: 'Draft. Version {version}.', versionLabel: 'Version', backToApp: 'Back to the app',
+    controllerTitle: 'Who we are',
+    controllerBody: '{name} ("we") is the data controller for the personal data in CashflowKub, under the Personal Data Protection Act B.E. 2562 (2019) of Thailand (PDPA). You can reach us at {email}.',
+    collectTitle: 'What we collect',
+    collectBody: 'Your name, email address and a password (stored only as a one-way hash); the sign-in sessions on your devices; and the financial records you enter yourself: accounts, transactions with their notes, bills, debts, budgets, goals, plans and tax figures. We also record which version of this notice you acknowledged and when.',
+    whyTitle: 'Why we use it',
+    whyBody: 'Only to provide the service you asked for: to sign you in and to show you your own cashflow. The lawful basis is performance of our contract with you (PDPA section 24(3)). We do not sell your data, send marketing, run analytics, or share it with advertisers.',
+    retentionTitle: 'How long we keep it',
+    retentionBody: 'Until you delete your account. Deleting your account permanently removes your profile, sessions and every financial record you entered. We do not keep a copy.',
+    securityTitle: 'How we protect it',
+    securityBody: 'Connections are encrypted in transit. Passwords are stored as one-way hashes, so we cannot read them. Free-text financial notes (transaction names and notes, debt payment notes and lender names) are additionally encrypted before they are saved. Every request is checked so you can only reach your own records.',
+    rightsTitle: 'Your rights',
+    rightsBody: 'You may ask us to give you access to your data, export a copy, correct it, delete it, or object to how it is used, and you may withdraw any consent you gave. Write to {email}. You may also complain to the Personal Data Protection Committee (PDPC) of Thailand.',
+    cookiesTitle: 'Cookies',
+    cookiesBody: 'Only strictly necessary cookies: your sign-in session, and your language, theme and year preferences. No advertising, analytics or third-party cookies, so there is no cookie banner.',
+  },
+  menu: 'Menu', currencyValue: 'THB ฿',
 };
 export type Dict = typeof en;
 
 const th: Dict = {
-  appName: 'CashflowKub', tagline: 'กระแสเงินสดส่วนตัว', greeting: 'สวัสดีตอนเช้า พลอย',
+  appName: 'CashflowKub', tagline: 'กระแสเงินสดส่วนตัว', greeting: 'สวัสดีตอนเช้า {name}',
   today: 'นี่คือเงินของคุณวันนี้', netWorth: 'มูลค่าสุทธิ', thisMonth: 'เดือนนี้',
   income: 'รายรับ', expenses: 'รายจ่าย', net: 'สุทธิ', cashflow: 'กระแสเงินสด',
   last6: '6 เดือนล่าสุด', spending: 'การใช้จ่ายตามหมวด', budgetsTitle: 'งบประมาณ',
@@ -393,7 +422,36 @@ const th: Dict = {
     sumIncome: 'รายรับ', sumSaving: 'เงินสะสม / การลงทุน', sumNeed: 'ค่าใช้จ่ายจำเป็น', sumWant: 'ค่าใช้จ่ายอื่นๆ', sumDebt: 'ชำระหนี้สิน',
     pageRange: 'แสดง {from}–{to} จาก {total}', perPage: 'ต่อหน้า', prevPage: 'หน้าก่อน', nextPage: 'หน้าถัดไป', pageTotals: 'ยอดรวมเฉพาะหน้านี้',
   },
-  menu: 'เมนู', settingsProfile: 'พลอย ศรีจันทร์', settingsEmail: 'ploy@email.com', currencyValue: 'THB ฿',
+  auth: {
+    loginTitle: 'เข้าสู่ระบบ', loginSubtitle: 'ยินดีต้อนรับกลับสู่ CashflowKub', signupTitle: 'สร้างบัญชีของคุณ', signupSubtitle: 'ข้อมูลของคุณเป็นส่วนตัวเฉพาะบัญชีของคุณ',
+    name: 'ชื่อ', email: 'อีเมล', password: 'รหัสผ่าน', passwordHint: 'อย่างน้อย 10 ตัวอักษร',
+    acknowledge: 'ฉันได้อ่านประกาศความเป็นส่วนตัวแล้ว', acknowledgeLink: 'อ่านประกาศความเป็นส่วนตัว',
+    submitLogin: 'เข้าสู่ระบบ', submitSignup: 'สร้างบัญชี', working: 'กรุณารอสักครู่…',
+    noAccount: 'ยังไม่มีบัญชี?', haveAccount: 'มีบัญชีอยู่แล้ว?', goSignup: 'สร้างบัญชี', goLogin: 'เข้าสู่ระบบ',
+    privacyLink: 'ประกาศความเป็นส่วนตัว',
+    errors: {
+      invalidCredentials: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง', emailTaken: 'อีเมลนี้ลงทะเบียนแล้ว ลองเข้าสู่ระบบ', passwordTooShort: 'รหัสผ่านต้องมีอย่างน้อย 10 ตัวอักษร',
+      invalidEmail: 'กรอกอีเมลให้ถูกต้อง', nameRequired: 'กรอกชื่อของคุณ', rateLimited: 'ลองหลายครั้งเกินไป รอสักครู่แล้วลองใหม่', generic: 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+    },
+  },
+  privacy: {
+    title: 'นโยบายความเป็นส่วนตัว', draftNote: 'ฉบับร่าง เวอร์ชัน {version}', versionLabel: 'เวอร์ชัน', backToApp: 'กลับไปที่แอป',
+    controllerTitle: 'เราคือใคร',
+    controllerBody: '{name} ("เรา") เป็นผู้ควบคุมข้อมูลส่วนบุคคลใน CashflowKub ตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA) ติดต่อเราได้ที่ {email}',
+    collectTitle: 'ข้อมูลที่เราเก็บ',
+    collectBody: 'ชื่อ อีเมล และรหัสผ่าน (เก็บเฉพาะค่าแฮชทางเดียว) เซสชันการเข้าสู่ระบบบนอุปกรณ์ของคุณ และข้อมูลการเงินที่คุณกรอกเอง ได้แก่ บัญชี ธุรกรรมพร้อมบันทึก บิล หนี้สิน งบประมาณ เป้าหมาย แผน และตัวเลขภาษี เรายังบันทึกด้วยว่าคุณรับทราบประกาศฉบับใดและเมื่อไร',
+    whyTitle: 'เหตุผลที่เราใช้ข้อมูล',
+    whyBody: 'เพื่อให้บริการที่คุณขอเท่านั้น คือให้คุณเข้าสู่ระบบและดูกระแสเงินสดของตัวเอง ฐานทางกฎหมายคือการปฏิบัติตามสัญญากับคุณ (PDPA มาตรา 24(3)) เราไม่ขายข้อมูล ไม่ส่งการตลาด ไม่วิเคราะห์การใช้งาน และไม่แบ่งปันให้ผู้โฆษณา',
+    retentionTitle: 'เก็บนานเท่าไร',
+    retentionBody: 'จนกว่าคุณจะลบบัญชี การลบบัญชีจะลบโปรไฟล์ เซสชัน และข้อมูลการเงินทั้งหมดที่คุณกรอกอย่างถาวร เราไม่เก็บสำเนาไว้',
+    securityTitle: 'วิธีที่เราปกป้องข้อมูล',
+    securityBody: 'การเชื่อมต่อเข้ารหัสระหว่างทาง รหัสผ่านเก็บเป็นแฮชทางเดียว เราจึงอ่านไม่ได้ บันทึกข้อความอิสระทางการเงิน (ชื่อและบันทึกของธุรกรรม บันทึกการชำระหนี้ และชื่อผู้ให้กู้) ถูกเข้ารหัสเพิ่มเติมก่อนบันทึก และทุกคำขอถูกตรวจสอบเพื่อให้คุณเข้าถึงได้เฉพาะข้อมูลของตัวเอง',
+    rightsTitle: 'สิทธิของคุณ',
+    rightsBody: 'คุณขอเข้าถึง ขอสำเนา แก้ไข ลบ หรือคัดค้านการใช้ข้อมูลของคุณได้ และถอนความยินยอมที่เคยให้ได้ ติดต่อ {email} นอกจากนี้คุณมีสิทธิร้องเรียนต่อคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (PDPC)',
+    cookiesTitle: 'คุกกี้',
+    cookiesBody: 'ใช้เฉพาะคุกกี้ที่จำเป็นอย่างยิ่ง คือเซสชันการเข้าสู่ระบบ และค่ากำหนดภาษา ธีม และปี ไม่มีคุกกี้โฆษณา วิเคราะห์ หรือของบุคคลที่สาม จึงไม่มีแบนเนอร์คุกกี้',
+  },
+  menu: 'เมนู', currencyValue: 'THB ฿',
 };
 
 export const DICT: Record<Lang, Dict> = { en, th };

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { I18nProvider, useOptionalI18n } from '@/components/i18n-provider';
 import { DICT } from '@/lib/i18n';
 
-const ALLOWED = ['appName', 'settingsEmail', 'tax.field.easyEReceipt', 'tax.field.rmf', 'tax.field.ssf', 'tax.field.thaiEsg'];
+const ALLOWED = ['appName', 'tax.field.easyEReceipt', 'tax.field.rmf', 'tax.field.ssf', 'tax.field.thaiEsg'];
 
 function englishOnly(node: unknown, path: string, out: string[]): string[] {
   if (typeof node === 'string') {

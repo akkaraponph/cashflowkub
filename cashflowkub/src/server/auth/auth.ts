@@ -2,10 +2,11 @@ import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { basePrisma } from '@/lib/db';
+import { PRIVACY_VERSION } from '@/lib/privacy';
 import { runAsUser } from '@/lib/user-context';
 import { defaultDataFor } from '@/server/me/service';
 
-export const PRIVACY_VERSION = '2026-10-19';
+export { PRIVACY_VERSION };
 
 function requireEnv(name: string): string {
   const value = process.env[name];
