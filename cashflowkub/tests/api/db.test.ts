@@ -8,9 +8,9 @@ describe('database', () => {
     const tables = await prisma.$queryRaw<{ tablename: string }[]>`
       SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations' ORDER BY tablename`;
     expect(tables.map((t) => t.tablename)).toEqual([
-      'accounts', 'asset_snapshots', 'assets', 'bill_payments', 'bills', 'budgets', 'categories', 'channels', 'day_spends',
-      'debt_payments', 'debts', 'goals', 'income_categories', 'monthly_cashflows', 'net_worth_histories', 'plan_items',
-      'settings', 'setup_goal_channels', 'setup_goals', 'transactions',
+      'accounts', 'asset_snapshots', 'assets', 'auth_accounts', 'bill_payments', 'bills', 'budgets', 'categories', 'channels',
+      'day_spends', 'debt_payments', 'debts', 'goals', 'income_categories', 'monthly_cashflows', 'net_worth_histories',
+      'plan_items', 'sessions', 'settings', 'setup_goal_channels', 'setup_goals', 'transactions', 'users', 'verifications',
     ]);
   });
 });

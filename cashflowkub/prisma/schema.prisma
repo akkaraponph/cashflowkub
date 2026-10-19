@@ -312,3 +312,70 @@ model SetupGoalChannel {
 
   @@map("setup_goal_channels")
 }
+
+/// Better Auth: a person who can log in. privacyVersion/privacyAcceptedAt record the acknowledged privacy notice.
+model User {
+  id                String        @id
+  name              String
+  email             String        @unique
+  emailVerified     Boolean       @default(false) @map("email_verified")
+  image             String?
+  privacyVersion    String        @map("privacy_version")
+  privacyAcceptedAt DateTime      @map("privacy_accepted_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+  sessions          Session[]
+  authAccounts      AuthAccount[]
+
+  @@map("users")
+}
+
+/// Better Auth: a login session.
+model Session {
+  id        String   @id
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Better Auth: a credential for a user (named AuthAccount because Account is a money account).
+model AuthAccount {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+/// Better Auth: one-time tokens (unused until email flows exist).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@index([identifier])
+  @@map("verifications")
+}
