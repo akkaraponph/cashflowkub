@@ -5,6 +5,7 @@ import { getI18n, getPrefs } from '@/lib/prefs-server';
 import { SignOutButton } from '@/components/app-shell/sign-out-button';
 import { getCurrentUser } from '@/server/auth/current-user';
 import { PreferencesRows } from './preferences';
+import { YourDataCard } from './your-data';
 
 export default async function SettingsPage() {
   const [{ ui }, { year }, user] = await Promise.all([getI18n(), getPrefs(), getCurrentUser()]);
@@ -28,6 +29,7 @@ export default async function SettingsPage() {
           <span className="text-sm text-muted-foreground">{ui.currencyValue}</span>
         </div>
       </Card>
+      <YourDataCard />
     </>
   );
 }

@@ -32,3 +32,8 @@ test.describe('preferences', () => {
     await expect(page.getByRole('link', { name: 'งบประมาณ' }).first()).toBeVisible();
   });
 });
+
+test('settings offers the data download', async ({ page }) => {
+  await page.goto('/settings');
+  await expect(page.getByRole('link', { name: 'Download my data' })).toHaveAttribute('href', '/api/v1/me/export');
+});
