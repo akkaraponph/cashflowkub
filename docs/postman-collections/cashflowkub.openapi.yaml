@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
-  title: CashflowKub API (auth and privacy)
-  version: '2026-10-19'
+  title: CashflowKub API (auth, privacy, and backend operations)
+  version: '2026-10-22'
   description: |
     Covers the sign-in, account deletion and PDPA endpoints. The resource endpoints under `/api/v1/*`
     (accounts, transactions, debts, ...) are documented in `cashflowkub/README.md`; what changed for
@@ -19,6 +19,24 @@ tags:
   - name: me
     description: The signed-in user's own account data.
 paths:
+  /internal/health:
+    get:
+      tags: [operations]
+      summary: Check the private Rust backend process
+      description: Available only on the backend's private network. Does not expose user or database data.
+      servers:
+        - url: http://127.0.0.1:8080
+      security: []
+      responses:
+        '200':
+          description: Backend process is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [ok] }
   /api/auth/sign-up/email:
     post:
       tags: [auth]

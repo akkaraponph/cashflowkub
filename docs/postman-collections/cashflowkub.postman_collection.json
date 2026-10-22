@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "CashflowKub (auth and privacy)",
+    "name": "CashflowKub (auth, privacy, and backend operations)",
     "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -194,12 +194,39 @@
           }
         }
       ]
+    },
+    {
+      "name": "backend operations",
+      "item": [
+        {
+          "name": "Private Rust health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{backendUrl}}/internal/health",
+              "host": [
+                "{{backendUrl}}"
+              ],
+              "path": [
+                "internal",
+                "health"
+              ]
+            },
+            "description": "Private network only. Process health response contains no user or database data."
+          }
+        }
+      ]
     }
   ],
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:3000"
+    },
+    {
+      "key": "backendUrl",
+      "value": "http://127.0.0.1:8080"
     }
   ]
 }

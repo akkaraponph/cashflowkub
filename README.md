@@ -11,6 +11,8 @@ as a single full-stack **Next.js** app in [`cashflowkub/`](cashflowkub/README.md
 | Data     | Prisma 7 · PostgreSQL                              |
 | Auth     | Better Auth (email + password) · per-user data     |
 
+The Rust service bootstrap is in [`backend/`](backend/). It currently provides the private health endpoint and shared boundary primitives; finance routes are still served by Next.js while the staged migration is implemented. See [`docs/knowledge/rust-backend.md`](docs/knowledge/rust-backend.md) for the rollout boundary and [implementation plan](docs/superpowers/plans/2026-10-22-rust-backend.md).
+
 Screens: Dashboard · Transactions · Bills (list + calendar) · Debts (+ schedule, avalanche/snowball) ·
 Net Worth · Budgets · Accounts · Reports · Goals · Plan · Setup · Settings, with light/dark theme and EN/TH.
 

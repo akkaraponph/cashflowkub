@@ -1,1 +1,3 @@
 cashflowkub/.vitest
+/backend/target/
+/backend/.env

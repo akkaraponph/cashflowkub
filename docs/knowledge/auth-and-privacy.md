@@ -79,6 +79,10 @@ Lawful basis is **contract** (PDPA s.24(3)), not consent: the data is needed to 
 - **Rate limiting keys on the client IP header.** Deploy behind a trusted proxy that sets it and does not pass a client-supplied `x-forwarded-for` through; otherwise a client can dodge or poison the limit.
 - Better Auth's rate limit store is in memory: fine for one instance, not for several (section 10).
 
+### Rust finance backend rollout
+
+The Rust service is introduced incrementally in repository-root `backend/`. Next.js remains the public origin and validates Better Auth sessions before forwarding finance requests with a private `BACKEND_SERVICE_TOKEN` and the verified user ID. The gateway strips incoming identity and authorization headers. Rust binds to a private interface and scopes every finance query by `user_id`. Better Auth remains the sole owner of auth tables and sign-in/deletion flows. See [rust-backend.md](rust-backend.md) for the service boundary and rollout state. Do not remove the current Next.js route implementation for a domain until its Rust parity and browser checks pass.
+
 ## 9. Environment variables
 
 | Name | Purpose |
