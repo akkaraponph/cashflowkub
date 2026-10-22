@@ -3,6 +3,9 @@ import { getSession } from '@/server/auth/auth';
 import { ApiError } from '@/lib/api-client';
 import type { ResourceName, ResourceRows } from '@/server/reference/resources';
 import type { TxView } from '@/server/transaction/logic';
+import type { BillView } from '@/server/views';
+import type { BillSummary } from '@/server/bill/logic';
+import type { PlanView, SnapshotsView } from '@/server/plan/logic';
 
 function backendOrigin(): string {
   const origin = process.env.BACKEND_URL;
@@ -122,4 +125,22 @@ export async function proxyToBackend(req: Request, path: string): Promise<Respon
   }
   responseHeaders.set('cache-control', 'no-store');
   return new Response(upstream.body, { status: upstream.status, headers: responseHeaders });
+}
+
+export function getBackendBills(opts: { month: string; kind?: string }): Promise<{ data: BillView[] }> {
+  const query = new URLSearchParams({ month: opts.month });
+  if (opts.kind) query.set('kind', opts.kind);
+  return backendJson(`/api/v1/bills?${query}`);
+}
+
+export function getBackendBillSummary(month: string): Promise<BillSummary> {
+  return backendJson(`/api/v1/bills/summary?${new URLSearchParams({ month })}`);
+}
+
+export function getBackendPlan(month: string): Promise<PlanView> {
+  return backendJson(`/api/v1/plan?${new URLSearchParams({ month })}`);
+}
+
+export function getBackendSnapshots(): Promise<SnapshotsView> {
+  return backendJson('/api/v1/plan/snapshots');
 }

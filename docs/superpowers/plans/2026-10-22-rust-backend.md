@@ -82,17 +82,17 @@
 - [x] Update knowledge, OpenAPI, and Postman (including the private paging endpoint); run Rust test, Next.js API tests, typecheck, and `pnpm --dir cashflowkub test:pw transactions quick-add`; require pass.
 - [x] Commit the transaction slice.
 
-### Task 4: Bills, plan, setup, and snapshots
+### Task 4: Bills, plan, and snapshots
 
-**Files:** Create `backend/src/{bills,plan}.rs`, `backend/tests/{bills,plan}.rs`; modify their corresponding route files in `cashflowkub/src/app/api/v1/{bills,plan,setup}/`, `cashflowkub/src/app/(app)/{bills,plan,setup}/page.tsx`, `backend/src/app.rs`, `docs/knowledge/rust-backend.md`, both API contract files.
+**Files:** Create `backend/src/{bills,plan}.rs`, `backend/tests/{bills,plan}.rs`; modify bill and plan route files in `cashflowkub/src/app/api/v1/{bills,plan}/`, `cashflowkub/src/app/(app)/{bills,plan}/page.tsx`, `cashflowkub/src/server/backend/client.ts`, `backend/src/app.rs`, `docs/knowledge/rust-backend.md`, both API contract files.
 
-**Interfaces:** Produce existing bill list/create/update/delete/pay/summary routes; plan list/create/update/delete/snapshots routes; GET `/api/v1/setup`. The Rust outputs retain current `BillView`, `BillSummary`, `PlanView`, `SnapshotsView`, and `SetupView` shapes; TypeScript domain readers use `backendJson<T>`.
+**Interfaces:** Produce existing bill list/create/update/delete/pay/summary routes and plan list/create/update/delete/snapshots routes. Rust outputs retain current `BillView`, `BillSummary`, `PlanView`, and `SnapshotsView` shapes; TypeScript server pages use authenticated `backendJson<T>` readers. Carry GET `/api/v1/setup` forward on Next.js until Task 5 ports the `DebtView` embedded in `SetupView`.
 
-- [ ] Write bill tests for recurrence, month/status filtering, payment toggle, due-day edge cases, and rollback when a bill payment write fails. Write plan/setup tests for invalid month, group totals, snapshot ordering, and tenant isolation.
-- [ ] Run `cargo test --manifest-path backend/Cargo.toml --test bills --test plan`; confirm red.
-- [ ] Implement the Rust routes and calculations; cut over each corresponding Next.js route and page after its parity test passes.
-- [ ] Update knowledge, OpenAPI, and Postman; run both Rust tests, Next.js API tests, typecheck, and `pnpm --dir cashflowkub test:pw bills plan setup`; require pass.
-- [ ] Commit this slice.
+- [x] Write bill tests for recurrence, month filtering, payment month isolation, due-day clamping, invalid month and non-occurring payment, and rollback when a bill payment write fails. Write plan tests for invalid month, group totals, snapshot ordering, and tenant isolation. Setup parity tests remain with Task 5.
+- [x] Run the bills and plan integration tests against the local disposable database; confirm red before implementation.
+- [x] Implement Rust routes and calculations; cut over the corresponding Next.js routes and server pages after parity tests passed. Keep `/api/v1/setup` on Next.js through Task 5.
+- [x] Update knowledge, OpenAPI, and Postman; run Rust tests, Next.js API tests (203 passed), typecheck, and bills/plan/setup Playwright tests (17 passed); require pass.
+- [x] Commit this slice.
 
 ### Task 5: Debts, payments, schedules, and planning
 

@@ -81,7 +81,7 @@ Lawful basis is **contract** (PDPA s.24(3)), not consent: the data is needed to 
 
 ### Rust finance backend rollout
 
-The Rust service is introduced incrementally in repository-root `backend/`. Next.js remains the public origin and validates Better Auth sessions before forwarding finance requests with a private `BACKEND_SERVICE_TOKEN` and the verified user ID. The gateway strips incoming identity and authorization headers. Rust binds to a private interface and scopes every finance query by `user_id`. Better Auth remains the sole owner of auth tables and sign-in/deletion flows. Accounts, categories, budgets, goals, assets, channels, income categories, settings, and transactions now use this boundary. Debt endpoints remain on their current Next.js services pending parity and browser checks. See [rust-backend.md](rust-backend.md) for endpoints and rollout status.
+The Rust service is introduced incrementally in repository-root `backend/`. Next.js remains the public origin and validates Better Auth sessions before forwarding finance requests with a private `BACKEND_SERVICE_TOKEN` and the verified user ID. The gateway strips incoming identity and authorization headers. Rust binds to a private interface and scopes every finance query by `user_id`. Better Auth remains the sole owner of auth tables and sign-in/deletion flows. Accounts, categories, budgets, goals, assets, channels, income categories, settings, transactions, bills, plan items, and asset snapshot reads now use this boundary. The setup endpoint remains in Next.js until debt view parity is implemented; debt endpoints remain on their current Next.js services pending parity and browser checks. See [rust-backend.md](rust-backend.md) for endpoints and rollout status.
 
 ## 9. Environment variables
 

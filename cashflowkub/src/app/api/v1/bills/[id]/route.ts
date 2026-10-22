@@ -1,14 +1,6 @@
-import { noContent, ok, parseId, readJson, route } from '@/server/http';
-import { deleteBill, updateBill } from '@/server/bill/service';
-
+import { proxyToBackend } from '@/server/backend/client';
 type Ctx = { params: Promise<{ id: string }> };
-
-
-const update = route(async (req: Request, ctx: Ctx) => ok(await updateBill(parseId((await ctx.params).id), await readJson(req))));
-export const PUT = update;
-export const PATCH = update;
-
-export const DELETE = route(async (_req: Request, ctx: Ctx) => {
-  await deleteBill(parseId((await ctx.params).id));
-  return noContent();
-});
+const forward = async (req: Request, ctx: Ctx) => proxyToBackend(req, `/api/v1/bills/${(await ctx.params).id}`);
+export const PUT = forward;
+export const PATCH = forward;
+export const DELETE = forward;

@@ -1,8 +1,10 @@
 pub mod app;
 pub mod auth;
+pub mod bills;
 pub mod config;
 pub mod crypto;
 pub mod db;
 pub mod error;
+pub mod plan;
 pub mod reference;
 pub mod transactions;

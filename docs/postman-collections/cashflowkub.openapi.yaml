@@ -154,6 +154,134 @@ paths:
               schema: { $ref: '#/components/schemas/Settings' }
         '400': { description: monthlyIncome must be a non-negative integer. }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/bills:
+    get:
+      tags: [finance]
+      summary: List bills for a month
+      parameters:
+        - { name: month, in: query, schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$' } }
+        - { name: status, in: query, schema: { type: string, enum: [paid, unpaid] } }
+        - { name: kind, in: query, schema: { type: string, enum: [bill, subscription] } }
+      responses:
+        '200': { description: Bill views in a data array. }
+        '400': { description: Invalid month. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [finance]
+      summary: Create a bill or subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, amount, dueDay]
+              properties:
+                name: { type: string }
+                amount: { type: integer, minimum: 0 }
+                dueDay: { type: integer, minimum: 1, maximum: 31 }
+                freq: { type: string, enum: [monthly, once] }
+                kind: { type: string, enum: [bill, subscription] }
+                startMonth: { type: string, example: '2026-06' }
+                endMonth: { type: string, example: '2026-12' }
+                everyMonths: { type: integer, minimum: 1, maximum: 12 }
+      responses:
+        '201': { description: Created bill view. }
+        '400': { description: Invalid bill input. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/bills/summary:
+    get:
+      tags: [finance]
+      summary: Summarize bills and daily spending
+      parameters:
+        - { name: month, in: query, schema: { type: string, example: '2026-06' } }
+      responses:
+        '200': { description: Bill totals, next bill, subscriptions, and daily spending. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/bills/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    put:
+      tags: [finance]
+      summary: Replace bill fields
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Updated bill view. }
+        '404': { description: Bill does not exist for this user. }
+    patch:
+      tags: [finance]
+      summary: Partially update a bill
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Updated bill view. }
+        '404': { description: Bill does not exist for this user. }
+    delete:
+      tags: [finance]
+      summary: Delete a bill and its payments
+      responses:
+        '204': { description: Deleted. }
+        '404': { description: Bill does not exist for this user. }
+  /api/v1/bills/{id}/pay:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    patch:
+      tags: [finance]
+      summary: Mark a bill paid or unpaid for one month
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paid: { type: boolean }
+                month: { type: string, example: '2026-06' }
+      responses:
+        '200': { description: Updated bill view. }
+        '400': { description: Invalid month or bill does not occur in that month. }
+        '404': { description: Bill does not exist for this user. }
+  /api/v1/plan:
+    get:
+      tags: [finance]
+      summary: Get plan totals and items
+      parameters:
+        - { name: month, in: query, schema: { type: string, example: '2026-06' } }
+      responses:
+        '200': { description: Income, expense, savings, and summary totals. }
+        '400': { description: Invalid month. }
+    post:
+      tags: [finance]
+      summary: Create a plan item
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [type, name, month], properties: { type: { type: string, enum: [income, expense, savings] }, name: { type: string }, month: { type: string }, planned: { type: integer, minimum: 0 }, actual: { type: integer, minimum: 0 } } } } } }
+      responses:
+        '201': { description: Created plan item. }
+        '400': { description: Invalid plan item. }
+  /api/v1/plan/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+    put:
+      tags: [finance]
+      summary: Replace plan item fields
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Updated plan item. }
+    patch:
+      tags: [finance]
+      summary: Partially update a plan item
+      requestBody: { required: true, content: { application/json: { schema: { type: object } } } }
+      responses:
+        '200': { description: Updated plan item. }
+    delete:
+      tags: [finance]
+      summary: Delete a plan item
+      responses:
+        '204': { description: Deleted. }
+  /api/v1/plan/snapshots:
+    get:
+      tags: [finance]
+      summary: Read asset snapshots and net worth history
+      responses:
+        '200': { description: Previous/current asset values and net worth history. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/v1/transactions:
     get:
       tags: [finance]

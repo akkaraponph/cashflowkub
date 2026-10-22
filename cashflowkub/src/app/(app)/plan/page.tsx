@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import type { PlanGroup } from '@/server/plan/logic';
 import { PlanItemDialog } from './plan-item-dialog';
 import type { PlanType } from './plan-form';
-import { getPlan, getSnapshots } from '@/server/plan/service';
+import { getBackendPlan, getBackendSnapshots } from '@/server/backend/client';
 
 const GROUP_META: Record<string, { label: keyof Dict; icon: string; tint: string }> = {
   bank: { label: 'bankAcctsGroup', icon: 'landmark', tint: 'doc' },
@@ -66,7 +66,7 @@ export default async function PlanPage({ searchParams }: { searchParams: SearchP
   const raw = firstParam(sp, 'tab');
   const tab = raw === 'summary' || raw === 'assets' ? raw : 'monthly';
   const month = resolveMonth(firstParam(sp, 'month'), CURRENT_MONTH);
-  const plan = await getPlan(month);
+  const plan = await getBackendPlan(month);
 
   return (
     <>
@@ -109,7 +109,7 @@ export default async function PlanPage({ searchParams }: { searchParams: SearchP
 }
 
 async function AssetsTab({ ui, lang }: { ui: Dict; lang: Lang }) {
-  const data = await getSnapshots();
+  const data = await getBackendSnapshots();
   return (
     <>
       <Card className="gap-3 p-5">

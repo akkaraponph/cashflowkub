@@ -1,7 +1,7 @@
 use axum::{Json, Router, routing::get};
 use serde::Serialize;
 
-use crate::{config::AppState, reference, transactions};
+use crate::{bills, config::AppState, plan, reference, transactions};
 
 #[derive(Serialize)]
 struct Health {
@@ -12,6 +12,8 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .route("/internal/health", get(health))
         .merge(transactions::internal_routes())
+        .merge(bills::routes())
+        .merge(plan::routes())
         .nest("/api/v1", reference::routes())
         .merge(transactions::public_routes())
         .with_state(state)

@@ -1,6 +1,4 @@
-import { created, ok, readJson, route } from '@/server/http';
-import { createPlanItem, getPlan } from '@/server/plan/service';
+import { proxyToBackend } from '@/server/backend/client';
 
-export const GET = route(async (req: Request) => ok(await getPlan(new URL(req.url).searchParams.get('month') ?? undefined)));
-
-export const POST = route(async (req: Request) => created(await createPlanItem(await readJson(req))));
+export const GET = (req: Request) => proxyToBackend(req, '/api/v1/plan');
+export const POST = (req: Request) => proxyToBackend(req, '/api/v1/plan');

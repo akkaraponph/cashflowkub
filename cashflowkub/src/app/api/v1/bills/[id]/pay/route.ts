@@ -1,8 +1,3 @@
-import { ok, parseId, readJson, route } from '@/server/http';
-import { toggleBillPaid } from '@/server/bill/service';
-
+import { proxyToBackend } from '@/server/backend/client';
 type Ctx = { params: Promise<{ id: string }> };
-
-export const PATCH = route(async (req: Request, ctx: Ctx) =>
-  ok(await toggleBillPaid(parseId((await ctx.params).id), await readJson(req, { optional: true }))),
-);
+export const PATCH = async (req: Request, ctx: Ctx) => proxyToBackend(req, `/api/v1/bills/${(await ctx.params).id}/pay`);

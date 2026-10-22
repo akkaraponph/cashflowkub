@@ -11,7 +11,7 @@ import { fill, localized, pickLabel, type Dict } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { cn } from '@/lib/utils';
-import { getBillSummary, listBills } from '@/server/bill/service';
+import { getBackendBillSummary, getBackendBills } from '@/server/backend/client';
 import type { BillStatus } from '@/server/views';
 import { BillCheck } from './bill-check';
 import { BillDialog } from './bill-dialog';
@@ -30,7 +30,8 @@ export default async function BillsPage({ searchParams }: { searchParams: Search
   const rawKind = firstParam(sp, 'kind');
   const kind = rawKind === 'bill' || rawKind === 'subscription' ? rawKind : 'all';
   const month = monthParam(firstParam(sp, 'month'));
-  const [summary, bills] = await Promise.all([getBillSummary(month), listBills({ month, kind: kind === 'all' ? undefined : kind })]);
+  const [summary, billResult] = await Promise.all([getBackendBillSummary(month), getBackendBills({ month, kind: kind === 'all' ? undefined : kind })]);
+  const bills = billResult.data;
   const href = (k: string, v: string, m = month) =>
     `/bills?view=${v}${k === 'all' ? '' : `&kind=${k}`}${m === CURRENT_MONTH ? '' : `&month=${m}`}`;
   const period = (b: { freq: string; everyMonths: number }): string =>

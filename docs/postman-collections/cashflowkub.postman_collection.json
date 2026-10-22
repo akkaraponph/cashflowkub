@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CashflowKub (auth, privacy, and backend operations)",
-    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first. Accounts, categories, budgets, goals, assets, channels, income-categories, and settings are proxied to the private Rust backend. Transaction CRUD, batch operations, and the private paged reader use Rust behind the Next.js session gateway.",
+    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first. Accounts, categories, budgets, goals, assets, channels, income-categories, and settings are proxied to the private Rust backend. Transaction CRUD, batch operations, and the private paged reader use Rust behind the Next.js session gateway. Bills, plan items, bill payments, and asset snapshot reads now use Rust behind the session gateway. The setup endpoint and debt endpoints remain in Next.js pending debt view parity.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -792,6 +792,314 @@
               ]
             },
             "description": "Private Next.js-to-Rust endpoint. Keep the service token and user ID on the server; do not call from a browser."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bills and plan",
+      "item": [
+        {
+          "name": "List bills",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills?month=2026-06&kind=bill",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-06"
+                },
+                {
+                  "key": "kind",
+                  "value": "bill"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Insurance\",\n  \"amount\": 3000,\n  \"dueDay\": 25,\n  \"freq\": \"monthly\",\n  \"kind\": \"bill\",\n  \"startMonth\": \"2026-06\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Bill summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills/summary?month=2026-06",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-06"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update bill",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills/{{billId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills",
+                "{{billId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 3200\n}"
+            }
+          }
+        },
+        {
+          "name": "Mark bill paid",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills/{{billId}}/pay",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills",
+                "{{billId}}",
+                "pay"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paid\": true,\n  \"month\": \"2026-06\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete bill",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/bills/{{billId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bills",
+                "{{billId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plan?month=2026-06",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plan"
+              ],
+              "query": [
+                {
+                  "key": "month",
+                  "value": "2026-06"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create plan item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plan"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"expense\",\n  \"name\": \"Food\",\n  \"month\": \"2026-06\",\n  \"planned\": 12000,\n  \"actual\": 0\n}"
+            }
+          }
+        },
+        {
+          "name": "Update plan item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plan/{{planItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plan",
+                "{{planItemId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planned\": 14000\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete plan item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plan/{{planItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plan",
+                "{{planItemId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Asset snapshots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/plan/snapshots",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "plan",
+                "snapshots"
+              ]
+            }
           }
         }
       ]
