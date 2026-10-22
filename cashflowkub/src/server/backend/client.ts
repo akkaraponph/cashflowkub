@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { getSession } from '@/server/auth/auth';
 import { ApiError } from '@/lib/api-client';
+import type { ResourceName, ResourceRows } from '@/server/reference/resources';
 
 function backendOrigin(): string {
   const origin = process.env.BACKEND_URL;
@@ -60,6 +61,21 @@ export async function backendJson<T>(path: string, init: RequestInit = {}): Prom
   const url = new URL(path, backendOrigin());
   const requestHeaders = authenticatedHeaders(userId, new Headers(init.headers));
   return backendFetch<T>(url, { ...init, headers: requestHeaders });
+}
+
+export async function getBackendResource<K extends ResourceName>(
+  name: K,
+): Promise<Omit<ResourceRows[K], 'userId'>[]> {
+  const result = await backendJson<{ data: Omit<ResourceRows[K], 'userId'>[] }>(`/api/v1/${name}`);
+  return result.data;
+}
+
+export interface AppSettings {
+  monthlyIncome: number;
+}
+
+export function getBackendSettings(): Promise<AppSettings> {
+  return backendJson<AppSettings>('/api/v1/settings');
 }
 
 /** Authenticated public API gateway. Browser identity headers are never forwarded. */

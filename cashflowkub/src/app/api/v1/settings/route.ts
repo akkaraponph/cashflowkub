@@ -1,6 +1,9 @@
-import { ok, readJson, route } from '@/server/http';
-import { getSettings, updateSettings } from '@/server/settings/service';
+import { proxyToBackend } from '@/server/backend/client';
 
-export const GET = route(async () => ok(await getSettings()));
+export function GET(req: Request): Promise<Response> {
+  return proxyToBackend(req, '/api/v1/settings');
+}
 
-export const PUT = route(async (req: Request) => ok(await updateSettings(await readJson(req))));
+export function PUT(req: Request): Promise<Response> {
+  return proxyToBackend(req, '/api/v1/settings');
+}

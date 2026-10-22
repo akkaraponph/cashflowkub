@@ -6,23 +6,23 @@ use axum::{
 use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum ApiError {
     #[error("resource not found")]
     NotFound,
-    #[error("bad request")]
-    BadRequest,
-    #[error("resource already exists")]
-    Conflict,
+    #[error("{0}")]
+    BadRequest(String, Option<String>),
+    #[error("{0}")]
+    Conflict(String, String),
     #[error("internal server error")]
     Internal,
 }
 
 #[derive(Serialize)]
 struct ErrorBody {
-    error: &'static str,
+    error: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    code: Option<&'static str>,
+    code: Option<String>,
 }
 
 impl IntoResponse for ApiError {
@@ -30,14 +30,14 @@ impl IntoResponse for ApiError {
         let (status, message, code) = match self {
             Self::NotFound => (
                 StatusCode::NOT_FOUND,
-                "resource not found",
-                Some("notFound"),
+                "resource not found".to_owned(),
+                Some("notFound".to_owned()),
             ),
-            Self::BadRequest => (StatusCode::BAD_REQUEST, "bad request", None),
-            Self::Conflict => (StatusCode::CONFLICT, "resource already exists", None),
+            Self::BadRequest(message, code) => (StatusCode::BAD_REQUEST, message, code),
+            Self::Conflict(message, code) => (StatusCode::CONFLICT, message, Some(code)),
             Self::Internal => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "internal server error",
+                "internal server error".to_owned(),
                 None,
             ),
         };

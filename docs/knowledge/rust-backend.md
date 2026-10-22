@@ -18,8 +18,14 @@ Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessi
 
 ## Environment and rollout status
 
-The service requires `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`. Next.js reads `BACKEND_URL` and `BACKEND_SERVICE_TOKEN`. Generate the service token with `openssl rand -base64 32`, store the same value only in the private Rust and Next.js environments, and rotate both together. The web `.env.example` includes the gateway values as a rollout reference; current finance routes still use their Next.js services until each planned domain cutover is completed.
+The service requires `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`. Next.js reads `BACKEND_URL` and `BACKEND_SERVICE_TOKEN`. Generate the service token with `openssl rand -base64 32`, store the same value only in the private Rust and Next.js environments, and rotate both together. The web `.env.example` includes the gateway values. The accounts, categories, budgets, goals, assets, channels, income-categories, and settings endpoints now proxy to Rust. Transactions and debt endpoints remain on their Next.js services until their planned cutovers.
 
 The implementation plan is [Rust Backend Implementation Plan](../superpowers/plans/2026-10-22-rust-backend.md), based on [the design](../superpowers/specs/2026-10-22-rust-backend-design.md). Update this page after each domain cutover and record the endpoints that now use Rust.
 
 Related existing constraints: [auth, tenancy, encryption and privacy](auth-and-privacy.md), [CashflowKub planner domain](spreadsheet-planner.md).
+
+## Current cutover: reference data and settings
+
+The following public session-authenticated routes remain at the Next.js origin and proxy to the private Rust service: `GET/POST /api/v1/{resource}`, `GET/PUT/PATCH/DELETE /api/v1/{resource}/{id}`, and `GET/PUT /api/v1/settings`. Allowed resources are `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, and `income-categories`. Collection responses retain `{ data: [...] }`; create, get, and update return the row; delete returns 204. Fields retain the existing UI contract (including camelCase fields such as `startDate` and `monthlyIncome`). Rust validates fields and values, scopes every query to the verified user, preserves transaction references when renaming accounts/goals/channels/income categories, and rejects deleting referenced names.
+
+Settings currently expose `monthlyIncome` as a non-negative integer. A missing value falls back to that user's latest monthly cashflow income. The Next.js session gateway overwrites identity headers and adds `Cache-Control: no-store`; callers must never call Rust directly from a browser.

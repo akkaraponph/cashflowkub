@@ -21,6 +21,7 @@ const TEST_ENV = {
   BETTER_AUTH_SECRET: 'test-secret-test-secret-test-secret-0123456789',
   BETTER_AUTH_URL: `http://localhost:${PORT}`,
   DATA_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
+  BACKEND_SERVICE_TOKEN: 'playwright-test-backend-token',
   SEED_DEMO_PASSWORD: 'demo-password-for-tests',
   BETTER_AUTH_RATE_LIMIT: 'off',
   PRIVACY_CONTROLLER_NAME: 'Test Controller Co., Ltd.',
@@ -48,12 +49,32 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } }],
-  webServer: {
-    // A production build: the dev server's hot reload re-navigates the page under the test.
-    command: `pnpm exec next build && pnpm exec next start -p ${PORT}`,
-    url: `http://localhost:${PORT}/api/health`,
-    reuseExistingServer: false,
-    timeout: 300_000,
-    env: { ...TEST_ENV, ...process.env, NEXT_DIST_DIR: '.next-e2e', DATABASE_URL: testDb } as Record<string, string>,
-  },
+  webServer: [
+    {
+      command: 'cargo run --manifest-path ../backend/Cargo.toml --bin cashflowkub-backend',
+      url: 'http://127.0.0.1:8081/internal/health',
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: {
+        ...TEST_ENV,
+        ...process.env,
+        DATABASE_URL: testDb,
+        BACKEND_BIND_ADDRESS: '127.0.0.1:8081',
+      } as Record<string, string>,
+    },
+    {
+      // A production build: the dev server's hot reload re-navigates the page under the test.
+      command: `pnpm exec next build && pnpm exec next start -p ${PORT}`,
+      url: `http://localhost:${PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 300_000,
+      env: {
+        ...TEST_ENV,
+        ...process.env,
+        NEXT_DIST_DIR: '.next-e2e',
+        DATABASE_URL: testDb,
+        BACKEND_URL: 'http://127.0.0.1:8081',
+      } as Record<string, string>,
+    },
+  ],
 });

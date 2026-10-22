@@ -59,15 +59,16 @@
 
 ### Task 2: Reference resources and settings
 
-**Files:** Create `backend/src/reference.rs`, `backend/tests/reference.rs`; modify `backend/src/app.rs`, `cashflowkub/src/app/api/v1/[resource]/{route.ts,[id]/route.ts}`, `cashflowkub/src/app/api/v1/settings/route.ts`, `cashflowkub/src/app/(app)/{accounts,budgets,goals,settings}/page.tsx`, `cashflowkub/src/app/(app)/layout.tsx`, `cashflowkub/src/components/app-shell/shell-data.tsx`, `docs/knowledge/rust-backend.md`, both API contract files.
+**Files:** Create `backend/src/reference.rs`, `backend/tests/reference.rs`; modify `backend/src/app.rs`, `cashflowkub/src/app/api/v1/[resource]/{route.ts,[id]/route.ts}`, `cashflowkub/src/app/api/v1/settings/route.ts`, `cashflowkub/src/app/(app)/{accounts,budgets,goals}/page.tsx`, `cashflowkub/src/app/(app)/layout.tsx`, `cashflowkub/src/components/app-shell/shell-data.tsx`, `cashflowkub/tests/setup/global-setup.ts`, `docs/knowledge/rust-backend.md`, both API contract files.
 
 **Interfaces:** Consume `AuthUser`, `AppState`, `backendJson`, `proxyToBackend`; produce Rust routes for `accounts`, `categories`, `budgets`, `goals`, `assets`, `channels`, `income-categories` (existing GET/POST collection and GET/PUT/PATCH/DELETE item methods), plus GET/PUT `/api/v1/settings`. TypeScript readers `getBackendResource<T>(name: ResourceName): Promise<T[]>` and `getBackendSettings(): Promise<AppSettings>`.
 
-- [ ] Write tests using the existing `RESOURCE_SCHEMAS` and `src/server/reference/service.ts` cases as fixtures: list envelope, create/update/delete, category `(user_id,key)` uniqueness, linked name rename, cross-user ID 404, and setting `monthlyIncome` validation.
-- [ ] Run `cargo test --manifest-path backend/Cargo.toml --test reference`; confirm red.
-- [ ] Implement SQLx queries scoped by `user_id`; use transactions for renames that update dependent rows. Switch the corresponding route handlers and Server Components to Rust client calls; preserve old route status codes and JSON shapes.
-- [ ] Update `docs/knowledge/rust-backend.md`, OpenAPI schemas and Postman requests for the cutover behavior; run Rust test, `pnpm --dir cashflowkub test:api`, typecheck, and `pnpm --dir cashflowkub test:pw accounts settings goals setup` against a disposable test DB; require pass.
-- [ ] Commit the reference/settings slice.
+- [x] Write tests using the existing `RESOURCE_SCHEMAS` and `src/server/reference/service.ts` cases as fixtures: list envelope, create/update/delete, category `(user_id,key)` uniqueness, linked name rename, cross-user ID 404, and setting `monthlyIncome` validation.
+- [x] Run `cargo test --manifest-path backend/Cargo.toml --test reference`; confirm red.
+- [x] Implement SQLx queries scoped by `user_id`; use transactions for renames that update dependent rows. Switch the corresponding route handlers and Server Components to Rust client calls; preserve old route status codes and JSON shapes.
+- [x] Start the Rust service against `TEST_DATABASE_URL` from API-test global setup and stop it during teardown so the existing route tests exercise the real gateway.
+- [x] Update `docs/knowledge/rust-backend.md`, OpenAPI schemas and Postman requests for the cutover behavior; run Rust test, `pnpm --dir cashflowkub test:api`, typecheck, and `pnpm --dir cashflowkub test:pw accounts settings goals setup` against a disposable test DB; require pass.
+- [x] Commit the reference/settings slice.
 
 ### Task 3: Transactions and batch operations
 

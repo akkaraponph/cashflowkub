@@ -7,18 +7,18 @@ import { PRIVACY_VERSION } from '@/lib/privacy';
 import { getPrefs } from '@/lib/prefs-server';
 import { getCurrentUser } from '@/server/auth/current-user';
 import { defaultDataFor } from '@/server/me/service';
-import { listResource } from '@/server/reference/service';
+import { getBackendResource } from '@/server/backend/client';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
   if (user.privacyVersion !== PRIVACY_VERSION) redirect('/privacy-update');
-  const [{ lang, year }, firstCategories, accounts] = await Promise.all([getPrefs(), listResource('categories'), listResource('accounts')]);
+  const [{ lang, year }, firstCategories, accounts] = await Promise.all([getPrefs(), getBackendResource('categories'), getBackendResource('accounts')]);
   // A sign-up whose default-data step failed leaves an account with no categories: repair it here (idempotent).
   let categories = firstCategories;
   if (categories.length === 0) {
     await defaultDataFor(user.id);
-    categories = await listResource('categories');
+    categories = await getBackendResource('categories');
   }
   return (
     <I18nProvider lang={lang}>

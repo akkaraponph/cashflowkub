@@ -3,9 +3,8 @@ info:
   title: CashflowKub API (auth, privacy, and backend operations)
   version: '2026-10-22'
   description: |
-    Covers the sign-in, account deletion and PDPA endpoints. The resource endpoints under `/api/v1/*`
-    (accounts, transactions, debts, ...) are documented in `cashflowkub/README.md`; what changed for
-    all of them is that they now need a session cookie, and return the 401 below without one.
+    Covers sign-in, account deletion, PDPA endpoints, and the Rust-backed reference data and settings API.
+    Next.js remains the public origin and forwards authenticated calls to the private Rust service.
 
     Naming exception: Better Auth's own endpoints (`/api/auth/*`) use camelCase fields, such as
     `privacyVersion`. Our endpoints (`/api/v1/me/*`) use snake_case.
@@ -37,6 +36,124 @@ paths:
                 required: [status]
                 properties:
                   status: { type: string, enum: [ok] }
+  /api/v1/{resource}:
+    parameters:
+      - $ref: '#/components/parameters/Resource'
+    get:
+      tags: [finance]
+      summary: List the signed-in user's reference data
+      responses:
+        '200':
+          description: Resource rows.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [finance]
+      summary: Create reference data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceInput' }
+      responses:
+        '201':
+          description: Created row.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceRow' }
+        '400': { description: Invalid resource or field value. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { description: Duplicate name or key. }
+  /api/v1/{resource}/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Resource'
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      tags: [finance]
+      summary: Get a reference row
+      responses:
+        '200':
+          description: Resource row.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceRow' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Row does not exist for this user. }
+    put:
+      tags: [finance]
+      summary: Update fields on a reference row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceUpdate' }
+      responses:
+        '200':
+          description: Updated row.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceRow' }
+        '400': { description: Invalid field value. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Row does not exist for this user. }
+        '409': { description: Duplicate name. }
+    patch:
+      tags: [finance]
+      summary: Partially update a reference row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResourceUpdate' }
+      responses:
+        '200':
+          description: Updated row.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResourceRow' }
+        '400': { description: Invalid field value. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Row does not exist for this user. }
+    delete:
+      tags: [finance]
+      summary: Delete a reference row
+      responses:
+        '204': { description: Deleted. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Row does not exist for this user. }
+        '409': { description: Row is referenced by existing transactions. }
+  /api/v1/settings:
+    get:
+      tags: [finance]
+      summary: Get the signed-in user's settings
+      responses:
+        '200':
+          description: Settings object.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Settings' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      tags: [finance]
+      summary: Set monthly income
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Settings' }
+      responses:
+        '200':
+          description: Updated settings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Settings' }
+        '400': { description: monthlyIncome must be a non-negative integer. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/auth/sign-up/email:
     post:
       tags: [auth]
@@ -197,6 +314,14 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 components:
+  parameters:
+    Resource:
+      name: resource
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [accounts, categories, budgets, goals, assets, channels, income-categories]
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -213,6 +338,141 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { error: not signed in, code: unauthorized }
   schemas:
+    ResourceInput:
+      oneOf:
+        - $ref: '#/components/schemas/AccountInput'
+        - $ref: '#/components/schemas/CategoryInput'
+        - $ref: '#/components/schemas/BudgetInput'
+        - $ref: '#/components/schemas/GoalInput'
+        - $ref: '#/components/schemas/AssetInput'
+        - $ref: '#/components/schemas/ChannelInput'
+        - $ref: '#/components/schemas/IncomeCategoryInput'
+      description: Resource-specific fields; existing API field names and casing are preserved.
+    ResourceUpdate:
+      type: object
+      description: Any subset of the selected resource's writable fields.
+      additionalProperties: true
+      properties:
+        name: { type: string, minLength: 1 }
+        key: { type: string, minLength: 1 }
+        label: { type: string, minLength: 1 }
+        cat: { type: string, minLength: 1 }
+        sub: { type: string }
+        th: { type: string }
+        short: { type: string }
+        icon: { type: string }
+        tint: { type: string }
+        type: { type: string, enum: [income, expense] }
+        kind: { type: string }
+        balance: { type: integer }
+        spent: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 0 }
+        saved: { type: integer, minimum: 0 }
+        target: { type: integer, minimum: 1 }
+        monthly: { type: integer, minimum: 0 }
+        value: { type: integer }
+        opening: { type: integer }
+        startDate: { type: string }
+        startTh: { type: string }
+        by: { type: string }
+        sort: { type: integer }
+    AccountInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        sub: { type: string }
+        balance: { type: integer }
+        icon: { type: string }
+        tint: { type: string }
+        kind: { type: string, enum: [bank, cash, ewallet, credit] }
+        startDate: { type: string }
+        startTh: { type: string }
+        sort: { type: integer }
+      example: { name: Main account, kind: bank, balance: 12000 }
+    CategoryInput:
+      type: object
+      required: [key, label]
+      properties:
+        key: { type: string, minLength: 1 }
+        label: { type: string, minLength: 1 }
+        th: { type: string }
+        short: { type: string }
+        icon: { type: string }
+        tint: { type: string }
+        type: { type: string, enum: [income, expense] }
+        sub: { type: string }
+        sort: { type: integer }
+    BudgetInput:
+      type: object
+      required: [cat, limit]
+      properties:
+        cat: { type: string, minLength: 1 }
+        spent: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 0 }
+        sort: { type: integer }
+    GoalInput:
+      type: object
+      required: [name, target]
+      properties:
+        name: { type: string, minLength: 1 }
+        th: { type: string }
+        icon: { type: string }
+        saved: { type: integer, minimum: 0 }
+        target: { type: integer, minimum: 1 }
+        monthly: { type: integer, minimum: 0 }
+        by: { type: string }
+        sort: { type: integer }
+    AssetInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        th: { type: string }
+        icon: { type: string }
+        tint: { type: string }
+        value: { type: integer }
+        sort: { type: integer }
+    ChannelInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        th: { type: string }
+        kind: { type: string, enum: [saving, mf, pf, stock, gold, bond] }
+        icon: { type: string }
+        tint: { type: string }
+        opening: { type: integer }
+        startDate: { type: string }
+        startTh: { type: string }
+        sort: { type: integer }
+    IncomeCategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        th: { type: string }
+        sub: { type: string, enum: [main, side, passive] }
+        icon: { type: string }
+        tint: { type: string }
+        sort: { type: integer }
+    ResourceRow:
+      type: object
+      description: Resource row without userId. Fields vary by resource.
+      properties:
+        id: { type: integer }
+    ResourceList:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ResourceRow' }
+    Settings:
+      type: object
+      required: [monthlyIncome]
+      properties:
+        monthlyIncome: { type: integer, minimum: 0 }
     Error:
       type: object
       required: [error]

@@ -8,6 +8,6 @@ export function firstParam(sp: SearchParamsRecord, key: string): string | undefi
   return Array.isArray(v) ? v[0] : v;
 }
 
-export function byKey(categories: Category[]): Map<string, Category> {
+export function byKey<T extends Pick<Category, 'key'>>(categories: T[]): Map<string, T> {
   return new Map(categories.map((c) => [c.key, c]));
 }

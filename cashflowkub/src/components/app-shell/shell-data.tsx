@@ -4,8 +4,8 @@ import { createContext, useContext } from 'react';
 import type { Account, Category } from '@/generated/prisma/client';
 
 interface ShellData {
-  categories: Category[];
-  accounts: Account[];
+  categories: Omit<Category, 'userId'>[];
+  accounts: Omit<Account, 'userId'>[];
 }
 
 const ShellDataContext = createContext<ShellData | null>(null);

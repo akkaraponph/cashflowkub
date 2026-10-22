@@ -15,7 +15,7 @@ import type { Goal } from '@/generated/prisma/client';
 import { GOAL_ICONS, emptyGoalForm, formFromGoal, goalBody, type GoalForm } from './goal-form';
 
 /** Add dialog when `goal` is omitted; edit (with delete) when it is given. */
-export function GoalDialog({ goal }: { goal?: Goal }) {
+export function GoalDialog({ goal }: { goal?: Omit<Goal, 'userId'> }) {
   const { ui, lang } = useI18n();
   const router = useRouter();
   const editing = goal !== undefined;

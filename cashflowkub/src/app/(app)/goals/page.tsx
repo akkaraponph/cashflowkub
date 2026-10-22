@@ -5,12 +5,12 @@ import { Tile } from '@/components/cfk/tile';
 import { fmt } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
-import { listResource } from '@/server/reference/service';
+import { getBackendResource } from '@/server/backend/client';
 import { GoalDialog } from './goal-dialog';
 
 export default async function GoalsPage() {
   const { ui, lang } = await getI18n();
-  const goals = await listResource('goals');
+  const goals = await getBackendResource('goals');
 
   return (
     <>

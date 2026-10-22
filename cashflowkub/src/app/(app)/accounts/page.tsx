@@ -6,14 +6,14 @@ import { fmt } from '@/lib/format';
 import { pickLabel } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { cn } from '@/lib/utils';
-import { listResource } from '@/server/reference/service';
+import { getBackendResource } from '@/server/backend/client';
 import { AccountDialog } from './account-dialog';
 
 const KIND_TONE: Record<string, Tone> = { bank: 'info', cash: 'success', ewallet: 'primary', credit: 'danger' };
 
 export default async function AccountsPage() {
   const { ui } = await getI18n();
-  const accounts = await listResource('accounts');
+  const accounts = await getBackendResource('accounts');
   const total = accounts.reduce((s, a) => s + a.balance, 0);
 
   return (

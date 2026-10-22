@@ -1,30 +1,24 @@
-import { noContent, ok, parseId, readJson, route } from '@/server/http';
-import { notFound } from '@/server/errors';
-import { isResourceName, type ResourceName } from '@/server/reference/resources';
-import { deleteResource, getResource, updateResource } from '@/server/reference/service';
+import { proxyToBackend } from '@/server/backend/client';
 
 type Ctx = { params: Promise<{ resource: string; id: string }> };
 
-async function target(ctx: Ctx): Promise<{ name: ResourceName; id: number }> {
+async function target(ctx: Ctx): Promise<string> {
   const { resource, id } = await ctx.params;
-  if (!isResourceName(resource)) throw notFound();
-  return { name: resource, id: parseId(id) };
+  return `/api/v1/${encodeURIComponent(resource)}/${encodeURIComponent(id)}`;
 }
 
-export const GET = route(async (_req: Request, ctx: Ctx) => {
-  const { name, id } = await target(ctx);
-  return ok(await getResource(name, id));
-});
+export async function GET(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}
 
-const update = route(async (req: Request, ctx: Ctx) => {
-  const { name, id } = await target(ctx);
-  return ok(await updateResource(name, id, await readJson(req)));
-});
-export const PUT = update;
-export const PATCH = update;
+export async function PUT(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}
 
-export const DELETE = route(async (_req: Request, ctx: Ctx) => {
-  const { name, id } = await target(ctx);
-  await deleteResource(name, id);
-  return noContent();
-});
+export async function PATCH(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}
+
+export async function DELETE(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}

@@ -16,7 +16,7 @@ import type { Account } from '@/generated/prisma/client';
 import { ACCOUNT_KINDS, accountBody, emptyAccountForm, formFromAccount, type AccountForm, type AccountKind } from './account-form';
 
 /** Add dialog when `account` is omitted; edit (with delete) when it is given. */
-export function AccountDialog({ account }: { account?: Account }) {
+export function AccountDialog({ account }: { account?: Omit<Account, 'userId'> }) {
   const { ui } = useI18n();
   const router = useRouter();
   const editing = account !== undefined;

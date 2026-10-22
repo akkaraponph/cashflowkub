@@ -7,11 +7,11 @@ import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
 import { cn } from '@/lib/utils';
-import { listResource } from '@/server/reference/service';
+import { getBackendResource } from '@/server/backend/client';
 
 export default async function BudgetsPage() {
   const { ui, lang } = await getI18n();
-  const [budgets, categories] = await Promise.all([listResource('budgets'), listResource('categories')]);
+  const [budgets, categories] = await Promise.all([getBackendResource('budgets'), getBackendResource('categories')]);
   const cats = byKey(categories);
   const spent = budgets.reduce((s, b) => s + b.spent, 0);
   const limit = budgets.reduce((s, b) => s + b.limit, 0);

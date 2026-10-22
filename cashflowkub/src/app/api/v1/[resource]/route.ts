@@ -1,16 +1,16 @@
-import { created, list, readJson, route } from '@/server/http';
-import { notFound } from '@/server/errors';
-import { isResourceName, type ResourceName } from '@/server/reference/resources';
-import { createResource, listResource } from '@/server/reference/service';
+import { proxyToBackend } from '@/server/backend/client';
 
 type Ctx = { params: Promise<{ resource: string }> };
 
-async function resourceOf(ctx: Ctx): Promise<ResourceName> {
+async function target(ctx: Ctx): Promise<string> {
   const { resource } = await ctx.params;
-  if (!isResourceName(resource)) throw notFound();
-  return resource;
+  return `/api/v1/${encodeURIComponent(resource)}`;
 }
 
-export const GET = route(async (_req: Request, ctx: Ctx) => list(await listResource(await resourceOf(ctx))));
+export async function GET(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}
 
-export const POST = route(async (req: Request, ctx: Ctx) => created(await createResource(await resourceOf(ctx), await readJson(req))));
+export async function POST(req: Request, ctx: Ctx): Promise<Response> {
+  return proxyToBackend(req, await target(ctx));
+}
