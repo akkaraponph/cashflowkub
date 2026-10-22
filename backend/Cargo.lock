@@ -210,7 +210,9 @@ dependencies = [
  "aes-gcm",
  "axum",
  "base64",
+ "chrono",
  "rand 0.9.5",
+ "rust_decimal",
  "secrecy",
  "serde",
  "serde_json",
@@ -251,7 +253,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aa79e62e7697b8e29b513a68abacf485adcd1fe8284a4316c5ae868e6633327"
 dependencies = [
  "iana-time-zone",
+ "js-sys",
  "num-traits",
+ "wasm-bindgen",
  "windows-link",
 ]
 
@@ -2062,6 +2066,7 @@ dependencies = [
  "cfg-if",
  "once_cell",
  "rustversion",
+ "serde",
  "wasm-bindgen-macro",
  "wasm-bindgen-shared",
 ]

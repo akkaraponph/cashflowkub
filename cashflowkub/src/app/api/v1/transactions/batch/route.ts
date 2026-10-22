@@ -1,6 +1,4 @@
-import { created, ok, readJson, route } from '@/server/http';
-import { createTransactions, deleteTransactions } from '@/server/transaction/service';
+import { proxyToBackend } from '@/server/backend/client';
 
-export const POST = route(async (req: Request) => created({ data: await createTransactions(await readJson(req)) }));
-
-export const DELETE = route(async (req: Request) => ok(await deleteTransactions(await readJson(req))));
+export const POST = (req: Request) => proxyToBackend(req, '/api/v1/transactions/batch');
+export const DELETE = (req: Request) => proxyToBackend(req, '/api/v1/transactions/batch');

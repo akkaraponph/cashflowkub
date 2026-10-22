@@ -1,7 +1,4 @@
-import { created, list, readJson, route } from '@/server/http';
-import { parseTxFilter } from '@/server/transaction/logic';
-import { createTransaction, listTransactions } from '@/server/transaction/service';
+import { proxyToBackend } from '@/server/backend/client';
 
-export const GET = route(async (req: Request) => list(await listTransactions(parseTxFilter(new URL(req.url).searchParams))));
-
-export const POST = route(async (req: Request) => created(await createTransaction(await readJson(req))));
+export const GET = (req: Request) => proxyToBackend(req, '/api/v1/transactions');
+export const POST = (req: Request) => proxyToBackend(req, '/api/v1/transactions');

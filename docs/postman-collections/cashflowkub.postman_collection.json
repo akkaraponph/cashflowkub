@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CashflowKub (auth, privacy, and backend operations)",
-    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first. Accounts, categories, budgets, goals, assets, channels, income-categories, and settings are proxied to the private Rust backend.",
+    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first. Accounts, categories, budgets, goals, assets, channels, income-categories, and settings are proxied to the private Rust backend. Transaction CRUD, batch operations, and the private paged reader use Rust behind the Next.js session gateway.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -191,6 +191,186 @@
               "mode": "raw",
               "raw": "{\n  \"privacy_version\": \"2026-10-19\"\n}"
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "description": "Transaction routes remain at the Next.js origin and require the sign-in cookie jar.",
+      "item": [
+        {
+          "name": "List transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions?from=2026-06-01&to=2026-06-30&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions?from=2026-06-01&to=2026-06-30&limit=50"
+              ]
+            },
+            "description": "Newest first; optional filters include type, activity, category, account, from, to, limit, and offset."
+          }
+        },
+        {
+          "name": "Create transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Coffee\",\n  \"cat\": \"food\",\n  \"acct\": \"Cash Wallet\",\n  \"amount\": -45.5,\n  \"date\": \"2026-06-18\"\n}"
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Get transaction",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "{{transactionId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Update transaction",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "{{transactionId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Morning coffee\"\n}"
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Delete transaction",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/{{transactionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "{{transactionId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Create batch atomically",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "batch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"name\": \"Lunch\",\n      \"cat\": \"food\",\n      \"acct\": \"Cash Wallet\",\n      \"amount\": -90,\n      \"date\": \"2026-06-18\"\n    },\n    {\n      \"name\": \"Train\",\n      \"cat\": \"transport\",\n      \"acct\": \"Cash Wallet\",\n      \"amount\": -42,\n      \"date\": \"2026-06-18\"\n    }\n  ]\n}"
+            },
+            "description": "One invalid item rolls back the full batch; 1–500 items."
+          }
+        },
+        {
+          "name": "Delete batch",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/transactions/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "transactions",
+                "batch"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    1,\n    2\n  ]\n}"
+            },
+            "description": "Deletes only rows owned by the signed-in user; 1–500 positive IDs."
           }
         }
       ]
@@ -566,6 +746,53 @@
             },
             "description": "Private network only. Process health response contains no user or database data."
           }
+        },
+        {
+          "name": "Private transaction page",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{backendServiceToken}}"
+              },
+              {
+                "key": "x-cfk-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{backendUrl}}/internal/v1/transactions/page?page=1&size=50&from=2026-06-01&to=2026-06-30",
+              "host": [
+                "{{backendUrl}}"
+              ],
+              "path": [
+                "internal",
+                "v1",
+                "transactions",
+                "page"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                },
+                {
+                  "key": "from",
+                  "value": "2026-06-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-06-30"
+                }
+              ]
+            },
+            "description": "Private Next.js-to-Rust endpoint. Keep the service token and user ID on the server; do not call from a browser."
+          }
         }
       ]
     }
@@ -586,6 +813,18 @@
     {
       "key": "id",
       "value": "1"
+    },
+    {
+      "key": "transactionId",
+      "value": "1"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "backendServiceToken",
+      "value": ""
     }
   ]
 }

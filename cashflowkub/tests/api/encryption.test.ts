@@ -85,17 +85,19 @@ describe('free text is encrypted at rest', () => {
     expect((await call(txItem.GET, { params: { id: String(created.id) } })).status).toBe(500);
   });
 
-  it('a write with no key throws instead of storing plaintext', async () => {
+  it('the Rust service encrypts writes even though the Next.js gateway has no key', async () => {
     const key = process.env.DATA_ENCRYPTION_KEY;
     delete process.env.DATA_ENCRYPTION_KEY;
     try {
       const res = await call(txCollection.POST, { method: 'POST', body: { name: 'Lunch', cat: 'food', acct: 'Cash Wallet', amount: -9 } });
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(201);
+      expect(res.json.name).toBe('Lunch');
+      const rows = await raw<{ name: string; note: string }>`SELECT name, note FROM transactions WHERE id = ${res.json.id}`;
+      expect(rows[0]!.name).toMatch(/^enc:v1:/);
+      expect(rows[0]!.note).toBe('');
     } finally {
       process.env.DATA_ENCRYPTION_KEY = key;
     }
-    const rows = await raw<{ n: number }>`SELECT count(*)::int AS n FROM transactions WHERE name = 'Lunch'`;
-    expect(rows[0]!.n).toBe(0);
   });
 });
 

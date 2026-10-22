@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { getSession } from '@/server/auth/auth';
 import { ApiError } from '@/lib/api-client';
 import type { ResourceName, ResourceRows } from '@/server/reference/resources';
+import type { TxView } from '@/server/transaction/logic';
 
 function backendOrigin(): string {
   const origin = process.env.BACKEND_URL;
@@ -76,6 +77,32 @@ export interface AppSettings {
 
 export function getBackendSettings(): Promise<AppSettings> {
   return backendJson<AppSettings>('/api/v1/settings');
+}
+
+export interface TxPageFilter {
+  page: number;
+  size: number;
+  from?: string;
+  to?: string;
+  type?: 'income' | 'expense';
+}
+
+export interface TxPage {
+  rows: TxView[];
+  total: number;
+  page: number;
+}
+
+export function getTransactionPage(filter: TxPageFilter): Promise<TxPage> {
+  const query = new URLSearchParams({ page: String(filter.page), size: String(filter.size) });
+  if (filter.from) query.set('from', filter.from);
+  if (filter.to) query.set('to', filter.to);
+  if (filter.type) query.set('type', filter.type);
+  return backendJson<TxPage>(`/internal/v1/transactions/page?${query}`);
+}
+
+export function getBackendTransaction(id: number): Promise<TxView> {
+  return backendJson<TxView>(`/api/v1/transactions/${id}`);
 }
 
 /** Authenticated public API gateway. Browser identity headers are never forwarded. */

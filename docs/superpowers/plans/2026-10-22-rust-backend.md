@@ -72,15 +72,15 @@
 
 ### Task 3: Transactions and batch operations
 
-**Files:** Create `backend/src/transactions.rs`, `backend/tests/transactions.rs`; modify `backend/src/app.rs`, `cashflowkub/src/app/api/v1/transactions/{route.ts,[id]/route.ts,batch/route.ts}`, `cashflowkub/src/app/(app)/transactions/{page.tsx,[id]/page.tsx}`, `cashflowkub/src/components/app-shell/add-transaction-dialog.tsx` only if its data source changes, `docs/knowledge/rust-backend.md`, both API contract files.
+**Files:** Create `backend/src/transactions.rs`, `backend/tests/transactions.rs`; modify `backend/src/app.rs`, `cashflowkub/src/app/api/v1/transactions/{route.ts,[id]/route.ts,batch/route.ts}`, `cashflowkub/src/app/(app)/transactions/{page.tsx,[id]/page.tsx}`, `cashflowkub/src/components/app-shell/add-transaction-dialog.tsx` only if its data source changes, `cashflowkub/tests/api/encryption.test.ts`, `docs/knowledge/rust-backend.md`, both API contract files.
 
 **Interfaces:** Produce GET/POST `/api/v1/transactions`, GET/PUT/PATCH/DELETE `/api/v1/transactions/{id}`, POST/DELETE `/api/v1/transactions/batch`, and protected GET `/internal/v1/transactions/page?page=&size=&from=&to=&type=` returning `{ rows: TxView[], total: number, page: number }`; TypeScript `getTransactionPage(filter: TxPageFilter): Promise<TxPage>` and `getBackendTransaction(id: number): Promise<TxView>`.
 
-- [ ] Write parity tests for six activities, signed amount rules, reference checks, filters and paging, batch delete limit of 1–500 positive IDs, cross-user batch skip, decimal `-45.50` retained without rounding error (the JSON number may render as `-45.5`), local-midnight date, encrypted name/note, and atomic rollback on a failed multi-row create.
-- [ ] Run `cargo test --manifest-path backend/Cargo.toml --test transactions`; confirm red.
-- [ ] Implement exact decimal parsing and SQL transactions; switch transaction route handlers and both transaction pages to Rust reads. Preserve the current `TxView` fields and date grouping behavior.
-- [ ] Update knowledge, OpenAPI, and Postman (including the private paging endpoint); run Rust test, Next.js API tests, typecheck, and `pnpm --dir cashflowkub test:pw transactions quick-add`; require pass.
-- [ ] Commit the transaction slice.
+- [x] Write parity tests for six activities, signed amount rules, reference checks, filters and paging, batch delete limit of 1–500 positive IDs, cross-user batch skip, decimal `-45.50` retained without rounding error (the JSON number may render as `-45.5`), local-midnight date, encrypted name/note, and atomic rollback on a failed multi-row create.
+- [x] Run `cargo test --manifest-path backend/Cargo.toml --test transactions`; confirm red.
+- [x] Implement exact decimal parsing and SQL transactions; switch transaction route handlers and both transaction pages to Rust reads. Preserve the current `TxView` fields and date grouping behavior.
+- [x] Update knowledge, OpenAPI, and Postman (including the private paging endpoint); run Rust test, Next.js API tests, typecheck, and `pnpm --dir cashflowkub test:pw transactions quick-add`; require pass.
+- [x] Commit the transaction slice.
 
 ### Task 4: Bills, plan, setup, and snapshots
 

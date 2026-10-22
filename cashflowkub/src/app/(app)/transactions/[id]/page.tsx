@@ -8,13 +8,13 @@ import { getI18n } from '@/lib/prefs-server';
 import { cn } from '@/lib/utils';
 import { parseId } from '@/server/http';
 import { listResource } from '@/server/reference/service';
-import { getTransaction } from '@/server/transaction/service';
+import { getBackendTransaction } from '@/server/backend/client';
 import { DeleteTransactionButton } from './delete-button';
 
 export default async function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { ui, lang } = await getI18n();
   const { id } = await params;
-  const [tx, categories] = await Promise.all([loadOr404(async () => getTransaction(parseId(id))), listResource('categories')]);
+  const [tx, categories] = await Promise.all([loadOr404(async () => getBackendTransaction(parseId(id))), listResource('categories')]);
   const cat = categories.find((c) => c.key === tx.cat);
   const rows: [string, string][] = [
     [ui.category, cat ? localized(lang, cat.label, cat.th) : tx.cat],

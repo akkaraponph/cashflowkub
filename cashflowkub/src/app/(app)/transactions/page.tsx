@@ -15,7 +15,7 @@ import { monthRange, shiftMonth } from '@/lib/tx-sheet';
 import { listDebtNames } from '@/server/debt/service';
 import { listResource } from '@/server/reference/service';
 import type { TxView } from '@/server/transaction/logic';
-import { listTransactionPage } from '@/server/transaction/service';
+import { getTransactionPage } from '@/server/backend/client';
 
 export default async function TransactionsPage({ searchParams }: { searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
@@ -27,9 +27,9 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
   const range = monthRange(month)!;
   const { page: askedPage, size } = parsePaging(firstParam(sp, 'page'), firstParam(sp, 'size'));
   const [{ rows: txs, total, page }, listing, categories, accounts, goals, incomeItems, channels, debts] = await Promise.all([
-    listTransactionPage({ from: range.from, to: range.to }, askedPage, size),
+    getTransactionPage({ from: range.from.toISOString().slice(0, 10), to: range.to.toISOString().slice(0, 10), page: askedPage, size }),
     // The ?type filter drives only the mobile list (its control is md:hidden); the desktop sheet always gets every row.
-    type ? listTransactionPage({ from: range.from, to: range.to, type }, askedPage, size) : null,
+    type ? getTransactionPage({ from: range.from.toISOString().slice(0, 10), to: range.to.toISOString().slice(0, 10), page: askedPage, size, type }) : null,
     listResource('categories'),
     listResource('accounts'),
     listResource('goals'),
