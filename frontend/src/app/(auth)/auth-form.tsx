@@ -54,7 +54,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
       }
       // A full navigation, so the server renders with the new session cookie.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a hard navigation on purpose
-      window.location.assign('/');
+      window.location.assign('/dashboard');
     } catch {
       setError(t.errors.generic);
       setBusy(false);

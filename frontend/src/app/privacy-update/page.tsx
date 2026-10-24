@@ -7,7 +7,7 @@ import { PRIVACY_VERSION } from '@/lib/privacy';
 import { getCurrentUser } from '@/server/auth/current-user';
 import { AcceptForm } from './accept-form';
 
-// Not in the (auth) group: that layout sends signed-in users to /, and this page is for signed-in users.
+// Not in the (auth) group: the auth layout sends signed-in users to /dashboard, and this page is for signed-in users.
 export async function generateMetadata() {
   const { ui } = await getI18n();
   return { title: `${ui.privacyUpdate.title} · CashflowKub` };
@@ -16,7 +16,7 @@ export async function generateMetadata() {
 export default async function PrivacyUpdatePage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login');
-  if (user.privacyVersion === PRIVACY_VERSION) redirect('/');
+  if (user.privacyVersion === PRIVACY_VERSION) redirect('/dashboard');
   const { lang, ui } = await getI18n();
   return (
     <I18nProvider lang={lang}>

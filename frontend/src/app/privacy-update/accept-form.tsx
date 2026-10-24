@@ -25,7 +25,7 @@ export function AcceptForm() {
       if (!res.ok) throw new Error(String(res.status));
       // A full navigation, so the server renders with the updated user.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a hard navigation on purpose
-      window.location.assign('/');
+      window.location.assign('/dashboard');
     } catch {
       setError(t.failed);
       setBusy(false);

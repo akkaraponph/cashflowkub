@@ -2,8 +2,9 @@ import { expect, reseed, test } from './fixtures';
 
 // [path, text that must appear in English, text that must appear in Thai]. Read-only, so the database is seeded once.
 const PAGES: [string, string, string][] = [
-  ['/', 'Net worth', 'มูลค่าสุทธิ'],
-  ['/', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
+  ['/', 'A clearer view of your money.', 'เห็นภาพการเงินของคุณชัดขึ้น'],
+  ['/dashboard', 'Net worth', 'มูลค่าสุทธิ'],
+  ['/dashboard', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
   ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
   ['/transactions', 'Item (by activity)', 'รายการตามกิจกรรม'],
   ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
@@ -68,5 +69,5 @@ test('falls back to English for a garbage language cookie', async ({ page, conte
   await context.addCookies([{ name: 'cfk-lang', value: '<script>', url: 'http://localhost:3210' }]);
   const res = await page.goto('/');
   expect(res?.status()).toBe(200);
-  await expect(page.locator('body')).toContainText('Dashboard');
+  await expect(page.locator('body')).toContainText('A clearer view of your money.');
 });

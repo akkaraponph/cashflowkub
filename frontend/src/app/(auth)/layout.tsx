@@ -6,7 +6,7 @@ import { getPrefs } from '@/lib/prefs-server';
 import { getCurrentUser } from '@/server/auth/current-user';
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
-  if (await getCurrentUser()) redirect('/');
+  if (await getCurrentUser()) redirect('/dashboard');
   const { lang } = await getPrefs();
   return (
     <I18nProvider lang={lang}>

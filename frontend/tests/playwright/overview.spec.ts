@@ -2,7 +2,7 @@ import { expect, test } from './fixtures';
 
 test.describe('dashboard', () => {
   test('summarises net worth, cashflow, bills, debts and goals', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/dashboard');
     for (const t of ['Net worth', 'Cashflow', 'Spending by category', 'Budgets', 'Savings goals', 'Recent transactions', 'Debt service ratio (DSR)']) {
       await expect(page.getByText(t).first()).toBeVisible();
     }
@@ -10,14 +10,14 @@ test.describe('dashboard', () => {
 
   test('links through to the detailed pages', async ({ page }) => {
     for (const [href, url] of [['/transactions', /\/transactions/], ['/debts', /\/debts/], ['/networth', /\/networth/], ['/goals', /\/goals/], ['/budgets', /\/budgets/]] as const) {
-      await page.goto('/');
+      await page.goto('/dashboard');
       await page.locator(`a[href="${href}"]`).filter({ hasText: 'View all' }).first().click();
       await expect(page).toHaveURL(url);
     }
   });
 
   test('navigates every screen from the sidebar', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/dashboard');
     for (const [name, url] of [
       ['Transactions', /\/transactions/], ['Bills', /\/bills/], ['Debts', /\/debts/], ['Net worth', /\/networth/], ['Budgets', /\/budgets/],
       ['Accounts', /\/accounts/], ['Reports', /\/reports/], ['Goals', /\/goals/], ['Plan', /\/plan/], ['Tax', /\/tax/], ['Setup', /\/setup/], ['Settings', /\/settings/],

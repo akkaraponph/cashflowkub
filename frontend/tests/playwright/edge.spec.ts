@@ -54,7 +54,7 @@ test.describe('phone navigation', () => {
   test.use({ viewport: { width: 390, height: 800 } });
 
   test('opens the menu and navigates', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/dashboard');
     await page.getByRole('button', { name: 'Menu' }).click();
     await page.getByRole('link', { name: 'Bills', exact: true }).click();
     await expect(page).toHaveURL(/\/bills/);

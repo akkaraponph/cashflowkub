@@ -24,7 +24,8 @@ Everything here was added by the `feat/auth-pdpa` branch. The decisions (D1-D8) 
 - **Fail closed.** An owned-model query with no scope throws; it never returns unscoped rows. Another user's id gives 404, never 403 and never the row.
 - **Running code as system.** Seeds, migrations-style scripts and the claim script must say so explicitly: `runAsSystem(async () => { ... })`. In system scope the extension does not add `userId`, and `requireUserId()` throws. Use it with `basePrisma` and write `userId` yourself. Never use it in a request path.
 - Uniqueness (account names, category keys, ...) is per user.
-- Public routes use `publicRoute()` (no auth): `/login`, `/signup`, `/privacy`, `/api/auth/*`, `/api/health`. Everything else, page or API, needs a session.
+- The public landing page `/` contains a sample transaction demo. Its sample edits are stored only in browser `localStorage`; the demo makes no finance API calls. The signed-in dashboard is `/dashboard`.
+- Public routes use `publicRoute()` (no auth): `/`, `/login`, `/signup`, `/privacy`, `/api/auth/*`, `/api/health`. Everything else, page or API, needs a session.
 
 ## 3. Encryption
 

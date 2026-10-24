@@ -17,7 +17,7 @@ test.describe('quick add transaction', () => {
   });
 
   test('adds income as a receive', async ({ page, request }) => {
-    await page.goto('/');
+    await page.goto('/dashboard');
     await page.getByRole('button', { name: 'Add transaction' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.getByRole('button', { name: 'Income', exact: true }).click();

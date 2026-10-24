@@ -5,8 +5,8 @@ const BASE = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 
 // [path, text that must appear in English, text that must appear with cfk-lang=th]
 const PAGES: [string, string, string][] = [
-  ['/', 'Net worth', 'มูลค่าสุทธิ'],
-  ['/', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
+  ['/dashboard', 'Net worth', 'มูลค่าสุทธิ'],
+  ['/dashboard', 'Debt service ratio', 'ภาระหนี้ต่อรายได้'],
   ['/transactions', 'Monthly Salary', 'ธุรกรรม'],
   ['/transactions', 'Item (by activity)', 'รายการตามกิจกรรม'],
   ['/transactions/1', 'Acme Co. payroll', 'บันทึก'],
@@ -64,11 +64,14 @@ async function fetchPage(path: string, cookie = '', signedIn = true): Promise<{ 
 }
 
 describe('pages', () => {
-  it('redirects a signed-out visit to /login, and /login and /privacy are public', async () => {
+  it('serves the public landing page and protects the dashboard, while /login and /privacy are public', async () => {
     const home = await fetchPage('/', '', false);
-    expect(home.status).toBeGreaterThanOrEqual(300);
-    expect(home.status).toBeLessThan(400);
-    expect(home.location).toContain('/login');
+    expect(home.status).toBe(200);
+    expect(home.html).toContain('A clearer view of your money.');
+    const dashboard = await fetchPage('/dashboard', '', false);
+    expect(dashboard.status).toBeGreaterThanOrEqual(300);
+    expect(dashboard.status).toBeLessThan(400);
+    expect(dashboard.location).toContain('/login');
     expect((await fetchPage('/login', '', false)).status).toBe(200);
     const privacy = await fetchPage('/privacy', '', false);
     expect(privacy.status).toBe(200);
@@ -92,6 +95,6 @@ describe('pages', () => {
   it('falls back to English for a garbage language cookie', async () => {
     const page = await fetchPage('/', 'cfk-lang=%3Cscript%3E');
     expect(page.status).toBe(200);
-    expect(page.html).toContain('Dashboard');
+    expect(page.html).toContain('A clearer view of your money.');
   });
 });

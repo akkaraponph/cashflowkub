@@ -1,6 +1,6 @@
 // The app's screens: i18n nav key, route, icon. Used by the sidebar and the mobile sheet.
 export const NAV_ITEMS = [
-  { key: 'dashboard', href: '/', icon: 'layout-dashboard' },
+  { key: 'dashboard', href: '/dashboard', icon: 'layout-dashboard' },
   { key: 'bills', href: '/bills', icon: 'calendar-clock' },
   { key: 'transactions', href: '/transactions', icon: 'arrow-left-right' },
   { key: 'debts', href: '/debts', icon: 'trending-down' },
@@ -18,5 +18,5 @@ export const NAV_ITEMS = [
 export type NavKey = (typeof NAV_ITEMS)[number]['key'];
 
 export function isActive(pathname: string, href: string): boolean {
-  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+  return pathname === href || pathname.startsWith(href + '/');
 }

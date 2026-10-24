@@ -8,8 +8,10 @@ const PASSWORD = 'a-long-test-password';
 test.describe('signed out', () => {
   test.use({ signedIn: false });
 
-  test('a visit to / goes to /login', async ({ page }) => {
+  test('the landing page is public and the dashboard goes to /login', async ({ page }) => {
     await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'A clearer view of your money.' })).toBeVisible();
+    await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
   });
@@ -30,7 +32,7 @@ test.describe('signed out', () => {
     await page.getByRole('checkbox').check();
     await expect(submit).toBeEnabled();
     await submit.click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     await expect(page.getByRole('heading', { name: 'Good morning, Mali' })).toBeVisible();
     await expect(page.getByText('Monthly Salary')).toHaveCount(0);
     await page.goto('/settings');
@@ -85,7 +87,7 @@ test.describe('signed out', () => {
 });
 
 test('the header and settings show the signed-in user, not a placeholder', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'Good morning, Ploy' })).toBeVisible();
   await page.goto('/settings');
   await expect(page.getByText('demo@cashflowkub.local')).toBeVisible();
@@ -100,19 +102,19 @@ test('sign out from settings returns to /login, and back-navigation does not sho
   await expect(page.getByText('Net worth')).toHaveCount(0);
 });
 
-test('a user with an old privacy version is redirected, accepts, and lands on /', async ({ page }) => {
+test('a user with an old privacy version is redirected, accepts, and lands on the dashboard', async ({ page }) => {
   sql("UPDATE users SET privacy_version = '2020-01-01'");
-  await page.goto('/');
+  await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/privacy-update$/);
   await expect(page.getByRole('heading', { name: 'The privacy notice changed' })).toBeVisible();
   await page.getByRole('button', { name: 'I have read it, continue' }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('heading', { name: 'Good morning, Ploy' })).toBeVisible();
 });
 
 test('an account with no categories gets the defaults back on the next visit', async ({ page }) => {
   sql('DELETE FROM categories');
-  await page.goto('/');
+  await page.goto('/dashboard');
   await expect(page.getByRole('heading', { name: 'Good morning, Ploy' })).toBeVisible();
   const res = await page.request.get('/api/v1/categories');
   expect((await res.json()).data.length).toBeGreaterThan(0);
