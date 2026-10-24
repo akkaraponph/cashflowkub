@@ -9,12 +9,12 @@ import { fmt, fmtRate } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
-import { getNetWorth } from '@/server/analytics/service';
+import { getBackendNetWorth } from '@/server/backend/client';
 
 export default async function NetWorthPage({ searchParams }: { searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
   const tab = firstParam(await searchParams, 'tab') === 'liabilities' ? 'liabilities' : 'assets';
-  const nw = await getNetWorth();
+  const nw = await getBackendNetWorth();
   const gross = nw.totalAssets + nw.totalLiab;
 
   return (

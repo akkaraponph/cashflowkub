@@ -18,7 +18,7 @@ Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessi
 
 ## Environment and rollout status
 
-The service requires `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`. Next.js reads `BACKEND_URL` and `BACKEND_SERVICE_TOKEN`. Generate the service token with `openssl rand -base64 32`, store the same value only in the private Rust and Next.js environments, and rotate both together. The web `.env.example` includes the gateway values. The accounts, categories, budgets, goals, assets, channels, income-categories, and settings endpoints now proxy to Rust. Transaction CRUD, batch operations, and the private paged reader now use Rust. Bills, bill summaries and payment toggles, plan items, and asset snapshot reads now use Rust. The setup endpoint remains in Next.js until Task 5 ports the debt view it embeds. Debt endpoints remain on their Next.js services until their planned cutover.
+The service requires `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`. Next.js reads `BACKEND_URL` and `BACKEND_SERVICE_TOKEN`; those values are server-only and never use a `NEXT_PUBLIC_` prefix. Generate the service token with `openssl rand -base64 32`, store the same value only in the private Rust and Next.js environments, and rotate both together. The web `.env.example` includes the gateway values. The accounts, categories, budgets, goals, assets, channels, income-categories, and settings endpoints now proxy to Rust. Transaction CRUD, batch operations, and the private paged reader now use Rust. Bills, bill summaries and payment toggles, plan items, and asset snapshot reads now use Rust. Debt APIs, schedules, repayment planning, DSR, debt page reads, and setup reads now use Rust behind the authenticated Next.js gateway. Gateway upstream failures return a stable 502 response and never expose the private backend URL.
 
 The implementation plan is [Rust Backend Implementation Plan](../superpowers/plans/2026-10-22-rust-backend.md), based on [the design](../superpowers/specs/2026-10-22-rust-backend-design.md). Update this page after each domain cutover and record the endpoints that now use Rust.
 
@@ -34,3 +34,15 @@ Settings currently expose `monthlyIncome` as a non-negative integer. A missing v
 ## Current cutover: transactions
 
 `/api/v1/transactions` supports filtered list/create, `/api/v1/transactions/{id}` supports read/update/delete, and `/api/v1/transactions/batch` supports atomic create and user-scoped delete. The public Next.js session gateway forwards browser calls. The transaction Server Components use Rust's `/internal/v1/transactions/page` reader for sorted, filtered pages. Rust keeps signed exact-decimal amounts, validates all six activity rules and user-owned references, encrypts `name` and `note` with the shared AES-GCM key, preserves date-only values, and performs multi-row create in one database transaction.
+
+## Current cutover: debts and setup
+
+The public `/api/v1/debts` collection, item, payment, schedule, DSR, and strategy routes are session-authenticated Next.js proxies to Rust. Server rendering uses private Rust readers for debt details and debt names. `/api/v1/setup` also proxies to Rust so its embedded debt view comes from the same implementation. Rust scopes reads and writes to the verified user, encrypts lender and payment note fields with the shared key, serializes repayment ledger changes in database transactions, and preserves existing payment allocation and payoff-planning behavior.
+
+## Current cutover: tax and aggregate views
+
+`GET/PUT /api/v1/tax` preserve the existing tax plan contract, pinned 2025 Thai rules, assumed rules for other years, validated saved inputs, and monthly income fallback. `GET /api/v1/dashboard`, `/api/v1/networth`, and `/api/v1/reports` return the existing view shapes from user-scoped SQL. Reports decrypt transaction merchant names before grouping; Next.js browser requests still use the public gateway and server-rendered pages use the authenticated server client.
+
+## Current cutover: export and sign-up defaults
+
+`GET /api/v1/me/export` streams the existing JSON download shape, with all 20 owned tables, no owner IDs or auth tables, and the four encrypted fields decrypted. The private `POST /internal/v1/me/default-data` inserts the nine standard categories with per-user unique-key conflict handling; Better Auth remains responsible for creating and deleting user records.

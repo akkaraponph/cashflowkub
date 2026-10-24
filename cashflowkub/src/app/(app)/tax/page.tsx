@@ -6,7 +6,7 @@ import { fmt, pct } from '@/lib/format';
 import { getPrefs } from '@/lib/prefs-server';
 import { DICT, fill } from '@/lib/i18n';
 import { hasUsefulRoom } from '@/server/tax/logic';
-import { getTaxPlan } from '@/server/tax/service';
+import { getBackendTaxPlan } from '@/server/backend/client';
 import { TaxForm } from './tax-form';
 
 const Row = ({ label, value }: { label: string; value: string }) => (
@@ -19,7 +19,7 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export default async function TaxPage() {
   const { lang, year } = await getPrefs();
   const ui = DICT[lang];
-  const plan = await getTaxPlan(year);
+  const plan = await getBackendTaxPlan(year);
   const { result: r } = plan;
   const shownYear = lang === 'th' ? year + 543 : year;
 

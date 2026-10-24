@@ -2,16 +2,16 @@
 
 A bilingual (EN / ไทย) personal-finance manager, implemented from the
 [CashflowKub design](https://claude.ai/design/p/fbc1b8d4-42f4-41a5-99b8-2391260cd947)
-as a single full-stack **Next.js** app in [`cashflowkub/`](cashflowkub/README.md).
+as a Next.js web app in [`cashflowkub/`](cashflowkub/README.md) with a Rust finance service in [`backend/`](backend/README.md).
 
 | Layer    | Stack                                              |
 | -------- | -------------------------------------------------- |
 | UI       | Next.js 16 App Router · shadcn/ui · Tailwind v4    |
-| API      | Next.js Route Handlers (`/api/v1`)                 |
-| Data     | Prisma 7 · PostgreSQL                              |
+| API      | Next.js authenticated proxy (`/api/v1`) → Axum Rust service |
+| Data     | SQLx/PostgreSQL (Prisma owns schema migrations)    |
 | Auth     | Better Auth (email + password) · per-user data     |
 
-The Rust service bootstrap is in [`backend/`](backend/). It currently provides the private health endpoint and shared boundary primitives; finance routes are still served by Next.js while the staged migration is implemented. See [`docs/knowledge/rust-backend.md`](docs/knowledge/rust-backend.md) for the rollout boundary and [implementation plan](docs/superpowers/plans/2026-10-22-rust-backend.md).
+Finance APIs and data access run in the private Rust service. Next.js owns the public origin, Better Auth sessions, UI, and server-rendered pages. Browser requests never receive the Rust URL or service token. See [`docs/knowledge/rust-backend.md`](docs/knowledge/rust-backend.md) for the boundary and rollback details.
 
 Screens: Dashboard · Transactions · Bills (list + calendar) · Debts (+ schedule, avalanche/snowball) ·
 Net Worth · Budgets · Accounts · Reports · Goals · Plan · Setup · Settings, with light/dark theme and EN/TH.

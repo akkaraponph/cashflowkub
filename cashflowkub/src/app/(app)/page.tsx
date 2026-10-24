@@ -16,10 +16,7 @@ import { compact, fmt, pct, signed, fmtRate } from '@/lib/format';
 import { fill, localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
-import { getDashboard } from '@/server/analytics/service';
-import { getDsr } from '@/server/debt/planning';
-import { listResource } from '@/server/reference/service';
-import { listTransactions } from '@/server/transaction/service';
+import { getBackendDashboard, getBackendDsr, getBackendResource, getTransactionPage } from '@/server/backend/client';
 
 function SectionHead({ title, href, viewAll }: { title: string; href?: string; viewAll: string }) {
   return (
@@ -48,7 +45,8 @@ export default async function DashboardPage() {
   const { ui, lang } = await getI18n();
   const user = await getCurrentUser();
   if (!user) redirect('/login'); // layouts and pages render in parallel, so the page guards itself too
-  const [d, recent, budgets, categories, dsr] = await Promise.all([getDashboard(), listTransactions({ limit: 5 }), listResource('budgets'), listResource('categories'), getDsr()]);
+  const [d, recentPage, budgets, categories, dsr] = await Promise.all([getBackendDashboard(), getTransactionPage({ page: 1, size: 5 }), getBackendResource('budgets'), getBackendResource('categories'), getBackendDsr()]);
+  const recent = recentPage.rows;
   const cats = byKey(categories);
 
   return (

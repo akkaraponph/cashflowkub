@@ -70,4 +70,21 @@ describe('Rust backend gateway', () => {
     expect(sent.get('authorization')).toBe('Bearer server-only-token');
     expect(sent.get('x-cfk-user-id')).toBe('user-from-session');
   });
+  it('returns a generic gateway failure without exposing the private address', async () => {
+    getSessionMock.mockResolvedValue({ user: { id: 'user-from-session' } });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('connect ECONNREFUSED http://private-rust.internal:8080')));
+    const response = await proxyToBackend(new Request('http://web.test/api/v1/accounts'), '/api/v1/accounts');
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({ error: 'backend unavailable', code: 'backend_unavailable' });
+  });
+
+  it('does not forward private upstream headers to the browser', async () => {
+    getSessionMock.mockResolvedValue({ user: { id: 'user-from-session' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { headers: {
+      location: 'http://private-rust.internal:8080', server: 'rust-private', 'x-cfk-user-id': 'private-user',
+    } })));
+    const response = await proxyToBackend(new Request('http://web.test/api/v1/accounts'), '/api/v1/accounts');
+    for (const name of ['location', 'server', 'x-cfk-user-id']) expect(response.headers.has(name)).toBe(false);
+  });
+
 });

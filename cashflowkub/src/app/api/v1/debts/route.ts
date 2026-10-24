@@ -1,6 +1,3 @@
-import { created, list, readJson, route } from '@/server/http';
-import { createDebt, listDebts } from '@/server/debt/service';
-
-export const GET = route(async (req: Request) => list(await listDebts(new URL(req.url).searchParams.get('status') ?? undefined)));
-
-export const POST = route(async (req: Request) => created(await createDebt(await readJson(req))));
+import { proxyToBackend } from '@/server/backend/client';
+export const GET = (req: Request) => proxyToBackend(req, '/api/v1/debts');
+export const POST = (req: Request) => proxyToBackend(req, '/api/v1/debts');

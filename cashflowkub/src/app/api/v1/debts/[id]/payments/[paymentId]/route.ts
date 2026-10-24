@@ -1,10 +1,3 @@
-import { ok, parseId, route } from '@/server/http';
-import { deletePayment } from '@/server/debt/service';
-
-type Ctx = { params: Promise<{ id: string; paymentId: string }> };
-
-/** Returns the recomputed debt so the client can show the reopened balance. */
-export const DELETE = route(async (_req: Request, ctx: Ctx) => {
-  const { id, paymentId } = await ctx.params;
-  return ok(await deletePayment(parseId(id), parseId(paymentId)));
-});
+import { proxyToBackend } from '@/server/backend/client';
+type Ctx={params:Promise<{id:string;paymentId:string}>};
+export const DELETE=async(req:Request,ctx:Ctx)=>{const p=await ctx.params;return proxyToBackend(req,`/api/v1/debts/${p.id}/payments/${p.paymentId}`)};

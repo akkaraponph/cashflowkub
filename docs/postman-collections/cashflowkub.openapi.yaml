@@ -3,8 +3,8 @@ info:
   title: CashflowKub API (auth, privacy, and backend operations)
   version: '2026-10-22'
   description: |
-    Covers sign-in, account deletion, PDPA endpoints, and the Rust-backed reference data and settings API.
-    Next.js remains the public origin and forwards authenticated calls to the private Rust service.
+    Covers sign-in, account deletion, PDPA endpoints, and finance APIs. Next.js remains the public origin
+    and validates sessions before forwarding requests to the private Rust service.
 
     Naming exception: Better Auth's own endpoints (`/api/auth/*`) use camelCase fields, such as
     `privacyVersion`. Our endpoints (`/api/v1/me/*`) use snake_case.
@@ -17,6 +17,8 @@ tags:
     description: Better Auth endpoints. Public except delete-user.
   - name: me
     description: The signed-in user's own account data.
+  - name: finance
+    description: Session-authenticated finance endpoints served by Rust through the Next.js gateway.
 paths:
   /internal/health:
     get:
@@ -615,6 +617,180 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/debts:
+    get:
+      tags: [finance]
+      summary: List the signed-in user's debts
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, paid] }
+      responses:
+        '200': { description: 'Debt list in the data array envelope.' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [finance]
+      summary: Create a debt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [name, original], properties: { name: { type: string }, original: { type: integer, minimum: 1 }, lender: { type: string }, apr: { type: number }, monthly: { type: integer }, dueDay: { type: integer } } }
+      responses:
+        '201': { description: Created debt view. }
+        '400': { description: Invalid debt fields. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { description: Debt name already exists for this user. }
+  /api/v1/debts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      tags: [finance]
+      summary: Read a debt
+      responses:
+        '200': { description: Debt view. }
+        '404': { description: Debt is not owned by the signed-in user. }
+    patch:
+      tags: [finance]
+      summary: Update a debt
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { type: object, additionalProperties: true } }
+      responses:
+        '200': { description: Updated debt view. }
+        '404': { description: Debt is not owned by the signed-in user. }
+    delete:
+      tags: [finance]
+      summary: Delete a debt
+      responses:
+        '204': { description: Deleted. }
+        '404': { description: Debt is not owned by the signed-in user. }
+        '409': { description: Debt has linked transactions. }
+  /api/v1/debts/{id}/payments:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [finance]
+      summary: List debt payments
+      responses: { '200': { description: Payments ordered by date. } }
+    post:
+      tags: [finance]
+      summary: Record a debt payment
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { type: object, required: [amount], properties: { amount: { type: integer, minimum: 1 }, date: { type: string }, note: { type: string } } } }
+      responses: { '201': { description: Payment and recalculated debt. }, '404': { description: Debt is not owned by the signed-in user. }, '409': { description: Debt is closed. } }
+  /api/v1/debts/{id}/payments/{paymentId}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+      - name: paymentId
+        in: path
+        required: true
+        schema: { type: integer }
+    delete:
+      tags: [finance]
+      summary: Delete a debt payment
+      responses: { '200': { description: Updated debt view. }, '404': { description: Payment is not owned by the signed-in user. } }
+  /api/v1/debts/{id}/schedule:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [finance]
+      summary: Read the projected debt payoff schedule
+      responses: { '200': { description: Schedule rows, interest total, and never-pays-off flag. }, '404': { description: Debt is not owned by the signed-in user. } }
+  /api/v1/debts/dsr:
+    get:
+      tags: [finance]
+      summary: Calculate debt service ratio and payoff plan
+      parameters:
+        - { name: target, in: query, schema: { type: number, exclusiveMinimum: 0, maximum: 1 } }
+        - { name: strategy, in: query, schema: { type: string, enum: [avalanche, snowball, custom] } }
+        - { name: extra, in: query, schema: { type: integer, minimum: 0 } }
+      responses: { '200': { description: DSR and payment plan. }, '400': { description: Invalid target or strategy. } }
+  /api/v1/debts/strategy:
+    get:
+      tags: [finance]
+      summary: Compare debt payoff strategies
+      parameters:
+        - { name: strategy, in: query, schema: { type: string, enum: [avalanche, snowball, custom] } }
+        - { name: extra, in: query, schema: { type: integer, minimum: 0 } }
+      responses: { '200': { description: Strategy payoff comparison. } }
+  /api/v1/setup:
+    get:
+      tags: [finance]
+      summary: Read setup dashboard data
+      responses: { '200': { description: Setup data including debt views. }, '401': { $ref: '#/components/responses/Unauthorized' } }
+  /api/v1/tax:
+    get:
+      tags: [finance]
+      summary: Calculate or read a saved tax plan
+      parameters:
+        - { name: year, in: query, schema: { type: integer, minimum: 2000, maximum: 2100 } }
+      responses: { '200': { description: Tax plan, assumptions, input, and result. }, '400': { description: Invalid year. } }
+    put:
+      tags: [finance]
+      summary: Save tax inputs and calculate the result
+      parameters:
+        - { name: year, in: query, schema: { type: integer, minimum: 2000, maximum: 2100 } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { type: object, required: [salary, freelance, otherNet, withheld, spouse, children, children2018Extra, parents, disabledDependents], additionalProperties: true } }
+      responses: { '200': { description: Saved tax plan and result. }, '400': { description: Invalid year or tax input. } }
+  /api/v1/dashboard:
+    get:
+      tags: [finance]
+      summary: Read dashboard aggregates
+      responses: { '200': { description: User-scoped dashboard view. }, '401': { $ref: '#/components/responses/Unauthorized' } }
+  /api/v1/networth:
+    get:
+      tags: [finance]
+      summary: Read assets, liabilities, and net worth history
+      responses: { '200': { description: User-scoped net worth view. } }
+  /api/v1/reports:
+    get:
+      tags: [finance]
+      summary: Read spending reports and top merchants
+      responses: { '200': { description: User-scoped reports; merchant names are decrypted for display. } }
+  /internal/v1/debts/{id}/detail:
+    get:
+      tags: [operations]
+      summary: Private server-rendering debt detail reader
+      servers: [{ url: http://127.0.0.1:8080 }]
+      security: [{ backendToken: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: x-cfk-user-id, in: header, required: true, schema: { type: string } }
+      responses: { '200': { description: Debt detail and schedule. }, '401': { description: Requires the backend service token and verified user ID. } }
+  /internal/v1/debts/names:
+    get:
+      tags: [operations]
+      summary: Private transaction-editor debt name reader
+      servers: [{ url: http://127.0.0.1:8080 }]
+      security: [{ backendToken: [] }]
+      parameters:
+        - { name: x-cfk-user-id, in: header, required: true, schema: { type: string } }
+      responses: { '200': { description: Debt names and done state. } }
+  /internal/v1/me/default-data:
+    post:
+      tags: [operations]
+      summary: Idempotently add the standard categories after sign-up
+      servers: [{ url: http://127.0.0.1:8080 }]
+      security: [{ backendToken: [] }]
+      parameters:
+        - { name: x-cfk-user-id, in: header, required: true, schema: { type: string } }
+      responses: { '204': { description: Defaults inserted if missing. } }
 components:
   parameters:
     Resource:

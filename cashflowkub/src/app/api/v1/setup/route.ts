@@ -1,4 +1,2 @@
-import { ok, route } from '@/server/http';
-import { getSetup } from '@/server/setup/service';
-
-export const GET = route(async () => ok(await getSetup()));
+import { proxyToBackend } from '@/server/backend/client';
+export const GET=(req:Request)=>proxyToBackend(req,'/api/v1/setup');

@@ -9,7 +9,7 @@ import { localized, pickLabel, type Dict, type Lang } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import type { SetupGoalRow } from '@/server/setup/logic';
-import { getSetup } from '@/server/setup/service';
+import { getBackendSetup } from '@/server/backend/client';
 import type { DebtView } from '@/server/views';
 import { CategoryEditDialog } from './category-edit-dialog';
 
@@ -89,7 +89,7 @@ export default async function SetupPage({ searchParams }: { searchParams: Search
   const { ui, lang } = await getI18n();
   const raw = firstParam(await searchParams, 'tab');
   const tab: Tab = (TABS as readonly string[]).includes(raw ?? '') ? (raw as Tab) : 'categories';
-  const s = await getSetup();
+  const s = await getBackendSetup();
   const expenseSubLabel = (sub: string) => (sub === 'need' ? ui.subNeed : sub === 'saving' ? ui.sheet.sumSaving : sub === 'debt' ? ui.sheet.sumDebt : ui.subWant);
   const subLabel = (sub: string) => (sub === 'main' ? ui.subMain : sub === 'side' ? ui.subSide : ui.subPassive);
 

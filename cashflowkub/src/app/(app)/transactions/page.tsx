@@ -12,8 +12,7 @@ import { getI18n } from '@/lib/prefs-server';
 import { DEFAULT_PAGE_SIZE, parsePaging } from '@/lib/pagination';
 import { byKey, firstParam, type SearchParams } from '@/lib/search-params';
 import { monthRange, shiftMonth } from '@/lib/tx-sheet';
-import { listDebtNames } from '@/server/debt/service';
-import { listResource } from '@/server/reference/service';
+import { getBackendDebtNames, getBackendResource } from '@/server/backend/client';
 import type { TxView } from '@/server/transaction/logic';
 import { getTransactionPage } from '@/server/backend/client';
 
@@ -30,12 +29,12 @@ export default async function TransactionsPage({ searchParams }: { searchParams:
     getTransactionPage({ from: range.from.toISOString().slice(0, 10), to: range.to.toISOString().slice(0, 10), page: askedPage, size }),
     // The ?type filter drives only the mobile list (its control is md:hidden); the desktop sheet always gets every row.
     type ? getTransactionPage({ from: range.from.toISOString().slice(0, 10), to: range.to.toISOString().slice(0, 10), page: askedPage, size, type }) : null,
-    listResource('categories'),
-    listResource('accounts'),
-    listResource('goals'),
-    listResource('income-categories'),
-    listResource('channels'),
-    listDebtNames(),
+    getBackendResource('categories'),
+    getBackendResource('accounts'),
+    getBackendResource('goals'),
+    getBackendResource('income-categories'),
+    getBackendResource('channels'),
+    getBackendDebtNames(),
   ]);
   const cats = byKey(categories);
   const defaultDate = month === CURRENT_MONTH ? today().toISOString().slice(0, 10) : `${month}-01`;

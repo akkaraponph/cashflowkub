@@ -1,6 +1,6 @@
 # CashflowKub (web)
 
-Bilingual (EN / ไทย) personal-finance manager: Next.js 16 + shadcn/ui front end, Next.js Route Handlers as the REST API, Prisma 7 + PostgreSQL.
+Bilingual (EN / ไทย) personal-finance manager: Next.js 16 + shadcn/ui front end, Next.js session gateway, private Axum/Rust finance API, and PostgreSQL. Prisma owns schema migrations and Better Auth storage.
 
 ## Run
 
@@ -9,6 +9,9 @@ cp .env.example .env              # set the Postgres password and the secrets be
 createdb cashflowkub && createdb cashflowkub_test
 pnpm install                      # also runs prisma generate
 pnpm db:deploy && pnpm db:seed    # schema + demo user and data
+cp ../backend/.env.example ../backend/.env
+# Set backend DATABASE_URL, DATA_ENCRYPTION_KEY and BACKEND_SERVICE_TOKEN to match this app's .env
+cargo run --manifest-path ../backend/Cargo.toml
 pnpm dev                          # http://localhost:3000
 ```
 
@@ -21,6 +24,8 @@ Required environment variables (no defaults; see `.env.example`):
 | `DATA_ENCRYPTION_KEY` | `openssl rand -base64 32` (base64 of 32 bytes); back it up, losing it makes encrypted notes unreadable |
 | `SEED_DEMO_PASSWORD` | Password of the seeded demo user `demo@cashflowkub.local` |
 | `PRIVACY_CONTROLLER_NAME`, `PRIVACY_CONTACT_EMAIL` | Shown on `/privacy`; the page throws if unset |
+| `BACKEND_URL` | Private Rust origin, normally `http://127.0.0.1:8080`; server-side only |
+| `BACKEND_SERVICE_TOKEN` | Shared private credential; must match the Rust environment |
 
 Sign in as `demo@cashflowkub.local` with `SEED_DEMO_PASSWORD`, or create your own account at `/signup`.
 
@@ -64,6 +69,7 @@ Base path `/api/v1`. Every endpoint except `/api/health` needs the session cooki
 - `GET/POST /debts/:id/payments`: POST body `{ "amount": number (positive int), "date"?: "YYYY-MM-DD", "note"?: string }`; responds `201 { payment, debt, excess }`. The payment is split fee → interest → principal; only the applied amount is stored, and `excess` is the part of `amount` beyond what was owed (0 otherwise). A closed debt gives 409.
 - `DELETE /debts/:id/payments/:paymentId`: removes the payment, recomputes `paid`/`done` (reopens a closed debt) and returns the updated debt.
 - `GET/PUT /tax?year=YYYY`: one saved Thai personal-income-tax plan per year (`TaxInput` body, integer baht). Responds `{ year, rulesYear, assumed, saved, input, result }`; `result.balance > 0` means you owe, `< 0` a refund. Only 2025 rules are pinned: other years set `assumed: true`.
+- Finance requests stay on the Next.js `/api/v1` origin; `BACKEND_URL` is never a browser variable. The gateway replaces identity headers with the Better Auth user and private service token.
 - `GET/PUT /settings`: `{ "monthlyIncome": non-negative int }`.
 - `GET /debts/strategy?strategy=avalanche|snowball|custom&extra=`: `{ baseline, plan, interestSaved, monthsSaved }`; `baseline`/`plan` carry `{ strategy, extra, months, totalInterest, neverPaysOff, order, payoffMonth }`. Check `neverPaysOff` before presenting savings. `extra` is a non-negative int.
 - `GET /debts/dsr?target=`: `{ dsr: { income, monthlyDebt, ratio, band }, targetDsr, monthlyCut, incomeNeeded, quickWins, refinance, actions }`; `target` is 0 < target <= 1.
@@ -73,14 +79,16 @@ Base path `/api/v1`. Every endpoint except `/api/health` needs the session cooki
 
 After `pnpm db:deploy`, existing debts get due day 1 and an empty payment ledger, so they may show as overdue until each debt's due day (and terms) is edited. `paid` and `done` are preserved via `opening_paid`.
 
-## Layout
+## Architecture
 
-- `src/server/<domain>/logic.ts`: pure, unit-tested business logic.
-- `src/server/<domain>/service.ts`: Prisma access.
-- `src/app/api/v1/**`: REST handlers.
-- `src/app/(app)/**`: Server Component pages that call services directly.
+- `backend/src/<domain>.rs`: Rust routes, PostgreSQL access, validation, and calculations.
+- `src/server/backend/client.ts`: server-only authenticated client and browser API proxy.
+- `src/app/api/v1/**`: stable public route handlers forwarding to Rust.
+- `src/app/(app)/**`: Server Components using authenticated server-side Rust reads.
 - `src/components/cfk`: app motifs and charts.
 - `src/components/ui`: shadcn.
+
+Prisma remains for Better Auth and the sole migration history. Run the Rust process before Next.js; deployment must place Rust on a private network and expose only Next.js publicly. Full environment and rollback instructions are in [`../backend/README.md`](../backend/README.md).
 
 ## Security and privacy
 

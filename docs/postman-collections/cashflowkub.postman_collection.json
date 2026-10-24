@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "CashflowKub (auth, privacy, and backend operations)",
-    "description": "Sign-in, account deletion and PDPA endpoints. Every /api/v1/* call needs the session cookie from sign-in and returns 401 {error:'not signed in', code:'unauthorized'} without it. Send requests in one cookie jar: sign up or sign in first. Accounts, categories, budgets, goals, assets, channels, income-categories, and settings are proxied to the private Rust backend. Transaction CRUD, batch operations, and the private paged reader use Rust behind the Next.js session gateway. Bills, plan items, bill payments, and asset snapshot reads now use Rust behind the session gateway. The setup endpoint and debt endpoints remain in Next.js pending debt view parity.",
+    "description": "Sign-in, account deletion, PDPA endpoints, and finance APIs. Every /api/v1/* request uses the Better Auth session cookie; Next.js validates it and proxies finance calls to the private Rust backend. Reference data, transactions, bills, plans, debts, setup, tax, dashboard, net worth, reports, export, and sign-up defaults are served by Rust. The private Rust operations folder is for trusted server-side calls only.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -1103,6 +1103,273 @@
           }
         }
       ]
+    },
+    {
+      "name": "Rust-backed finance API",
+      "description": "Call public routes through Next.js with a signed-in cookie.",
+      "item": [
+        {
+          "name": "List debts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/debts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "debts"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create debt",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/debts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "debts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Personal loan\",\n  \"original\": 10000,\n  \"apr\": 12,\n  \"monthly\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dashboard"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get net worth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/networth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "networth"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reports"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get setup data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "setup"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get tax plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tax?year=2025",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tax?year=2025"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download personal data",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "export"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Private Rust operations (server only)",
+      "description": "Use only from trusted backend infrastructure. Never expose the service token to browsers.",
+      "item": [
+        {
+          "name": "Debt detail (private)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              },
+              {
+                "key": "x-cfk-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{backendUrl}}/internal/v1/debts/{{debtId}}/detail",
+              "host": [
+                "{{backendUrl}}"
+              ],
+              "path": [
+                "internal",
+                "v1",
+                "debts",
+                "{{debtId}}",
+                "detail"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Debt names (private)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              },
+              {
+                "key": "x-cfk-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{backendUrl}}/internal/v1/debts/names",
+              "host": [
+                "{{backendUrl}}"
+              ],
+              "path": [
+                "internal",
+                "v1",
+                "debts",
+                "names"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create default categories (private)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{serviceToken}}"
+              },
+              {
+                "key": "x-cfk-user-id",
+                "value": "{{userId}}"
+              }
+            ],
+            "url": {
+              "raw": "{{backendUrl}}/internal/v1/me/default-data",
+              "host": [
+                "{{backendUrl}}"
+              ],
+              "path": [
+                "internal",
+                "v1",
+                "me",
+                "default-data"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -1133,6 +1400,14 @@
     {
       "key": "backendServiceToken",
       "value": ""
+    },
+    {
+      "key": "serviceToken",
+      "value": "replace-with-private-service-token"
+    },
+    {
+      "key": "debtId",
+      "value": "1"
     }
   ]
 }

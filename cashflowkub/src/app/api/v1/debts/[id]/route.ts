@@ -1,15 +1,4 @@
-import { noContent, ok, parseId, readJson, route } from '@/server/http';
-import { deleteDebt, getDebt, updateDebt } from '@/server/debt/service';
-
-type Ctx = { params: Promise<{ id: string }> };
-
-export const GET = route(async (_req: Request, ctx: Ctx) => ok(await getDebt(parseId((await ctx.params).id))));
-
-const update = route(async (req: Request, ctx: Ctx) => ok(await updateDebt(parseId((await ctx.params).id), await readJson(req))));
-export const PUT = update;
-export const PATCH = update;
-
-export const DELETE = route(async (_req: Request, ctx: Ctx) => {
-  await deleteDebt(parseId((await ctx.params).id));
-  return noContent();
-});
+import { proxyToBackend } from '@/server/backend/client';
+type Ctx={params:Promise<{id:string}>};
+const forward=async(req:Request,ctx:Ctx)=>proxyToBackend(req,`/api/v1/debts/${(await ctx.params).id}`);
+export const GET=forward; export const PUT=forward; export const PATCH=forward; export const DELETE=forward;

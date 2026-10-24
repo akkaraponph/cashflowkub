@@ -1,3 +1,6 @@
+import { vi } from 'vitest';
+// Next.js enforces this boundary in builds; API tests run directly in Node.
+vi.mock('server-only', () => ({}));
 import 'dotenv/config';
 
 // Point every Prisma client created in API tests at the test database.

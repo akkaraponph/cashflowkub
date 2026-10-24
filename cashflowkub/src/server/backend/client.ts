@@ -1,3 +1,4 @@
+import 'server-only';
 import { headers } from 'next/headers';
 import { getSession } from '@/server/auth/auth';
 import { ApiError } from '@/lib/api-client';
@@ -6,6 +7,13 @@ import type { TxView } from '@/server/transaction/logic';
 import type { BillView } from '@/server/views';
 import type { BillSummary } from '@/server/bill/logic';
 import type { PlanView, SnapshotsView } from '@/server/plan/logic';
+import type { DebtView } from '@/server/views';
+import type { DebtDetail } from '@/server/debt/service';
+import type { DsrResult, SmartPlan } from '@/server/debt/dsr';
+import type { Strategy } from '@/server/debt/logic';
+import type { PayoffComparison } from '@/server/debt/strategy';
+import type { SetupView } from '@/server/setup/logic';
+import type { DashboardView, NetWorthView, ReportsView } from '@/server/analytics/logic';
 
 function backendOrigin(): string {
   const origin = process.env.BACKEND_URL;
@@ -40,7 +48,12 @@ function unauthorized(): Response {
 }
 
 async function backendFetch<T>(url: URL, init: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, cache: 'no-store' });
+  let response: Response;
+  try {
+    response = await fetch(url, { ...init, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  } catch {
+    throw new ApiError(502, 'backend unavailable', 'backend_unavailable');
+  }
   if (response.status === 204) return undefined as T;
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
@@ -65,6 +78,14 @@ export async function backendJson<T>(path: string, init: RequestInit = {}): Prom
   const url = new URL(path, backendOrigin());
   const requestHeaders = authenticatedHeaders(userId, new Headers(init.headers));
   return backendFetch<T>(url, { ...init, headers: requestHeaders });
+}
+
+/** Server-only call for lifecycle work that has a verified user ID but no browser session. */
+export async function backendInternal(path: string, userId: string, init: RequestInit = {}): Promise<void> {
+  const url = new URL(path, backendOrigin());
+  const requestHeaders = authenticatedHeaders(userId, new Headers(init.headers));
+  const response = await fetch(url, { ...init, headers: requestHeaders, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  if (!response.ok && response.status !== 204) throw new Error(`Private backend request failed (${response.status})`);
 }
 
 export async function getBackendResource<K extends ResourceName>(
@@ -117,7 +138,13 @@ export async function proxyToBackend(req: Request, path: string): Promise<Respon
   url.search = new URL(req.url).search;
   const headers = authenticatedHeaders(userId, req.headers);
   const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer();
-  const upstream = await fetch(url, { method: req.method, headers, body, cache: 'no-store' });
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, { method: req.method, headers, body, cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  } catch {
+    // Network errors can contain the private service URL; expose a stable public error.
+    return Response.json({ error: 'backend unavailable', code: 'backend_unavailable' }, { status: 502, headers: { 'cache-control': 'no-store' } });
+  }
   const responseHeaders = new Headers();
   for (const name of ['content-type', 'content-disposition', 'cache-control']) {
     const value = upstream.headers.get(name);
@@ -144,3 +171,25 @@ export function getBackendPlan(month: string): Promise<PlanView> {
 export function getBackendSnapshots(): Promise<SnapshotsView> {
   return backendJson('/api/v1/plan/snapshots');
 }
+
+export function getBackendDebts(status?: string): Promise<{ data: DebtView[] }> {
+  const query = status ? `?${new URLSearchParams({ status })}` : '';
+  return backendJson<{ data: DebtView[] }>(`/api/v1/debts${query}`);
+}
+export function getBackendDebt(id: number): Promise<DebtView> { return backendJson<DebtView>(`/api/v1/debts/${id}`); }
+export function getBackendDebtDetail(id: number): Promise<DebtDetail> { return backendJson<DebtDetail>(`/internal/v1/debts/${id}/detail`); }
+export function getBackendDebtNames(): Promise<{ name: string; done: boolean }[]> { return backendJson<{ name: string; done: boolean }[]>('/internal/v1/debts/names'); }
+export async function getBackendDsr(): Promise<DsrResult> { return (await backendJson<SmartPlan>('/api/v1/debts/dsr')).dsr; }
+export function getBackendSmartPlan(target: number): Promise<SmartPlan> { return backendJson<SmartPlan>(`/api/v1/debts/dsr?${new URLSearchParams({ target: String(target) })}`); }
+export function getBackendPayoffComparison(strategy: Strategy, extra: number): Promise<PayoffComparison> {
+  const query = new URLSearchParams({ strategy, extra: String(extra) });
+  return backendJson<PayoffComparison>(`/api/v1/debts/strategy?${query}`);
+}
+export function getBackendSetup(): Promise<SetupView> { return backendJson<SetupView>('/api/v1/setup'); }
+
+export function getBackendTaxPlan(year: number): Promise<import('@/server/tax/service').TaxPlan> {
+  return backendJson(`/api/v1/tax?${new URLSearchParams({ year: String(year) })}`);
+}
+export function getBackendDashboard(): Promise<DashboardView> { return backendJson('/api/v1/dashboard'); }
+export function getBackendNetWorth(): Promise<NetWorthView> { return backendJson('/api/v1/networth'); }
+export function getBackendReports(): Promise<ReportsView> { return backendJson('/api/v1/reports'); }

@@ -14,6 +14,8 @@ pub enum ApiError {
     BadRequest(String, Option<String>),
     #[error("{0}")]
     Conflict(String, String),
+    #[error("{0}")]
+    ConflictMessage(String),
     #[error("internal server error")]
     Internal,
 }
@@ -35,6 +37,7 @@ impl IntoResponse for ApiError {
             ),
             Self::BadRequest(message, code) => (StatusCode::BAD_REQUEST, message, code),
             Self::Conflict(message, code) => (StatusCode::CONFLICT, message, Some(code)),
+            Self::ConflictMessage(message) => (StatusCode::CONFLICT, message, None),
             Self::Internal => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "internal server error".to_owned(),

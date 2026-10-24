@@ -1,10 +1,14 @@
+pub mod analytics;
 pub mod app;
 pub mod auth;
 pub mod bills;
 pub mod config;
 pub mod crypto;
 pub mod db;
+pub mod debts;
 pub mod error;
+pub mod export;
 pub mod plan;
 pub mod reference;
+pub mod tax;
 pub mod transactions;

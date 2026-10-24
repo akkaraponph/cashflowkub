@@ -11,8 +11,8 @@ import { getI18n } from '@/lib/prefs-server';
 import type { SearchParamsRecord } from '@/lib/search-params';
 import { cn } from '@/lib/utils';
 import type { DsrBand, SmartAction } from '@/server/debt/dsr';
-import { getPayoffComparison, getSmartPlan, parsePlanningParams } from '@/server/debt/planning';
-import { listActiveDebtViews } from '@/server/debt/service';
+import { parsePlanningParams } from '@/server/debt/planning';
+import { getBackendDebts, getBackendPayoffComparison, getBackendSmartPlan } from '@/server/backend/client';
 import { HttpError } from '@/server/errors';
 import type { DebtView } from '@/server/views';
 import { IncomeDialog } from './income-dialog';
@@ -47,8 +47,8 @@ function actionText(a: SmartAction, ui: Dict, lang: Lang, debts: Map<number, Deb
 export default async function SmartPlanPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
   const { ui, lang } = await getI18n();
   const { strategy, extra, target } = safeParams(await searchParams);
-  const [plan, comparison, debts] = await Promise.all([getSmartPlan(target), getPayoffComparison(strategy, extra), listActiveDebtViews()]);
-  const byId = new Map(debts.map((d) => [d.id, d]));
+  const [plan, comparison, debtResult] = await Promise.all([getBackendSmartPlan(target), getBackendPayoffComparison(strategy, extra), getBackendDebts('active')]);
+  const byId = new Map(debtResult.data.map((d) => [d.id, d]));
   const { dsr } = plan;
 
   return (

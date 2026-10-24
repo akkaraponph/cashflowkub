@@ -1,7 +1,2 @@
-import { ok, route } from '@/server/http';
-import { getPayoffComparison, parsePlanningParams } from '@/server/debt/planning';
-
-export const GET = route(async (req: Request) => {
-  const { strategy, extra } = parsePlanningParams(new URL(req.url).searchParams);
-  return ok(await getPayoffComparison(strategy, extra));
-});
+import { proxyToBackend } from '@/server/backend/client';
+export const GET=(req:Request)=>proxyToBackend(req,'/api/v1/debts/strategy');

@@ -4,7 +4,7 @@ import type { TxView } from '@/server/transaction/logic';
 import { cn } from '@/lib/utils';
 import { ListRow } from './list-row';
 
-export function TxRow({ tx, cat, className }: { tx: TxView; cat?: Category; className?: string }) {
+export function TxRow({ tx, cat, className }: { tx: TxView; cat?: Pick<Category, 'icon' | 'tint'>; className?: string }) {
   return (
     <ListRow
       icon={cat?.icon ?? 'circle'}

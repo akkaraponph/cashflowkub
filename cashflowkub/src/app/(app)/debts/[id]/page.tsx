@@ -12,7 +12,7 @@ import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseId } from '@/server/http';
 import { today } from '@/lib/clock';
 import { amountOwedNow, isoDate } from '@/server/debt/cycle';
-import { getDebtDetail } from '@/server/debt/service';
+import { getBackendDebtDetail } from '@/server/backend/client';
 import { planVsActual } from '@/server/debt/summary';
 import { calcLabel } from '../debt-form';
 import { DebtFormDialog } from '../debt-form-dialog';
@@ -25,7 +25,7 @@ export default async function DebtDetailPage({ params, searchParams }: { params:
   const { ui, lang } = await getI18n();
   const { id } = await params;
   const tab = firstParam(await searchParams, 'tab') === 'schedule' ? 'schedule' : 'overview';
-  const { debt: d, payments } = await loadOr404(async () => getDebtDetail(parseId(id)));
+  const { debt: d, payments } = await loadOr404(async () => getBackendDebtDetail(parseId(id)));
   const method = calcLabel(ui, d.calc);
   const isFixed = d.calc === 'fixed';
   const due = d.due;

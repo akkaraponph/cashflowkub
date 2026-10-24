@@ -7,12 +7,11 @@ import { compact, fmt } from '@/lib/format';
 import { localized } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { byKey } from '@/lib/search-params';
-import { getReports } from '@/server/analytics/service';
-import { listResource } from '@/server/reference/service';
+import { getBackendReports, getBackendResource } from '@/server/backend/client';
 
 export default async function ReportsPage() {
   const { ui, lang } = await getI18n();
-  const [r, categories] = await Promise.all([getReports(), listResource('categories')]);
+  const [r, categories] = await Promise.all([getBackendReports(), getBackendResource('categories')]);
   const cats = byKey(categories);
 
   return (

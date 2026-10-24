@@ -82,7 +82,7 @@ const PROBLEM_FIELD: Record<ActivityProblem, keyof RowDraft> = {
 };
 
 /** `requireItem: false` is for rows loaded from the server: legacy save and debt rows have no item yet but still count in totals. */
-export function validateRow(d: RowDraft, cats: Category[], opts: { requireItem?: boolean } = {}): RowCheck {
+export function validateRow(d: RowDraft, cats: Omit<Category, 'userId'>[], opts: { requireItem?: boolean } = {}): RowCheck {
   const requireItem = opts.requireItem ?? true;
   const touched = [d.cat, d.item, d.acct, d.amount, d.interest, d.fee, d.goal, d.note, d.name].some((v) => v.trim() !== '');
   if (!touched) return { kind: 'empty' };
@@ -122,7 +122,7 @@ export function draftFromView(t: TxView): RowDraft {
  * Whether an item exists is the server's call; here it only has to be present when the activity needs one.
  */
 export function parsePaste(
-  text: string, defaults: { date: string; acct: string }, cats: Category[],
+  text: string, defaults: { date: string; acct: string }, cats: Omit<Category, 'userId'>[],
 ): { ok: true; bodies: TxBody[] } | { ok: false; line: number; error: string } {
   const bodies: TxBody[] = [];
   const lines = text.split(/\r?\n/);
@@ -193,7 +193,7 @@ export function shiftMonth(month: string, delta: number): string {
   return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-export function summarize(rows: Pick<TxView, 'activity' | 'cat' | 'amount'>[], cats: Category[]): { income: number; saving: number; need: number; want: number; debt: number } {
+export function summarize(rows: Pick<TxView, 'activity' | 'cat' | 'amount'>[], cats: Pick<Category, 'key' | 'sub'>[]): { income: number; saving: number; need: number; want: number; debt: number } {
   const sub = new Map(cats.map((c) => [c.key, c.sub]));
   const out = { income: 0, saving: 0, need: 0, want: 0, debt: 0 };
   for (const r of rows) {

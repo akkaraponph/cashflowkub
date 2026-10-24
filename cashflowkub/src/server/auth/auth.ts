@@ -3,7 +3,6 @@ import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { basePrisma } from '@/lib/db';
 import { PRIVACY_VERSION } from '@/lib/privacy';
-import { runAsUser } from '@/lib/user-context';
 import { defaultDataFor } from '@/server/me/service';
 
 export { PRIVACY_VERSION };
@@ -53,7 +52,7 @@ export const auth = betterAuth({
         },
         // Runs after the user row is committed.
         after: async (user) => {
-          await runAsUser(user.id, () => defaultDataFor(user.id));
+          await defaultDataFor(user.id);
         },
       },
     },

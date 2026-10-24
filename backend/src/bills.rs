@@ -298,6 +298,14 @@ async fn list_bills(
     }
     Ok(out)
 }
+pub(crate) async fn all_views(
+    pool: &PgPool,
+    user: &str,
+    month: &str,
+    status: Option<&str>,
+) -> Result<Vec<Value>, ApiError> {
+    list_bills(pool, user, month, None, status).await
+}
 async fn get_bill(
     tx: &mut PgConnection,
     user: &str,

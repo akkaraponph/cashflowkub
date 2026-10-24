@@ -14,7 +14,7 @@ import { localized, pickLabel } from '@/lib/i18n';
 import { getI18n } from '@/lib/prefs-server';
 import { firstParam, type SearchParams } from '@/lib/search-params';
 import { parseStrategy, sortByStrategy } from '@/server/debt/logic';
-import { listDebts } from '@/server/debt/service';
+import { getBackendDebts } from '@/server/backend/client';
 import { debtSummary } from '@/server/debt/summary';
 import { DebtFormDialog } from './debt-form-dialog';
 import { DueBadge } from './due-badge';
@@ -22,7 +22,9 @@ import { DueBadge } from './due-badge';
 export default async function DebtsPage({ searchParams }: { searchParams: SearchParams }) {
   const { ui, lang } = await getI18n();
   const strategy = parseStrategy(firstParam(await searchParams, 'strategy'));
-  const [active, paid] = await Promise.all([listDebts('active'), listDebts('paid')]);
+  const [activeResult, paidResult] = await Promise.all([getBackendDebts('active'), getBackendDebts('paid')]);
+  const active = activeResult.data;
+  const paid = paidResult.data;
   const { totalRemaining, totalOriginal, totalPaid, monthlyTotal, progress, avgApr, avgMonthlyRate } = debtSummary(active);
 
   return (

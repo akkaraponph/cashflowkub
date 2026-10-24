@@ -36,8 +36,8 @@ type EditableField = Exclude<keyof RowDraft, 'id' | 'name'>;
 
 export function TxSheet({ rows: initialRows, categories, accounts, goals, incomeItems, channels, debts, defaultDate, summaryCaption }: {
   rows: TxView[];
-  categories: Category[];
-  accounts: Account[];
+  categories: Omit<Category, 'userId'>[];
+  accounts: Omit<Account, 'userId'>[];
   goals: { name: string }[];
   incomeItems: { name: string }[];
   channels: { name: string }[];
@@ -217,7 +217,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
 
   const saved = rows.flatMap((r) => (r.body ? [r.body] : []));
   const totals = columnTotals(saved);
-  const catLabel = (c: Category) => localized(lang, c.label, c.th);
+  const catLabel = (c: Pick<Category, 'label' | 'th'>) => localized(lang, c.label, c.th);
   const th = 'border border-border bg-secondary px-1.5 py-1 text-center text-[11px] font-semibold';
 
   return (
