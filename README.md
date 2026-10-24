@@ -2,7 +2,7 @@
 
 A bilingual (EN / ไทย) personal-finance manager, implemented from the
 [CashflowKub design](https://claude.ai/design/p/fbc1b8d4-42f4-41a5-99b8-2391260cd947)
-as a Next.js web app in [`cashflowkub/`](cashflowkub/README.md) with a Rust finance service in [`backend/`](backend/README.md).
+as a Next.js web app in [`frontend/`](frontend/README.md) with a Rust finance service in [`backend/`](backend/README.md).
 
 | Layer    | Stack                                              |
 | -------- | -------------------------------------------------- |
@@ -20,8 +20,8 @@ Each person signs in and sees only their own data; free-text notes are encrypted
 everything (PDPA). See [`docs/knowledge/auth-and-privacy.md`](docs/knowledge/auth-and-privacy.md). The privacy notice is a draft and password reset
 is not built yet, so do not open sign-up to the public before those are done.
 
-See [`cashflowkub/README.md`](cashflowkub/README.md) to run it (it now needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATA_ENCRYPTION_KEY`,
-`SEED_DEMO_PASSWORD` and the two `PRIVACY_*` variables; existing data is handed to your account with `pnpm db:claim --email <your email>`).
+Run both services with `make dev` after configuring `backend/.env` and `frontend/.env`. The command starts Rust and Next.js together; use Ctrl+C to stop both. See [`backend/README.md`](backend/README.md) and [`frontend/README.md`](frontend/README.md) for setup details. The app needs `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATA_ENCRYPTION_KEY`,
+`SEED_DEMO_PASSWORD` and the two `PRIVACY_*` variables; existing data is handed to your account with `pnpm --dir frontend db:claim --email <your email>`.
 
 > The earlier Go API (`api/`) and Expo app (`mobile/`) were replaced by this app. They are in git history before this commit.
 

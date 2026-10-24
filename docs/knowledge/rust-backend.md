@@ -20,6 +20,8 @@ Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessi
 
 The service requires `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`. Next.js reads `BACKEND_URL` and `BACKEND_SERVICE_TOKEN`; those values are server-only and never use a `NEXT_PUBLIC_` prefix. Generate the service token with `openssl rand -base64 32`, store the same value only in the private Rust and Next.js environments, and rotate both together. The web `.env.example` includes the gateway values. The accounts, categories, budgets, goals, assets, channels, income-categories, and settings endpoints now proxy to Rust. Transaction CRUD, batch operations, and the private paged reader now use Rust. Bills, bill summaries and payment toggles, plan items, and asset snapshot reads now use Rust. Debt APIs, schedules, repayment planning, DSR, debt page reads, and setup reads now use Rust behind the authenticated Next.js gateway. Gateway upstream failures return a stable 502 response and never expose the private backend URL.
 
+For local development, configure `backend/.env` and `frontend/.env`, then run `make dev` from the repository root to launch both services. `make backend` and `make frontend` start either service independently.
+
 The implementation plan is [Rust Backend Implementation Plan](../superpowers/plans/2026-10-22-rust-backend.md), based on [the design](../superpowers/specs/2026-10-22-rust-backend-design.md). Update this page after each domain cutover and record the endpoints that now use Rust.
 
 Related existing constraints: [auth, tenancy, encryption and privacy](auth-and-privacy.md), [CashflowKub planner domain](spreadsheet-planner.md).

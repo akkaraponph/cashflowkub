@@ -1,3 +1,4 @@
-cashflowkub/.vitest
+/frontend/.vitest/
 /backend/target/
 /backend/.env
+.DS_Store

@@ -4,10 +4,10 @@ This Axum service owns finance API behavior and PostgreSQL access. The Next.js a
 
 ## Local startup
 
-1. Deploy the existing Prisma schema to the selected database with `pnpm --dir cashflowkub db:deploy`.
-2. Copy `.env.example` to `.env`. Set `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`; use the same database, encryption key, and service token as the Next.js app. Generate secrets with `openssl rand -base64 32`.
-3. Start Rust with `cargo run --manifest-path backend/Cargo.toml`.
-4. Set `BACKEND_URL=http://127.0.0.1:8080` in `cashflowkub/.env`, use the same `BACKEND_SERVICE_TOKEN`, and start Next.js with `pnpm --dir cashflowkub dev`.
+1. Deploy the existing Prisma schema to the selected database with `pnpm --dir frontend db:deploy`.
+2. Copy `backend/.env.example` to `backend/.env`. Set `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`; use the same database, encryption key, and service token as the Next.js app. Generate secrets with `openssl rand -base64 32`.
+3. Set `BACKEND_URL=http://127.0.0.1:8080` in `frontend/.env` and use the same `BACKEND_SERVICE_TOKEN` in both environment files.
+4. From the repository root, run `make dev` to start Rust and Next.js together. Use Ctrl+C to stop both. To run one service independently, use `make backend` or `make frontend`.
 5. Check `GET http://127.0.0.1:8080/internal/health`; the public application remains at `http://localhost:3000`.
 
 Prisma migrations remain the only schema deployment history. Do not run `pnpm db:seed` against production: it truncates the database.
