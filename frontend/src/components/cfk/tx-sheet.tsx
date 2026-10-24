@@ -20,6 +20,7 @@ import type { TxView } from '@/server/transaction/logic';
 
 let rowSeq = 0;
 const PAD = 20;
+const AUTOSAVE_DELAY_MS = 700;
 const CELL = 'h-7 w-full bg-transparent px-1.5 text-xs outline-none focus:ring-1 focus:ring-inset focus:ring-primary';
 
 interface Row {
@@ -49,6 +50,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
   const s = ui.sheet;
   const catByKey = new Map(categories.map((c) => [c.key, c]));
   const inflight = useRef(new Map<string, Promise<void>>());
+  const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const tableRef = useRef<HTMLTableElement>(null);
   // While a dropdown is open focus lives in its portal; that must not count as leaving the row.
   const openMenus = useRef(0);
@@ -85,20 +87,6 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
   };
   const patchRow = (key: string, fn: (r: Row) => Row) => setRows((list) => withPad(list.map((r) => (r.key === key ? fn(r) : r))));
 
-  const edit = (key: string, patch: Partial<RowDraft>) => patchRow(key, (r) => ({ ...r, draft: { ...r.draft, ...patch } }));
-
-  // Changing the activity changes what the category, item, debt and goal cells mean, so they start over.
-  const onActivity = (row: Row, activity: Activity) => {
-    if (activity === row.draft.activity) return;
-    edit(row.key, { activity, cat: '', item: '', interest: '', fee: '', goal: '', name: '' });
-  };
-
-  const onCat = (row: Row, key: string) => {
-    const d = row.draft;
-    const auto = d.name === '' || d.name === catByKey.get(d.cat)?.label;
-    edit(row.key, { cat: key, name: auto ? '' : d.name });
-  };
-
   const run = async (key: string) => {
     const row = rowsRef.current.find((r) => r.key === key);
     if (!row) return;
@@ -122,15 +110,49 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
   };
 
   // Saves for one row run strictly in sequence, so a second blur during a POST becomes a PATCH, never a second create.
-  const commit = (key: string) => {
+  const commit = (key: string): Promise<void> => {
     const next = (inflight.current.get(key) ?? Promise.resolve()).then(() => run(key)).finally(() => {
       if (inflight.current.get(key) === next) inflight.current.delete(key);
     });
     inflight.current.set(key, next);
+    return next;
+  };
+
+  const scheduleCommit = (key: string) => {
+    const timer = saveTimers.current.get(key);
+    if (timer) clearTimeout(timer);
+    saveTimers.current.set(key, setTimeout(() => {
+      saveTimers.current.delete(key);
+      void commit(key);
+    }, AUTOSAVE_DELAY_MS));
+  };
+
+  const flushCommit = (key: string) => {
+    const timer = saveTimers.current.get(key);
+    if (timer) clearTimeout(timer);
+    saveTimers.current.delete(key);
+    return commit(key);
+  };
+
+  const edit = (key: string, patch: Partial<RowDraft>) => {
+    patchRow(key, (r) => ({ ...r, draft: { ...r.draft, ...patch } }));
+    scheduleCommit(key);
+  };
+
+  // Changing the activity changes what the category, item, debt and goal cells mean, so they start over.
+  const onActivity = (row: Row, activity: Activity) => {
+    if (activity === row.draft.activity) return;
+    edit(row.key, { activity, cat: '', item: '', interest: '', fee: '', goal: '', name: '' });
+  };
+
+  const onCat = (row: Row, key: string) => {
+    const d = row.draft;
+    const auto = d.name === '' || d.name === catByKey.get(d.cat)?.label;
+    edit(row.key, { cat: key, name: auto ? '' : d.name });
   };
 
   const remove = async (key: string) => {
-    await inflight.current.get(key);
+    await flushCommit(key);
     const row = rowsRef.current.find((r) => r.key === key);
     if (!row) return;
     try {
@@ -153,7 +175,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
     setDeleting(true);
     try {
       // A row created by an in-flight POST only gets its id once that save settles.
-      await Promise.all(keys.map((k) => inflight.current.get(k)));
+      await Promise.all(keys.map(flushCommit));
       const targets = rowsRef.current.filter((r) => keys.includes(r.key) && r.draft.id !== undefined);
       const ids = targets.map((r) => r.draft.id as number);
       if (ids.length === 0) return;
@@ -277,7 +299,7 @@ export function TxSheet({ rows: initialRows, categories, accounts, goals, income
                   <tr
                     key={row.key}
                     className={cn('group border-t', selected.has(row.key) && 'bg-primary/5')}
-                    onBlur={(e) => { if (openMenus.current === 0 && !e.currentTarget.contains(e.relatedTarget as Node | null)) commit(row.key); }}
+                    onBlur={(e) => { if (openMenus.current === 0 && !e.currentTarget.contains(e.relatedTarget as Node | null)) void flushCommit(row.key); }}
                   >
                     <td className="w-8 border-r text-center">
                       {d.id !== undefined && (

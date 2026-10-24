@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { api, expect, test } from './fixtures';
 
-type Tx = { name: string; acct: string; amount: number; activity: string; item: string; cat: string; goal: string; interest: number; fee: number };
+type Tx = { name: string; note: string; acct: string; amount: number; activity: string; item: string; cat: string; goal: string; interest: number; fee: number };
 
 // The seeded month has 12 rows, so row 12 (0-based) is the first blank one.
 const BLANK = 12;
@@ -109,6 +109,22 @@ test.describe('transactions sheet', () => {
     await expect.poll(async () => (await june(request)).find((t) => t.name === 'Starbucks')).toMatchObject({ amount: -210.25, acct: 'Cash Wallet' });
     await page.reload();
     await expect(cell(page, 10, 'amount')).toHaveValue('210.25');
+  });
+
+  test('autosaves an edit while the cell remains focused', async ({ page, request }) => {
+    await page.goto('/transactions');
+    await cell(page, 10, 'amount').fill('225.75');
+    await expect.poll(async () => (await june(request)).find((t) => t.name === 'Starbucks')?.amount).toBe(-225.75);
+    await expect(cell(page, 10, 'amount')).toBeFocused();
+  });
+
+  test('autosaves a new row without leaving the sheet', async ({ page, request }) => {
+    await page.goto('/transactions');
+    await pick(page, BLANK, 'cat', 'Food & Dining');
+    await pick(page, BLANK, 'acct', 'SCB Current');
+    await cell(page, BLANK, 'amount').fill('85');
+    await cell(page, BLANK, 'note').fill('Auto saved noodles');
+    await expect.poll(async () => (await june(request)).find((t) => t.note === 'Auto saved noodles')?.amount).toBe(-85);
   });
 
   test('Escape puts a cell back to its saved value', async ({ page }) => {

@@ -45,6 +45,8 @@ Settings currently expose `monthlyIncome` as a non-negative integer. A missing v
 
 `/api/v1/transactions` supports filtered list/create, `/api/v1/transactions/{id}` supports read/update/delete, and `/api/v1/transactions/batch` supports atomic create and user-scoped delete. The public Next.js session gateway forwards browser calls. The transaction Server Components use Rust's `/internal/v1/transactions/page` reader for sorted, filtered pages. Rust keeps signed exact-decimal amounts, validates all six activity rules and user-owned references, encrypts `name` and `note` with the shared AES-GCM key, preserves date-only values, and performs multi-row create in one database transaction.
 
+The desktop transactions sheet debounces valid row edits for 700 ms and sends them through the authenticated Next.js gateway to Rust. Leaving a row flushes its pending save, and deleting a row waits for its pending save first. Incomplete rows remain unsaved until the user completes them.
+
 ## Current cutover: debts and setup
 
 The public `/api/v1/debts` collection, item, payment, schedule, DSR, and strategy routes are session-authenticated Next.js proxies to Rust. Server rendering uses private Rust readers for debt details and debt names. `/api/v1/setup` also proxies to Rust so its embedded debt view comes from the same implementation. Rust scopes reads and writes to the verified user, encrypts lender and payment note fields with the shared key, serializes repayment ledger changes in database transactions, and preserves existing payment allocation and payoff-planning behavior.
