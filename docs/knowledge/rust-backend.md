@@ -14,6 +14,8 @@ Next.js remains the public origin. Browser calls keep their `/api/v1` URLs and p
 
 Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessions, and privacy acknowledgement. The only exception is the opt-in local startup seed: when `SEED_ACCOUNTS_ENABLED=true`, Rust creates or resets the two configured test credentials in `users` and `auth_accounts`, revokes their sessions, and adds default categories. This seed is disabled by default; Rust does not otherwise write `users`, `sessions`, `auth_accounts`, or `verifications`.
 
+Every request that reaches Rust is logged to stderr as `[rust-api] METHOD /path -> STATUS in Nms`, including internal and health routes. Query parameters, headers, and bodies are omitted so filters, credentials, and personal data are not written to request logs. Next.js browser-facing finance routes use the server-only `proxyToBackend` gateway; `/api/v1/me/privacy` remains a Next.js-owned exception.
+
 ## Data rules
 
 - Every query against an owned finance table scopes by the authenticated `user_id`, including joins, updates, deletes, nested payments, and aggregates. A row belonging to someone else responds as not found.

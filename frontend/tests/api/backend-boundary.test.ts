@@ -44,6 +44,19 @@ describe('Rust backend gateway', () => {
     expect(sent.get('cookie')).toBeNull();
   });
 
+  it('forwards the public finance route and query to the configured Rust backend', async () => {
+    getSessionMock.mockResolvedValue({ user: { id: 'user-from-session' } });
+    const upstream = vi.fn().mockResolvedValue(Response.json({ data: [] }));
+    vi.stubGlobal('fetch', upstream);
+    const request = new Request('http://web.test/api/v1/accounts?kind=cash', { method: 'GET' });
+
+    await proxyToBackend(request, '/api/v1/accounts');
+
+    expect(upstream).toHaveBeenCalledOnce();
+    const [url] = upstream.mock.calls[0] as [URL, RequestInit];
+    expect(url.toString()).toBe('http://127.0.0.1:8080/api/v1/accounts?kind=cash');
+  });
+
   it('returns the existing unauthorized envelope without calling Rust', async () => {
     getSessionMock.mockResolvedValue(null);
     const upstream = vi.fn();
