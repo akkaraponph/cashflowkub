@@ -18,7 +18,8 @@ dev:
 		fi; \
 	done; \
 	set -a; . backend/.env; set +a; \
-	cargo run --manifest-path backend/Cargo.toml & backend_pid=$$!; \
+	cargo build --manifest-path backend/Cargo.toml; \
+	./backend/target/debug/cashflowkub-backend & backend_pid=$$!; \
 	trap 'kill "$$backend_pid" 2>/dev/null || true; wait "$$backend_pid" 2>/dev/null || true' EXIT INT TERM; \
 	pnpm --dir frontend dev
 

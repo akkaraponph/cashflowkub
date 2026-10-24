@@ -6,7 +6,7 @@ The Rust service lives at repository-root `backend/`. It uses Axum and SQLx with
 
 Next.js remains the public origin. Browser calls keep their `/api/v1` URLs and pass through authenticated Next.js route handlers. The gateway resolves the Better Auth session, discards caller supplied `Authorization` and `x-cfk-user-id`, and sends the verified user ID with `BACKEND_SERVICE_TOKEN`. Server Components call the same Rust service through a server-only client that resolves the incoming session first. Rust checks the service token and user ID before handling protected routes. Bind Rust to a private interface and keep its port off the public network.
 
-Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessions, and privacy acknowledgement. Rust must not write `users`, `sessions`, `auth_accounts`, or `verifications` except reading the verified user ID's foreign key relationship through the finance schema.
+Better Auth continues to own sign-up, sign-in, sign-out, account deletion, sessions, and privacy acknowledgement. The only exception is the opt-in local startup seed: when `SEED_ACCOUNTS_ENABLED=true`, Rust creates or resets the two configured test credentials in `users` and `auth_accounts`, revokes their sessions, and adds default categories. This seed is disabled by default; Rust does not otherwise write `users`, `sessions`, `auth_accounts`, or `verifications`.
 
 ## Data rules
 

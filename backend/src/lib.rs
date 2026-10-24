@@ -10,5 +10,6 @@ pub mod error;
 pub mod export;
 pub mod plan;
 pub mod reference;
+pub mod seed;
 pub mod tax;
 pub mod transactions;

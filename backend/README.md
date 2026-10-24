@@ -7,8 +7,12 @@ This Axum service owns finance API behavior and PostgreSQL access. The Next.js a
 1. Deploy the existing Prisma schema to the selected database with `pnpm --dir frontend db:deploy`.
 2. Copy `backend/.env.example` to `backend/.env`. Set `DATABASE_URL`, `DATA_ENCRYPTION_KEY`, and `BACKEND_SERVICE_TOKEN`; use the same database, encryption key, and service token as the Next.js app. Generate secrets with `openssl rand -base64 32`.
 3. Set `BACKEND_URL=http://127.0.0.1:8080` in `frontend/.env` and use the same `BACKEND_SERVICE_TOKEN` in both environment files.
-4. From the repository root, run `make dev` to start Rust and Next.js together. Use Ctrl+C to stop both. To run one service independently, use `make backend` or `make frontend`.
+4. From the repository root, run `make dev` to start Rust and Next.js together. Use Ctrl+C to stop both. To run one service independently, use `make backend` or `make frontend`; `cargo run --manifest-path backend/Cargo.toml` also loads `backend/.env` when started directly.
 5. Check `GET http://127.0.0.1:8080/internal/health`; the public application remains at `http://localhost:3000`.
+
+### Local test login accounts
+
+Set `SEED_ACCOUNTS_ENABLED=true` and provide `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_CLIENT_EMAIL`, and `SEED_CLIENT_PASSWORD` in `backend/.env`. The email is the sign-in username. Each backend startup creates a missing account or replaces its Better Auth credential password, removes that user's existing sessions, and ensures default categories exist. New seeded users are marked with a stale privacy notice version and must acknowledge the current notice after signing in. Leave startup seeding disabled for any database where resetting these accounts is not intended. The current app has no separate admin role, so the account named Admin has the same permissions as Client.
 
 Prisma migrations remain the only schema deployment history. Do not run `pnpm db:seed` against production: it truncates the database.
 

@@ -245,7 +245,12 @@ async fn default_data(
     State(s): State<AppState>,
     u: AuthUser,
 ) -> Result<impl IntoResponse, ApiError> {
-    let mut tx = s.pool.begin().await.map_err(fail)?;
+    ensure_default_data(&s.pool, &u.id).await.map_err(fail)?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn ensure_default_data(pool: &sqlx::PgPool, user_id: &str) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
     for (key, label, th, short, icon, tint, kind, sort) in DEFAULTS {
         let sub = match *key {
             "food" | "transport" | "bills" | "health" => "need",
@@ -254,10 +259,21 @@ async fn default_data(
             "debt" => "debt",
             _ => "",
         };
-        sqlx::query("INSERT INTO categories(user_id,key,label,th,short,icon,tint,type,sub,sort) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(user_id,key) DO NOTHING").bind(&u.id).bind(key).bind(label).bind(th).bind(short).bind(icon).bind(tint).bind(kind).bind(sub).bind(sort).execute(&mut *tx).await.map_err(fail)?;
+        sqlx::query("INSERT INTO categories(user_id,key,label,th,short,icon,tint,type,sub,sort) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(user_id,key) DO NOTHING")
+            .bind(user_id)
+            .bind(key)
+            .bind(label)
+            .bind(th)
+            .bind(short)
+            .bind(icon)
+            .bind(tint)
+            .bind(kind)
+            .bind(sub)
+            .bind(sort)
+            .execute(&mut *tx)
+            .await?;
     }
-    tx.commit().await.map_err(fail)?;
-    Ok(StatusCode::NO_CONTENT)
+    tx.commit().await
 }
 pub fn routes() -> Router<AppState> {
     Router::new()

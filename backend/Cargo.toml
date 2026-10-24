@@ -8,15 +8,19 @@ aes-gcm = "0.10"
 axum = "0.8"
 base64 = "0.22"
 chrono = "0.4"
+dotenvy = "0.15"
 rand = "0.9"
 rust_decimal = "1"
 secrecy = { version = "0.10", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+scrypt = { version = "0.12", default-features = false }
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "chrono", "rust_decimal", "json"] }
 subtle = "2"
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal"] }
+unicode-normalization = "0.1"
+uuid = { version = "1", features = ["v4"] }
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }
