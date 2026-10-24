@@ -88,9 +88,9 @@ impl SeedAccount {
         }
         let normalized_password: String = password.nfkc().collect();
         let length = normalized_password.chars().count();
-        if !(10..=128).contains(&length) {
+        if length == 0 || length > 128 {
             return Err(SeedError::Configuration(
-                "seed passwords must contain 10 to 128 characters after NFKC normalization",
+                "seed passwords must contain 1 to 128 characters after NFKC normalization",
             ));
         }
         let name = name.into();
@@ -198,7 +198,17 @@ fn hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::hash_password_with_salt;
+    use super::{SeedAccount, hash_password_with_salt};
+
+    #[test]
+    fn accepts_existing_seed_passwords_shorter_than_signup_minimum() {
+        assert!(SeedAccount::new("admin@example.test", "12345678", "Admin").is_ok());
+    }
+
+    #[test]
+    fn rejects_empty_seed_passwords() {
+        assert!(SeedAccount::new("admin@example.test", "", "Admin").is_err());
+    }
 
     #[test]
     fn password_hash_matches_better_auth_scrypt_format() {

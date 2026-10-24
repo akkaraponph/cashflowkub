@@ -1,5 +1,7 @@
+pub mod adapters;
 pub mod analytics;
 pub mod app;
+pub mod application;
 pub mod auth;
 pub mod bills;
 pub mod config;

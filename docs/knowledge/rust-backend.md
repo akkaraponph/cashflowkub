@@ -1,5 +1,11 @@
 # Rust backend boundary and rollout
 
+## Backend architecture status
+
+The runtime composition now has explicit inbound HTTP and outbound PostgreSQL adapter modules: `backend/src/adapters/inbound/http.rs` owns Axum router composition, `backend/src/adapters/outbound/postgres.rs` owns pool creation, and `backend/src/application/startup.rs` builds runtime state and selects those adapters. This is the composition shell for a hexagonal architecture.
+
+The finance feature modules (`reference`, `transactions`, `bills`, `plan`, `debts`, `tax`, `analytics`, and `export`) still combine Axum handlers, application rules, and SQLx queries. They are not fully hexagonal yet because use cases do not call domain repository ports. New feature work must put transport mapping in inbound adapters, behavior in application/domain modules, and SQL in outbound repository adapters. Existing features require migration before the backend can be considered fully hexagonal.
+
 The Rust service lives at repository-root `backend/`. It uses Axum and SQLx with the existing PostgreSQL schema. Prisma remains responsible for migrations and Better Auth's four tables; Rust owns finance SQL and rules as each domain is moved.
 
 ## Request boundary
